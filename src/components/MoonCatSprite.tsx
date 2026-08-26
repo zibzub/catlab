@@ -1,20 +1,26 @@
 import type { CSSProperties } from 'react'
 import { assetPath } from '../data'
-import type { AtlasManifest, CatRecord } from '../types'
+import type { AtlasManifest, CatRecord, GridViewMode } from '../types'
 
 interface MoonCatSpriteProps {
   cat: CatRecord
   manifest: AtlasManifest
-  variant?: 'grid' | 'palette'
+  variant?: GridViewMode | 'palette'
+  showRings?: boolean
 }
 
-export function MoonCatSprite({ cat, manifest, variant = 'grid' }: MoonCatSpriteProps) {
+export function MoonCatSprite({
+  cat,
+  manifest,
+  variant = 'detailed',
+  showRings = true,
+}: MoonCatSpriteProps) {
   const { atlas } = manifest
   const cell = cat.rescueOrder % atlas.catsPerAtlas
   const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
   const column = cell % atlas.columns
   const row = Math.floor(cell / atlas.columns)
-  const scale = variant === 'palette' ? 3 : 5
+  const scale = variant === 'palette' ? 3 : variant === 'compact' ? 4 : 5
   const style = {
     width: atlas.cellWidth * scale,
     height: atlas.cellHeight * scale,
@@ -24,8 +30,8 @@ export function MoonCatSprite({ cat, manifest, variant = 'grid' }: MoonCatSprite
   } satisfies CSSProperties
 
   return (
-    <div className="cat-art" aria-hidden="true">
-      <div className="cat-art__platform" />
+    <div className={`cat-art cat-art--${variant}`} aria-hidden="true">
+      {showRings && <div className="cat-art__platform" />}
       <div className="cat-art__sprite" style={style} />
     </div>
   )

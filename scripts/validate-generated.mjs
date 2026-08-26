@@ -45,7 +45,7 @@ function assertAtlasPixels(atlasBuffers, index) {
     const width = matrix.length
     const height = matrix[0].length
     const offsetX = Math.floor((CELL_WIDTH - width) / 2)
-    const offsetY = Math.floor((CELL_HEIGHT - height) / 2)
+    const offsetY = CELL_HEIGHT - height
     const sheet = Math.floor(rescueOrder / CATS_PER_ATLAS)
     const cell = rescueOrder % CATS_PER_ATLAS
     const cellColumn = cell % ATLAS_COLUMNS

@@ -3,7 +3,7 @@ import { CatGrid } from './components/CatGrid'
 import { FilterBar } from './components/FilterBar'
 import { Palette } from './components/Palette'
 import { loadGeneratedData } from './data'
-import type { AtlasManifest, CatRecord, FilterState } from './types'
+import type { AtlasManifest, CatRecord, FilterState, GridViewMode } from './types'
 
 const initialFilters: FilterState = {
   query: '',
@@ -95,6 +95,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>(initialFilters)
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(() => new Set())
+  const [viewMode, setViewMode] = useState<GridViewMode>('compact')
+  const [showRings, setShowRings] = useState(true)
 
   useEffect(() => {
     let active = true
@@ -171,12 +173,46 @@ export default function App() {
               <p className="eyebrow">Adoption center · bare/native</p>
               <h1 id="collection-title">Find your next MoonCat</h1>
             </div>
-            <div className="ordering-note">
-              <span className="ordering-note__icon">↕</span>
-              <span>
-                <strong>Rescue order</strong>
-                <small>ascending</small>
-              </span>
+            <div className="collection-heading-tools">
+              <div className="ordering-note">
+                <span className="ordering-note__icon">↕</span>
+                <span>
+                  <strong>Rescue order</strong>
+                  <small>ascending</small>
+                </span>
+              </div>
+              <div className="collection-view-controls">
+                <div className="grid-view-toggle" role="group" aria-label="Grid view">
+                  <span className="grid-view-toggle__label">View</span>
+                  <button
+                    type="button"
+                    className={viewMode === 'compact' ? 'is-active' : ''}
+                    aria-pressed={viewMode === 'compact'}
+                    onClick={() => setViewMode('compact')}
+                  >
+                    Compact
+                  </button>
+                  <button
+                    type="button"
+                    className={viewMode === 'detailed' ? 'is-active' : ''}
+                    aria-pressed={viewMode === 'detailed'}
+                    onClick={() => setViewMode('detailed')}
+                  >
+                    Details
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className={`rings-toggle${showRings ? ' is-active' : ''}`}
+                  aria-pressed={showRings}
+                  onClick={() => setShowRings((current) => !current)}
+                >
+                  <span className="rings-toggle__icon" aria-hidden="true">
+                    ◉
+                  </span>
+                  AC rings
+                </button>
+              </div>
             </div>
           </div>
           <FilterBar
@@ -190,6 +226,8 @@ export default function App() {
           <CatGrid
             cats={filteredCats}
             manifest={manifest}
+            viewMode={viewMode}
+            showRings={showRings}
             selectedOrders={selectedOrders}
             onToggle={toggleSelection}
           />
@@ -197,6 +235,7 @@ export default function App() {
         <Palette
           cats={selectedCats}
           manifest={manifest}
+          showRings={showRings}
           onRemove={removeSelection}
           onClear={clearSelection}
         />

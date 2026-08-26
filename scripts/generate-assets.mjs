@@ -93,7 +93,7 @@ function paintCat(buffer, matrix, rescueOrder, catId) {
 
   const position = atlasPosition(rescueOrder)
   const originX = position.column * CELL_WIDTH + Math.floor((CELL_WIDTH - width) / 2)
-  const originY = position.row * CELL_HEIGHT + Math.floor((CELL_HEIGHT - height) / 2)
+  const originY = position.row * CELL_HEIGHT + CELL_HEIGHT - height
   for (let x = 0; x < width; x += 1) {
     for (let y = 0; y < height; y += 1) {
       const color = matrix[x][y]

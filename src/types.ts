@@ -12,6 +12,8 @@ export interface CatRecord {
   genesis: boolean
 }
 
+export type GridViewMode = 'compact' | 'detailed'
+
 export interface EncodedIndex {
   schemaVersion: number
   count: number

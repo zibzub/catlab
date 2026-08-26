@@ -33,6 +33,8 @@ never edits sibling repositories and never calls a MoonCat data or image API.
   sheet dimensions, and deterministic rescue-order-to-cell mapping.
 - `atlases/atlas-000.webp` through the final sheet contain 256 fixed 21×22
   transparent native-resolution cells (the final sheet is partially filled).
+  Native cat matrices are horizontally centered and bottom-aligned to a
+  shared platform baseline.
   Sheets use lossless WebP so the site has about 100 image files instead of
   25,440 individual thumbnails, staying well below static-host file limits.
 

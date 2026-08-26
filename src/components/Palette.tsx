@@ -4,11 +4,12 @@ import type { AtlasManifest, CatRecord } from '../types'
 interface PaletteProps {
   cats: CatRecord[]
   manifest: AtlasManifest
+  showRings: boolean
   onRemove: (rescueOrder: number) => void
   onClear: () => void
 }
 
-export function Palette({ cats, manifest, onRemove, onClear }: PaletteProps) {
+export function Palette({ cats, manifest, showRings, onRemove, onClear }: PaletteProps) {
   return (
     <aside className="palette-panel" aria-labelledby="palette-title">
       <div className="palette-panel__header">
@@ -36,7 +37,7 @@ export function Palette({ cats, manifest, onRemove, onClear }: PaletteProps) {
         <ul className="palette-list">
           {cats.map((cat) => (
             <li className="palette-item" key={cat.rescueOrder}>
-              <MoonCatSprite cat={cat} manifest={manifest} variant="palette" />
+              <MoonCatSprite cat={cat} manifest={manifest} variant="palette" showRings={showRings} />
               <span className="palette-item__details">
                 <strong>#{cat.rescueOrder.toLocaleString()}</strong>
                 <span>{cat.catId}</span>
