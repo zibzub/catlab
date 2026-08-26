@@ -113,6 +113,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<GridViewMode>('compact')
   const [showRings, setShowRings] = useState(true)
   const [showStars, setShowStars] = useState(false)
+  const [showVignette, setShowVignette] = useState(true)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
 
   useEffect(() => {
@@ -234,6 +235,17 @@ export default function App() {
                   </span>
                   Stars
                 </button>
+                <button
+                  type="button"
+                  className={`rings-toggle${showVignette ? ' is-active' : ''}`}
+                  aria-pressed={showVignette}
+                  onClick={() => setShowVignette((current) => !current)}
+                >
+                  <span className="rings-toggle__icon" aria-hidden="true">
+                    ◌
+                  </span>
+                  Vignette
+                </button>
               </div>
             </div>
           </div>
@@ -251,6 +263,7 @@ export default function App() {
             viewMode={viewMode}
             showRings={showRings}
             showStars={showStars}
+            showVignette={showVignette}
             selectedOrders={selectedOrders}
             onToggle={toggleSelection}
           />

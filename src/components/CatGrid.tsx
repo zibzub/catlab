@@ -9,6 +9,7 @@ interface CatGridProps {
   viewMode: GridViewMode
   showRings: boolean
   showStars: boolean
+  showVignette: boolean
   selectedOrders: Set<number>
   onToggle: (rescueOrder: number) => void
 }
@@ -29,6 +30,7 @@ export function CatGrid({
   viewMode,
   showRings,
   showStars,
+  showVignette,
   selectedOrders,
   onToggle,
 }: CatGridProps) {
@@ -131,7 +133,7 @@ export function CatGrid({
         <div
           className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}${
             showStars ? ' cat-grid-viewport--stars' : ''
-          }`}
+          }${showVignette ? '' : ' cat-grid-viewport--vignette-hidden'}`}
         >
           {showStars && (
             <div className="cat-grid-stars" aria-hidden="true">
