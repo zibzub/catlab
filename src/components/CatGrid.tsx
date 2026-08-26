@@ -13,9 +13,13 @@ interface CatGridProps {
 }
 
 function columnsForWidth(width: number, viewMode: GridViewMode) {
-  const targetTileWidth = viewMode === 'compact' ? 96 : 142
+  const isPhone = width <= 620
+  const targetTileWidth = viewMode === 'compact' ? (isPhone ? 78 : 96) : 142
   const maxColumns = viewMode === 'compact' ? 14 : 9
-  return Math.max(1, Math.min(maxColumns, Math.floor((width + 11) / (targetTileWidth + 11))))
+  const gap = isPhone ? 7 : 11
+  const calculatedColumns = Math.floor((width + gap) / (targetTileWidth + gap))
+  const minimumColumns = viewMode === 'compact' && isPhone && width > 0 ? 4 : 1
+  return Math.max(minimumColumns, Math.min(maxColumns, calculatedColumns))
 }
 
 export function CatGrid({

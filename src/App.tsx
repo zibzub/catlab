@@ -17,7 +17,17 @@ const initialFilters: FilterState = {
   genesis: 'all',
 }
 
-function AppHeader({ catalogCount, selectedCount }: { catalogCount: number; selectedCount: number }) {
+function AppHeader({
+  catalogCount,
+  selectedCount,
+  onPaletteOpen,
+  paletteOpen,
+}: {
+  catalogCount: number
+  selectedCount: number
+  onPaletteOpen?: () => void
+  paletteOpen?: boolean
+}) {
   return (
     <header className="app-header">
       <div className="brand-lockup">
@@ -26,7 +36,6 @@ function AppHeader({ catalogCount, selectedCount }: { catalogCount: number; sele
         </span>
         <span>
           <strong>CatLab</strong>
-          <small>MoonCat index</small>
         </span>
       </div>
       <div className="header-note">
@@ -35,10 +44,16 @@ function AppHeader({ catalogCount, selectedCount }: { catalogCount: number; sele
         <span className="header-divider" />
         <span>{catalogCount.toLocaleString()} native cats</span>
       </div>
-      <div className="header-selection">
+      <button
+        className="header-selection"
+        type="button"
+        aria-expanded={paletteOpen}
+        aria-controls="palette-drawer-content"
+        onClick={onPaletteOpen}
+      >
         <span>Palette</span>
         <strong>{selectedCount}</strong>
-      </div>
+      </button>
     </header>
   )
 }
@@ -97,6 +112,7 @@ export default function App() {
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(() => new Set())
   const [viewMode, setViewMode] = useState<GridViewMode>('compact')
   const [showRings, setShowRings] = useState(true)
+  const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -165,22 +181,16 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <AppHeader catalogCount={cats.length} selectedCount={selectedCats.length} />
+      <AppHeader
+        catalogCount={cats.length}
+        selectedCount={selectedCats.length}
+        onPaletteOpen={() => setMobilePaletteOpen(true)}
+        paletteOpen={mobilePaletteOpen}
+      />
       <main className="workspace">
-        <section className="collection-panel" aria-labelledby="collection-title">
+        <section className="collection-panel" aria-label="MoonCat collection">
           <div className="collection-panel__heading">
-            <div>
-              <p className="eyebrow">Adoption center · bare/native</p>
-              <h1 id="collection-title">Find your next MoonCat</h1>
-            </div>
             <div className="collection-heading-tools">
-              <div className="ordering-note">
-                <span className="ordering-note__icon">↕</span>
-                <span>
-                  <strong>Rescue order</strong>
-                  <small>ascending</small>
-                </span>
-              </div>
               <div className="collection-view-controls">
                 <div className="grid-view-toggle" role="group" aria-label="Grid view">
                   <span className="grid-view-toggle__label">View</span>
@@ -236,6 +246,8 @@ export default function App() {
           cats={selectedCats}
           manifest={manifest}
           showRings={showRings}
+          mobileOpen={mobilePaletteOpen}
+          onMobileClose={() => setMobilePaletteOpen(false)}
           onRemove={removeSelection}
           onClear={clearSelection}
         />
