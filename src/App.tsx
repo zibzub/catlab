@@ -224,7 +224,7 @@ export default function App() {
                       aria-pressed={artMode === 'bodies'}
                       onClick={() => setArtMode('bodies')}
                     >
-                      Bodies
+                      Full
                     </button>
                     <button
                       type="button"
@@ -232,7 +232,7 @@ export default function App() {
                       aria-pressed={artMode === 'faces'}
                       onClick={() => setArtMode('faces')}
                     >
-                      Faces
+                      Face
                     </button>
                   </div>
                   <div className="grid-size-toggle" role="group" aria-label="Grid size">
@@ -266,7 +266,7 @@ export default function App() {
                     aria-pressed={showRings && artMode === 'bodies'}
                     aria-disabled={artMode === 'faces'}
                     disabled={artMode === 'faces'}
-                    title={artMode === 'faces' ? 'AC rings are available for Bodies only' : undefined}
+                    title={artMode === 'faces' ? 'AC rings are available for Full only' : undefined}
                     onClick={() => setShowRings((current) => !current)}
                   >
                     <span className="rings-toggle__icon" aria-hidden="true">
