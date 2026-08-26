@@ -3,7 +3,7 @@ import { CatGrid } from './components/CatGrid'
 import { FilterBar } from './components/FilterBar'
 import { Palette } from './components/Palette'
 import { loadGeneratedData } from './data'
-import type { AtlasManifest, CatRecord, FilterState, GridViewMode } from './types'
+import type { AtlasManifest, CatRecord, FilterState, GridSize, GridViewMode } from './types'
 
 const initialFilters: FilterState = {
   query: '',
@@ -111,6 +111,7 @@ export default function App() {
   const [filters, setFilters] = useState<FilterState>(initialFilters)
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(() => new Set())
   const [viewMode, setViewMode] = useState<GridViewMode>('compact')
+  const [gridSize, setGridSize] = useState<GridSize>('medium')
   const [showRings, setShowRings] = useState(true)
   const [showStars, setShowStars] = useState(false)
   const [showVignette, setShowVignette] = useState(true)
@@ -194,58 +195,85 @@ export default function App() {
           <div className="collection-panel__heading">
             <div className="collection-heading-tools">
               <div className="collection-view-controls">
-                <div className="grid-view-toggle" role="group" aria-label="Grid view">
-                  <span className="grid-view-toggle__label">View</span>
+                <div className="collection-control-group collection-control-group--layout">
+                  <div className="grid-view-toggle" role="group" aria-label="Grid view">
+                    <span className="grid-view-toggle__label">View</span>
+                    <button
+                      type="button"
+                      className={viewMode === 'compact' ? 'is-active' : ''}
+                      aria-pressed={viewMode === 'compact'}
+                      onClick={() => setViewMode('compact')}
+                    >
+                      Compact
+                    </button>
+                    <button
+                      type="button"
+                      className={viewMode === 'detailed' ? 'is-active' : ''}
+                      aria-pressed={viewMode === 'detailed'}
+                      onClick={() => setViewMode('detailed')}
+                    >
+                      Details
+                    </button>
+                  </div>
+                  <div className="grid-size-toggle" role="group" aria-label="Grid size">
+                    {(['small', 'medium', 'large'] as const).map((size) => {
+                      const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
+                      const label = size[0].toUpperCase() + size.slice(1)
+                      return (
+                        <button
+                          key={size}
+                          type="button"
+                          className={gridSize === size ? 'is-active' : ''}
+                          aria-label={`${label} cats`}
+                          title={`${label} cats`}
+                          aria-pressed={gridSize === size}
+                          onClick={() => setGridSize(size)}
+                        >
+                          <span className={`grid-size-icon grid-size-icon--${size}`} aria-hidden="true">
+                            {Array.from({ length: cellCount }, (_, index) => (
+                              <span key={index} />
+                            ))}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="collection-control-group collection-control-group--effects">
                   <button
                     type="button"
-                    className={viewMode === 'compact' ? 'is-active' : ''}
-                    aria-pressed={viewMode === 'compact'}
-                    onClick={() => setViewMode('compact')}
+                    className={`rings-toggle${showRings ? ' is-active' : ''}`}
+                    aria-pressed={showRings}
+                    onClick={() => setShowRings((current) => !current)}
                   >
-                    Compact
+                    <span className="rings-toggle__icon" aria-hidden="true">
+                      ◉
+                    </span>
+                    AC rings
                   </button>
                   <button
                     type="button"
-                    className={viewMode === 'detailed' ? 'is-active' : ''}
-                    aria-pressed={viewMode === 'detailed'}
-                    onClick={() => setViewMode('detailed')}
+                    className={`rings-toggle${showStars ? ' is-active' : ''}`}
+                    aria-pressed={showStars}
+                    onClick={() => setShowStars((current) => !current)}
                   >
-                    Details
+                    <span className="rings-toggle__icon" aria-hidden="true">
+                      ✦
+                    </span>
+                    Stars
+                  </button>
+                  <button
+                    type="button"
+                    className={`rings-toggle${showVignette ? ' is-active' : ''}`}
+                    aria-pressed={showVignette}
+                    onClick={() => setShowVignette((current) => !current)}
+                  >
+                    <span className="rings-toggle__icon" aria-hidden="true">
+                      ◌
+                    </span>
+                    Vignette
                   </button>
                 </div>
-                <button
-                  type="button"
-                  className={`rings-toggle${showRings ? ' is-active' : ''}`}
-                  aria-pressed={showRings}
-                  onClick={() => setShowRings((current) => !current)}
-                >
-                  <span className="rings-toggle__icon" aria-hidden="true">
-                    ◉
-                  </span>
-                  AC rings
-                </button>
-                <button
-                  type="button"
-                  className={`rings-toggle${showStars ? ' is-active' : ''}`}
-                  aria-pressed={showStars}
-                  onClick={() => setShowStars((current) => !current)}
-                >
-                  <span className="rings-toggle__icon" aria-hidden="true">
-                    ✦
-                  </span>
-                  Stars
-                </button>
-                <button
-                  type="button"
-                  className={`rings-toggle${showVignette ? ' is-active' : ''}`}
-                  aria-pressed={showVignette}
-                  onClick={() => setShowVignette((current) => !current)}
-                >
-                  <span className="rings-toggle__icon" aria-hidden="true">
-                    ◌
-                  </span>
-                  Vignette
-                </button>
               </div>
             </div>
           </div>
@@ -261,6 +289,7 @@ export default function App() {
             cats={filteredCats}
             manifest={manifest}
             viewMode={viewMode}
+            gridSize={gridSize}
             showRings={showRings}
             showStars={showStars}
             showVignette={showVignette}

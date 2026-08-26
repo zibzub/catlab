@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CatTile } from './CatTile'
-import type { AtlasManifest, CatRecord, GridViewMode } from '../types'
+import type { AtlasManifest, CatRecord, GridSize, GridViewMode } from '../types'
 
 interface CatGridProps {
   cats: CatRecord[]
   manifest: AtlasManifest
   viewMode: GridViewMode
+  gridSize: GridSize
   showRings: boolean
   showStars: boolean
   showVignette: boolean
@@ -14,20 +15,34 @@ interface CatGridProps {
   onToggle: (rescueOrder: number) => void
 }
 
-function columnsForWidth(width: number, viewMode: GridViewMode) {
+function columnsForWidth(width: number, viewMode: GridViewMode, gridSize: GridSize) {
   const isPhone = width <= 620
-  const targetTileWidth = viewMode === 'compact' ? (isPhone ? 78 : 96) : 142
+  const targetTileWidth =
+    viewMode === 'compact'
+      ? isPhone
+        ? { small: 60, medium: 78, large: 108 }[gridSize]
+        : { small: 78, medium: 96, large: 118 }[gridSize]
+      : isPhone
+        ? { small: 120, medium: 142, large: 166 }[gridSize]
+        : { small: 122, medium: 142, large: 166 }[gridSize]
   const maxColumns = viewMode === 'compact' ? 14 : 9
   const gap = isPhone ? 7 : 11
   const calculatedColumns = Math.floor((width + gap) / (targetTileWidth + gap))
-  const minimumColumns = viewMode === 'compact' && isPhone && width > 0 ? 4 : 1
+  const minimumColumns = viewMode === 'compact' && gridSize === 'medium' && isPhone && width > 0 ? 4 : 1
   return Math.max(minimumColumns, Math.min(maxColumns, calculatedColumns))
+}
+
+function rowEstimateFor(viewMode: GridViewMode, gridSize: GridSize) {
+  return viewMode === 'compact'
+    ? { small: 116, medium: 142, large: 168 }[gridSize]
+    : { small: 205, medium: 225, large: 250 }[gridSize]
 }
 
 export function CatGrid({
   cats,
   manifest,
   viewMode,
+  gridSize,
   showRings,
   showStars,
   showVignette,
@@ -40,13 +55,13 @@ export function CatGrid({
   const canvasRef = useRef<HTMLDivElement>(null)
   const faderRef = useRef<HTMLInputElement>(null)
   const [width, setWidth] = useState(0)
-  const columnCount = columnsForWidth(width, viewMode)
+  const columnCount = columnsForWidth(width, viewMode, gridSize)
   const rowCount = Math.ceil(cats.length / columnCount)
   const overscan = width <= 900 ? 2 : 5
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => (viewMode === 'compact' ? 142 : 225),
+    estimateSize: () => rowEstimateFor(viewMode, gridSize),
     getItemKey: (index) => `row-${index}`,
     overscan,
   })
@@ -64,7 +79,7 @@ export function CatGrid({
   useEffect(() => {
     scrollElementRef.current?.scrollTo({ top: 0 })
     rowVirtualizer.measure()
-  }, [cats, columnCount, rowVirtualizer, viewMode])
+  }, [cats, columnCount, gridSize, rowVirtualizer, viewMode])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -91,7 +106,7 @@ export function CatGrid({
       scrollElement.removeEventListener('scroll', handleScroll)
       if (frameId !== 0) cancelAnimationFrame(frameId)
     }
-  }, [cats, columnCount, showStars, viewMode])
+  }, [cats, columnCount, gridSize, showStars, viewMode])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -115,7 +130,7 @@ export function CatGrid({
       resizeObserver.disconnect()
       scrollElement.removeEventListener('scroll', syncFader)
     }
-  }, [cats, columnCount, viewMode])
+  }, [cats, columnCount, gridSize, viewMode])
 
   if (cats.length === 0) {
     return (
@@ -152,7 +167,7 @@ export function CatGrid({
                 const rowCats = cats.slice(rowStart, rowStart + columnCount)
                 return (
                   <div
-                    className={`cat-grid-row cat-grid-row--${viewMode}`}
+                    className={`cat-grid-row cat-grid-row--${viewMode} cat-grid-row--size-${gridSize}`}
                     data-index={virtualRow.index}
                     key={virtualRow.key}
                     ref={rowVirtualizer.measureElement}
@@ -167,6 +182,7 @@ export function CatGrid({
                         cat={cat}
                         manifest={manifest}
                         viewMode={viewMode}
+                        gridSize={gridSize}
                         selected={selectedOrders.has(cat.rescueOrder)}
                         onToggle={onToggle}
                       />

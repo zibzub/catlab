@@ -1,24 +1,39 @@
 import { memo, type CSSProperties } from 'react'
 import { assetPath } from '../data'
-import type { AtlasManifest, CatRecord, GridViewMode } from '../types'
+import type { AtlasManifest, CatRecord, GridSize, GridViewMode } from '../types'
 
 interface MoonCatSpriteProps {
   cat: CatRecord
   manifest: AtlasManifest
   variant?: GridViewMode | 'palette'
+  gridSize?: GridSize
 }
 
 export const MoonCatSprite = memo(function MoonCatSprite({
   cat,
   manifest,
   variant = 'detailed',
+  gridSize = 'medium',
 }: MoonCatSpriteProps) {
   const { atlas } = manifest
   const cell = cat.rescueOrder % atlas.catsPerAtlas
   const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
   const column = cell % atlas.columns
   const row = Math.floor(cell / atlas.columns)
-  const scale = variant === 'palette' ? 3 : variant === 'compact' ? 4 : 5
+  const scale =
+    variant === 'palette'
+      ? 3
+      : gridSize === 'small'
+        ? variant === 'compact'
+          ? 3
+          : 4
+        : gridSize === 'large'
+          ? variant === 'compact'
+            ? 5
+            : 6
+          : variant === 'compact'
+            ? 4
+            : 5
   const spriteBoxStyle = {
     width: atlas.cellWidth * scale,
     height: atlas.cellHeight * scale,

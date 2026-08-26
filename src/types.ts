@@ -14,6 +14,8 @@ export interface CatRecord {
 
 export type GridViewMode = 'compact' | 'detailed'
 
+export type GridSize = 'small' | 'medium' | 'large'
+
 export interface EncodedIndex {
   schemaVersion: number
   count: number
