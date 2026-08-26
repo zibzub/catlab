@@ -27,6 +27,8 @@ export function CatGrid({
   onToggle,
 }: CatGridProps) {
   const scrollElementRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const faderRef = useRef<HTMLInputElement>(null)
   const [width, setWidth] = useState(0)
   const columnCount = columnsForWidth(width, viewMode)
   const rowCount = Math.ceil(cats.length / columnCount)
@@ -53,6 +55,30 @@ export function CatGrid({
     rowVirtualizer.measure()
   }, [cats, columnCount, rowVirtualizer, viewMode])
 
+  useEffect(() => {
+    const scrollElement = scrollElementRef.current
+    const fader = faderRef.current
+    if (!scrollElement || !fader) return
+
+    const syncFader = () => {
+      const maxScroll = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight)
+      fader.max = String(maxScroll)
+      fader.value = String(Math.min(maxScroll, scrollElement.scrollTop))
+      fader.disabled = maxScroll === 0
+    }
+
+    const resizeObserver = new ResizeObserver(syncFader)
+    resizeObserver.observe(scrollElement)
+    if (canvasRef.current) resizeObserver.observe(canvasRef.current)
+    scrollElement.addEventListener('scroll', syncFader, { passive: true })
+    syncFader()
+
+    return () => {
+      resizeObserver.disconnect()
+      scrollElement.removeEventListener('scroll', syncFader)
+    }
+  }, [cats, columnCount, viewMode])
+
   if (cats.length === 0) {
     return (
       <div className="grid-empty" role="status">
@@ -66,38 +92,56 @@ export function CatGrid({
   return (
     <div className="cat-grid-shell">
       <div className="cat-grid-frame">
-        <div className="cat-grid-scroll" ref={scrollElementRef}>
-          <div className="cat-grid-canvas" style={{ height: rowVirtualizer.getTotalSize() }}>
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const rowStart = virtualRow.index * columnCount
-              const rowCats = cats.slice(rowStart, rowStart + columnCount)
-              return (
-                <div
-                  className={`cat-grid-row cat-grid-row--${viewMode}`}
-                  data-index={virtualRow.index}
-                  key={virtualRow.key}
-                  ref={rowVirtualizer.measureElement}
-                  style={{
-                    gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  {rowCats.map((cat) => (
-                    <CatTile
-                      key={cat.rescueOrder}
-                      cat={cat}
-                      manifest={manifest}
-                      viewMode={viewMode}
-                      showRings={showRings}
-                      selected={selectedOrders.has(cat.rescueOrder)}
-                      onToggle={onToggle}
-                    />
-                  ))}
-                </div>
-              )
-            })}
+        <div className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}`}>
+          <div className="cat-grid-scroll" ref={scrollElementRef}>
+            <div
+              className="cat-grid-canvas"
+              ref={canvasRef}
+              style={{ height: rowVirtualizer.getTotalSize() }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const rowStart = virtualRow.index * columnCount
+                const rowCats = cats.slice(rowStart, rowStart + columnCount)
+                return (
+                  <div
+                    className={`cat-grid-row cat-grid-row--${viewMode}`}
+                    data-index={virtualRow.index}
+                    key={virtualRow.key}
+                    ref={rowVirtualizer.measureElement}
+                    style={{
+                      gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    {rowCats.map((cat) => (
+                      <CatTile
+                        key={cat.rescueOrder}
+                        cat={cat}
+                        manifest={manifest}
+                        viewMode={viewMode}
+                        selected={selectedOrders.has(cat.rescueOrder)}
+                        onToggle={onToggle}
+                      />
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
+        <input
+          ref={faderRef}
+          className="cat-grid-fader"
+          type="range"
+          min="0"
+          max="0"
+          defaultValue="0"
+          aria-label="Scroll MoonCat grid"
+          onChange={(event) => {
+            const scrollElement = scrollElementRef.current
+            if (scrollElement) scrollElement.scrollTop = Number(event.currentTarget.value)
+          }}
+        />
       </div>
     </div>
   )

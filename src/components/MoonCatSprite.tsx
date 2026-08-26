@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { memo, type CSSProperties } from 'react'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridViewMode } from '../types'
 
@@ -6,14 +6,12 @@ interface MoonCatSpriteProps {
   cat: CatRecord
   manifest: AtlasManifest
   variant?: GridViewMode | 'palette'
-  showRings?: boolean
 }
 
-export function MoonCatSprite({
+export const MoonCatSprite = memo(function MoonCatSprite({
   cat,
   manifest,
   variant = 'detailed',
-  showRings = true,
 }: MoonCatSpriteProps) {
   const { atlas } = manifest
   const cell = cat.rescueOrder % atlas.catsPerAtlas
@@ -21,18 +19,26 @@ export function MoonCatSprite({
   const column = cell % atlas.columns
   const row = Math.floor(cell / atlas.columns)
   const scale = variant === 'palette' ? 3 : variant === 'compact' ? 4 : 5
-  const style = {
+  const spriteBoxStyle = {
     width: atlas.cellWidth * scale,
     height: atlas.cellHeight * scale,
+  } satisfies CSSProperties
+  const spriteCellStyle = {
+    width: atlas.cellWidth,
+    height: atlas.cellHeight,
     backgroundImage: `url(${assetPath(`data/atlases/atlas-${String(sheet).padStart(3, '0')}.webp`)})`,
-    backgroundPosition: `-${column * atlas.cellWidth * scale}px -${row * atlas.cellHeight * scale}px`,
-    backgroundSize: `${atlas.width * scale}px ${atlas.height * scale}px`,
+    backgroundPosition: `-${column * atlas.cellWidth}px -${row * atlas.cellHeight}px`,
+    backgroundSize: `${atlas.width}px ${atlas.height}px`,
+    transform: `scale(${scale})`,
+    transformOrigin: 'top left',
   } satisfies CSSProperties
 
   return (
     <div className={`cat-art cat-art--${variant}`} aria-hidden="true">
-      {showRings && <div className="cat-art__platform" />}
-      <div className="cat-art__sprite" style={style} />
+      <div className="cat-art__platform" />
+      <div className="cat-art__sprite" style={spriteBoxStyle}>
+        <div className="cat-art__sprite-cell" style={spriteCellStyle} />
+      </div>
     </div>
   )
-}
+})
