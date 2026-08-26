@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CatTile } from './CatTile'
-import type { AtlasManifest, CatRecord, GridSize, GridViewMode } from '../types'
+import type { AtlasManifest, CatRecord, GridArtMode, GridSize, GridViewMode } from '../types'
 
 interface CatGridProps {
   cats: CatRecord[]
   manifest: AtlasManifest
   viewMode: GridViewMode
+  artMode: GridArtMode
   gridSize: GridSize
   showRings: boolean
   showStars: boolean
@@ -15,8 +16,21 @@ interface CatGridProps {
   onToggle: (rescueOrder: number) => void
 }
 
-function columnsForWidth(width: number, viewMode: GridViewMode, gridSize: GridSize) {
+function columnsForWidth(width: number, viewMode: GridViewMode, artMode: GridArtMode, gridSize: GridSize) {
   const isPhone = width <= 620
+  if (artMode === 'faces') {
+    const targetTileWidth = viewMode === 'compact'
+      ? isPhone
+        ? { small: 56, medium: 68, large: 82 }[gridSize]
+        : { small: 70, medium: 84, large: 102 }[gridSize]
+      : isPhone
+        ? { small: 112, medium: 128, large: 148 }[gridSize]
+        : { small: 118, medium: 136, large: 158 }[gridSize]
+    const maxColumns = viewMode === 'compact' ? 16 : 9
+    const gap = isPhone ? 7 : 11
+    const calculatedColumns = Math.floor((width + gap) / (targetTileWidth + gap))
+    return Math.max(1, Math.min(maxColumns, calculatedColumns))
+  }
   const targetTileWidth =
     viewMode === 'compact'
       ? isPhone
@@ -32,7 +46,12 @@ function columnsForWidth(width: number, viewMode: GridViewMode, gridSize: GridSi
   return Math.max(minimumColumns, Math.min(maxColumns, calculatedColumns))
 }
 
-function rowEstimateFor(viewMode: GridViewMode, gridSize: GridSize) {
+function rowEstimateFor(viewMode: GridViewMode, artMode: GridArtMode, gridSize: GridSize) {
+  if (artMode === 'faces') {
+    return viewMode === 'compact'
+      ? { small: 104, medium: 116, large: 138 }[gridSize]
+      : { small: 178, medium: 194, large: 224 }[gridSize]
+  }
   return viewMode === 'compact'
     ? { small: 116, medium: 142, large: 168 }[gridSize]
     : { small: 205, medium: 225, large: 250 }[gridSize]
@@ -42,6 +61,7 @@ export function CatGrid({
   cats,
   manifest,
   viewMode,
+  artMode,
   gridSize,
   showRings,
   showStars,
@@ -55,13 +75,13 @@ export function CatGrid({
   const canvasRef = useRef<HTMLDivElement>(null)
   const faderRef = useRef<HTMLInputElement>(null)
   const [width, setWidth] = useState(0)
-  const columnCount = columnsForWidth(width, viewMode, gridSize)
+  const columnCount = columnsForWidth(width, viewMode, artMode, gridSize)
   const rowCount = Math.ceil(cats.length / columnCount)
   const overscan = width <= 900 ? 2 : 5
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => rowEstimateFor(viewMode, gridSize),
+    estimateSize: () => rowEstimateFor(viewMode, artMode, gridSize),
     getItemKey: (index) => `row-${index}`,
     overscan,
   })
@@ -79,7 +99,7 @@ export function CatGrid({
   useEffect(() => {
     scrollElementRef.current?.scrollTo({ top: 0 })
     rowVirtualizer.measure()
-  }, [cats, columnCount, gridSize, rowVirtualizer, viewMode])
+  }, [artMode, cats, columnCount, gridSize, rowVirtualizer, viewMode])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -106,7 +126,7 @@ export function CatGrid({
       scrollElement.removeEventListener('scroll', handleScroll)
       if (frameId !== 0) cancelAnimationFrame(frameId)
     }
-  }, [cats, columnCount, gridSize, showStars, viewMode])
+  }, [artMode, cats, columnCount, gridSize, showStars, viewMode])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -130,7 +150,7 @@ export function CatGrid({
       resizeObserver.disconnect()
       scrollElement.removeEventListener('scroll', syncFader)
     }
-  }, [cats, columnCount, gridSize, viewMode])
+  }, [artMode, cats, columnCount, gridSize, viewMode])
 
   if (cats.length === 0) {
     return (
@@ -148,7 +168,7 @@ export function CatGrid({
         <div
           className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}${
             showStars ? ' cat-grid-viewport--stars' : ''
-          }${showVignette ? '' : ' cat-grid-viewport--vignette-hidden'}`}
+          }${showVignette ? '' : ' cat-grid-viewport--vignette-hidden'} cat-grid-viewport--${artMode}`}
         >
           {showStars && (
             <div className="cat-grid-stars" aria-hidden="true">
@@ -167,13 +187,13 @@ export function CatGrid({
                 const rowCats = cats.slice(rowStart, rowStart + columnCount)
                 return (
                   <div
-                    className={`cat-grid-row cat-grid-row--${viewMode} cat-grid-row--size-${gridSize}`}
+                    className={`cat-grid-row cat-grid-row--${viewMode} cat-grid-row--${artMode} cat-grid-row--size-${gridSize}`}
                     data-index={virtualRow.index}
                     key={virtualRow.key}
                     ref={rowVirtualizer.measureElement}
                     style={{
                       gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-                      transform: `translateY(${virtualRow.start}px)`,
+                      top: virtualRow.start,
                     }}
                   >
                     {rowCats.map((cat) => (
@@ -182,13 +202,14 @@ export function CatGrid({
                         cat={cat}
                         manifest={manifest}
                         viewMode={viewMode}
+                        artMode={artMode}
                         gridSize={gridSize}
                         selected={selectedOrders.has(cat.rescueOrder)}
                         onToggle={onToggle}
                       />
                     ))}
                   </div>
-                )
+                );
               })}
             </div>
           </div>

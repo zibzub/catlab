@@ -10,6 +10,12 @@ import {
   CATS_PER_ATLAS,
   CELL_HEIGHT,
   CELL_WIDTH,
+  FACE_ATLAS_HEIGHT,
+  FACE_ATLAS_WIDTH,
+  FACE_CELL_HEIGHT,
+  FACE_CELL_WIDTH,
+  FACE_CROP_ORIGINS,
+  FACE_MASK,
   MANIFEST_SCHEMA_VERSION,
   validateEncodedIndex,
 } from './lib/catalog.mjs'
@@ -19,6 +25,7 @@ const DATA_DIR = path.join(ROOT, 'public/data')
 const INDEX_PATH = path.join(DATA_DIR, 'mooncats.json')
 const MANIFEST_PATH = path.join(DATA_DIR, 'atlas-manifest.json')
 const ATLAS_DIR = path.join(DATA_DIR, 'atlases')
+const FACE_ATLAS_DIR = path.join(DATA_DIR, 'face-atlases')
 const require = createRequire(import.meta.url)
 const mooncatModule = require('mooncatparser')
 const mooncatparser =
@@ -80,6 +87,53 @@ function assertAtlasPixels(atlasBuffers, index) {
           atlasBuffer[pixelOffset + 2] !== blue
         ) {
           throw new Error(`Atlas pixel mismatch for rescue order ${rescueOrder}`)
+        }
+      }
+    }
+  }
+}
+
+function assertFaceAtlasPixels(faceAtlasBuffers, index) {
+  const facingField = index.fields.indexOf('facing')
+  const poseField = index.fields.indexOf('pose')
+  for (const [rescueOrder, row] of index.cats.entries()) {
+    const catId = row[0]
+    const facing = index.dictionaries.facing[row[facingField]]
+    const pose = index.dictionaries.pose[row[poseField]]
+    const crop = FACE_CROP_ORIGINS[pose]?.[facing]
+    if (!crop) throw new Error(`Missing face crop for rescue order ${rescueOrder}`)
+    const matrix = mooncatparser(catId)
+    const [cropX, cropY] = crop
+    const sheet = Math.floor(rescueOrder / CATS_PER_ATLAS)
+    const cell = rescueOrder % CATS_PER_ATLAS
+    const cellColumn = cell % ATLAS_COLUMNS
+    const cellRow = Math.floor(cell / ATLAS_COLUMNS)
+    const faceAtlasBuffer = faceAtlasBuffers[sheet]
+
+    for (let y = 0; y < FACE_CELL_HEIGHT; y += 1) {
+      for (let x = 0; x < FACE_CELL_WIDTH; x += 1) {
+        const sourceColor = matrix[cropX + x]?.[cropY + y] ?? null
+        const expectedColor = FACE_MASK[x][y] === '1' ? sourceColor : null
+        const atlasX = cellColumn * FACE_CELL_WIDTH + x
+        const atlasY = cellRow * FACE_CELL_HEIGHT + y
+        const pixelOffset = (atlasY * FACE_ATLAS_WIDTH + atlasX) * 4
+        const actualAlpha = faceAtlasBuffer[pixelOffset + 3]
+
+        if (expectedColor === null) {
+          if (actualAlpha !== 0) {
+            throw new Error(`Face atlas pixel unexpectedly painted around rescue order ${rescueOrder}`)
+          }
+          continue
+        }
+
+        const [red, green, blue] = parseColor(expectedColor)
+        if (
+          actualAlpha !== 255 ||
+          faceAtlasBuffer[pixelOffset] !== red ||
+          faceAtlasBuffer[pixelOffset + 1] !== green ||
+          faceAtlasBuffer[pixelOffset + 2] !== blue
+        ) {
+          throw new Error(`Face atlas pixel mismatch for rescue order ${rescueOrder}`)
         }
       }
     }
@@ -150,10 +204,62 @@ async function main() {
   }
 
   const totalBytes = sizes.reduce((total, size) => total + size, 0)
+  const faceAtlas = manifest.faceAtlas
+  if (!faceAtlas) {
+    throw new Error('Manifest is missing faceAtlas metadata')
+  }
+  const expectedFaceSheetCount = Math.ceil(CAT_COUNT / CATS_PER_ATLAS)
+  for (const [field, expected] of [
+    ['catsPerAtlas', CATS_PER_ATLAS],
+    ['sheetCount', expectedFaceSheetCount],
+    ['cellWidth', FACE_CELL_WIDTH],
+    ['cellHeight', FACE_CELL_HEIGHT],
+    ['width', FACE_ATLAS_WIDTH],
+    ['height', FACE_ATLAS_HEIGHT],
+  ]) {
+    if (faceAtlas[field] !== expected) {
+      throw new Error(`Manifest faceAtlas.${field} must be ${expected}`)
+    }
+  }
+  if (faceAtlas.format !== 'webp' || faceAtlas.compression !== 'lossless') {
+    throw new Error('Manifest must describe lossless WebP face atlases')
+  }
+
+  const faceEntries = await fs.readdir(FACE_ATLAS_DIR, { withFileTypes: true })
+  const faceFiles = faceEntries
+    .filter((entry) => entry.isFile() && /^face-atlas-\d{3}\.webp$/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort()
+  if (faceFiles.length !== expectedFaceSheetCount) {
+    throw new Error(`Expected ${expectedFaceSheetCount} face atlas files, found ${faceFiles.length}`)
+  }
+
+  const faceSizes = []
+  const faceAtlasBuffers = []
+  for (const filename of faceFiles) {
+    const filePath = path.join(FACE_ATLAS_DIR, filename)
+    const metadata = await sharp(filePath).metadata()
+    if (metadata.format !== 'webp' || metadata.width !== FACE_ATLAS_WIDTH || metadata.height !== FACE_ATLAS_HEIGHT) {
+      throw new Error(`${filename} is not a ${FACE_ATLAS_WIDTH}x${FACE_ATLAS_HEIGHT} WebP face atlas`)
+    }
+    if (metadata.hasAlpha !== true) {
+      throw new Error(`${filename} does not preserve an alpha channel`)
+    }
+    const { data } = await sharp(filePath).raw().toBuffer({ resolveWithObject: true })
+    faceAtlasBuffers.push(data)
+    faceSizes.push((await fs.stat(filePath)).size)
+  }
+  assertFaceAtlasPixels(faceAtlasBuffers, index)
+  if (Array.isArray(faceAtlas.bytes) && JSON.stringify(faceAtlas.bytes) !== JSON.stringify(faceSizes)) {
+    throw new Error('Manifest faceAtlas byte sizes do not match the generated files')
+  }
+
+  const totalFaceBytes = faceSizes.reduce((total, size) => total + size, 0)
   console.log(
     `Generated data is valid: ${CAT_COUNT.toLocaleString()} unique indexed cats, ` +
       `${files.length} ${ATLAS_WIDTH}x${ATLAS_HEIGHT} lossless WebP atlases, ` +
-      `${totalBytes.toLocaleString()} atlas bytes.`,
+      `${totalBytes.toLocaleString()} atlas bytes, and ${faceFiles.length} ` +
+      `${FACE_ATLAS_WIDTH}x${FACE_ATLAS_HEIGHT} face atlases (${totalFaceBytes.toLocaleString()} bytes).`,
   )
 }
 

@@ -14,6 +14,8 @@ export interface CatRecord {
 
 export type GridViewMode = 'compact' | 'detailed'
 
+export type GridArtMode = 'bodies' | 'faces'
+
 export type GridSize = 'small' | 'medium' | 'large'
 
 export interface EncodedIndex {
@@ -44,6 +46,22 @@ export interface AtlasManifest {
     bytes: number
   }
   atlas: {
+    directory: string
+    pattern: string
+    columns: number
+    rows: number
+    catsPerAtlas: number
+    sheetCount: number
+    cellWidth: number
+    cellHeight: number
+    width: number
+    height: number
+    format: string
+    compression: string
+    mapping: string
+    bytes: number[]
+  }
+  faceAtlas: {
     directory: string
     pattern: string
     columns: number

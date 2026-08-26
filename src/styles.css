@@ -298,6 +298,21 @@ h1 {
   padding: 3px;
 }
 
+.grid-art-toggle {
+  display: flex;
+  align-items: center;
+  height: 31px;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  color: var(--muted);
+  background: linear-gradient(145deg, var(--control-surface), var(--control-surface-deep));
+  box-shadow: inset 0 1px 0 var(--control-highlight), 0 2px 0 var(--control-shadow);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
 .grid-size-toggle {
   display: flex;
   align-items: center;
@@ -320,7 +335,17 @@ h1 {
   text-transform: uppercase;
 }
 
+.grid-art-toggle__label {
+  padding: 0 6px 0 5px;
+  color: var(--faint);
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .grid-view-toggle button,
+.grid-art-toggle button,
 .grid-size-toggle button,
 .rings-toggle {
   border: 1px solid transparent;
@@ -336,6 +361,11 @@ h1 {
   padding: 0 8px;
 }
 
+.grid-art-toggle button {
+  height: 23px;
+  padding: 0 7px;
+}
+
 .grid-size-toggle button {
   display: grid;
   width: 24px;
@@ -345,6 +375,7 @@ h1 {
 }
 
 .grid-view-toggle button:hover,
+.grid-art-toggle button:hover,
 .grid-size-toggle button:hover,
 .rings-toggle:hover {
   color: var(--ink);
@@ -352,6 +383,7 @@ h1 {
 }
 
 .grid-view-toggle button.is-active,
+.grid-art-toggle button.is-active,
 .grid-size-toggle button.is-active,
 .rings-toggle.is-active {
   color: #e4e4ff;
@@ -399,6 +431,11 @@ h1 {
   border-color: var(--control-border);
   background: linear-gradient(145deg, var(--control-surface), var(--control-surface-deep));
   box-shadow: inset 0 1px 0 var(--control-highlight), 0 2px 0 var(--control-shadow);
+}
+
+.rings-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .rings-toggle__icon {
@@ -856,7 +893,6 @@ h1 {
   width: 100%;
   gap: 11px;
   padding: 1px 1px 10px;
-  will-change: transform;
 }
 
 .cat-grid-row--compact {
@@ -933,7 +969,7 @@ h1 {
   border-color: rgba(129, 129, 255, 0.42);
   background: var(--panel-hover);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
 }
 
 .cat-tile--selected {
@@ -959,11 +995,53 @@ h1 {
   min-height: 164px;
 }
 
+.cat-tile--faces {
+  --cat-art-height: 112px;
+  --cat-platform-width: 108px;
+  --cat-platform-height: 23px;
+  --cat-compact-art-height: 96px;
+  --cat-compact-platform-width: 84px;
+  --cat-compact-platform-height: 18px;
+  min-height: 180px;
+}
+
+.cat-tile--faces.cat-tile--size-small {
+  --cat-art-height: 96px;
+  --cat-platform-width: 98px;
+  --cat-platform-height: 21px;
+  --cat-compact-art-height: 82px;
+  --cat-compact-platform-width: 73px;
+  --cat-compact-platform-height: 16px;
+  min-height: 164px;
+}
+
+.cat-tile--faces.cat-tile--size-large {
+  --cat-art-height: 132px;
+  --cat-platform-width: 122px;
+  --cat-platform-height: 26px;
+  --cat-compact-art-height: 112px;
+  --cat-compact-platform-width: 96px;
+  --cat-compact-platform-height: 21px;
+  min-height: 210px;
+}
+
+.cat-tile--faces.cat-tile--compact {
+  min-height: 110px;
+}
+
+.cat-tile--faces.cat-tile--compact.cat-tile--size-small {
+  min-height: 94px;
+}
+
+.cat-tile--faces.cat-tile--compact.cat-tile--size-large {
+  min-height: 130px;
+}
+
 .cat-tile--compact:hover {
   border-color: transparent;
   background: transparent;
   box-shadow: none;
-  transform: translateY(-1px);
+  transform: translateY(-4px);
 }
 
 .cat-tile--compact .cat-art {
@@ -1057,6 +1135,12 @@ h1 {
 .cat-art--compact {
   --cat-art-bottom-padding: 4px;
   --cat-platform-offset-y: 3px;
+}
+
+.cat-art--faces {
+  background:
+    radial-gradient(circle at 50% 68%, rgba(102, 102, 246, 0.1), transparent 40%),
+    #0c0e14;
 }
 
 .cat-art--palette {
@@ -1494,7 +1578,36 @@ h1 {
   }
 
   .collection-control-group--layout {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 4px;
+    justify-content: stretch;
+  }
+
+  .collection-control-group--layout > .grid-view-toggle,
+  .collection-control-group--layout > .grid-art-toggle,
+  .collection-control-group--layout > .grid-size-toggle {
+    min-width: 0;
+  }
+
+  .grid-view-toggle,
+  .grid-art-toggle {
+    justify-content: space-between;
+  }
+
+  .grid-view-toggle button,
+  .grid-art-toggle button {
+    min-width: 0;
+    padding-right: 5px;
+    padding-left: 5px;
+    font-size: 0.6rem;
+  }
+
+  .grid-view-toggle__label,
+  .grid-art-toggle__label {
+    padding-right: 4px;
+    padding-left: 4px;
+    font-size: 0.56rem;
   }
 
   .collection-control-group--effects {

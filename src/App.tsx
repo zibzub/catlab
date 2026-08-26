@@ -3,7 +3,7 @@ import { CatGrid } from './components/CatGrid'
 import { FilterBar } from './components/FilterBar'
 import { Palette } from './components/Palette'
 import { loadGeneratedData } from './data'
-import type { AtlasManifest, CatRecord, FilterState, GridSize, GridViewMode } from './types'
+import type { AtlasManifest, CatRecord, FilterState, GridArtMode, GridSize, GridViewMode } from './types'
 
 const initialFilters: FilterState = {
   query: '',
@@ -111,6 +111,7 @@ export default function App() {
   const [filters, setFilters] = useState<FilterState>(initialFilters)
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(() => new Set())
   const [viewMode, setViewMode] = useState<GridViewMode>('compact')
+  const [artMode, setArtMode] = useState<GridArtMode>('bodies')
   const [gridSize, setGridSize] = useState<GridSize>('medium')
   const [showRings, setShowRings] = useState(true)
   const [showStars, setShowStars] = useState(false)
@@ -195,7 +196,7 @@ export default function App() {
           <div className="collection-panel__heading">
             <div className="collection-heading-tools">
               <div className="collection-view-controls">
-                <div className="collection-control-group collection-control-group--layout">
+                  <div className="collection-control-group collection-control-group--layout">
                   <div className="grid-view-toggle" role="group" aria-label="Grid view">
                     <span className="grid-view-toggle__label">View</span>
                     <button
@@ -213,6 +214,25 @@ export default function App() {
                       onClick={() => setViewMode('detailed')}
                     >
                       Details
+                    </button>
+                  </div>
+                  <div className="grid-art-toggle" role="group" aria-label="Art">
+                    <span className="grid-art-toggle__label">Art</span>
+                    <button
+                      type="button"
+                      className={artMode === 'bodies' ? 'is-active' : ''}
+                      aria-pressed={artMode === 'bodies'}
+                      onClick={() => setArtMode('bodies')}
+                    >
+                      Bodies
+                    </button>
+                    <button
+                      type="button"
+                      className={artMode === 'faces' ? 'is-active' : ''}
+                      aria-pressed={artMode === 'faces'}
+                      onClick={() => setArtMode('faces')}
+                    >
+                      Faces
                     </button>
                   </div>
                   <div className="grid-size-toggle" role="group" aria-label="Grid size">
@@ -242,8 +262,11 @@ export default function App() {
                 <div className="collection-control-group collection-control-group--effects">
                   <button
                     type="button"
-                    className={`rings-toggle${showRings ? ' is-active' : ''}`}
-                    aria-pressed={showRings}
+                    className={`rings-toggle${showRings && artMode === 'bodies' ? ' is-active' : ''}`}
+                    aria-pressed={showRings && artMode === 'bodies'}
+                    aria-disabled={artMode === 'faces'}
+                    disabled={artMode === 'faces'}
+                    title={artMode === 'faces' ? 'AC rings are available for Bodies only' : undefined}
                     onClick={() => setShowRings((current) => !current)}
                   >
                     <span className="rings-toggle__icon" aria-hidden="true">
@@ -289,8 +312,9 @@ export default function App() {
             cats={filteredCats}
             manifest={manifest}
             viewMode={viewMode}
+            artMode={artMode}
             gridSize={gridSize}
-            showRings={showRings}
+            showRings={showRings && artMode === 'bodies'}
             showStars={showStars}
             showVignette={showVignette}
             selectedOrders={selectedOrders}

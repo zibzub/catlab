@@ -10,6 +10,12 @@ import {
   CAT_COUNT,
   CELL_HEIGHT,
   CELL_WIDTH,
+  FACE_ATLAS_HEIGHT,
+  FACE_ATLAS_WIDTH,
+  FACE_CELL_HEIGHT,
+  FACE_CELL_WIDTH,
+  FACE_CROP_ORIGINS,
+  FACE_MASK,
   CATS_PER_ATLAS,
   INDEX_SCHEMA_VERSION,
   MANIFEST_SCHEMA_VERSION,
@@ -33,6 +39,7 @@ const DEFAULT_TRAITS = path.resolve(
 )
 const DATA_DIR = path.join(ROOT, 'public/data')
 const ATLAS_DIR = path.join(DATA_DIR, 'atlases')
+const FACE_ATLAS_DIR = path.join(DATA_DIR, 'face-atlases')
 const INDEX_PATH = path.join(DATA_DIR, 'mooncats.json')
 const MANIFEST_PATH = path.join(DATA_DIR, 'atlas-manifest.json')
 
@@ -110,12 +117,46 @@ function paintCat(buffer, matrix, rescueOrder, catId) {
   }
 }
 
+function paintFace(buffer, matrix, record) {
+  const crop = FACE_CROP_ORIGINS[record.pose]?.[record.facing]
+  if (!crop) {
+    throw new Error(`Unsupported face crop ${record.pose}/${record.facing} for ${record.catId}`)
+  }
+  const [cropX, cropY] = crop
+  const position = atlasPosition(record.rescueOrder)
+  const originX = position.column * FACE_CELL_WIDTH
+  const originY = position.row * FACE_CELL_HEIGHT
+
+  for (let x = 0; x < FACE_CELL_WIDTH; x += 1) {
+    for (let y = 0; y < FACE_CELL_HEIGHT; y += 1) {
+      if (FACE_MASK[x][y] !== '1') continue
+      const color = matrix[cropX + x]?.[cropY + y]
+      if (color === null || color === undefined) continue
+      const [red, green, blue] = parseColor(color, record.catId)
+      const offset = ((originY + y) * FACE_ATLAS_WIDTH + originX + x) * 4
+      buffer[offset] = red
+      buffer[offset + 1] = green
+      buffer[offset + 2] = blue
+      buffer[offset + 3] = 255
+    }
+  }
+}
+
 async function removeOldAtlases() {
   const entries = await fs.readdir(ATLAS_DIR, { withFileTypes: true }).catch(() => [])
   await Promise.all(
     entries
       .filter((entry) => entry.isFile() && /^atlas-\d{3}\.webp$/.test(entry.name))
       .map((entry) => fs.unlink(path.join(ATLAS_DIR, entry.name))),
+  )
+}
+
+async function removeOldFaceAtlases() {
+  const entries = await fs.readdir(FACE_ATLAS_DIR, { withFileTypes: true }).catch(() => [])
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile() && /^face-atlas-\d{3}\.webp$/.test(entry.name))
+      .map((entry) => fs.unlink(path.join(FACE_ATLAS_DIR, entry.name))),
   )
 }
 
@@ -147,6 +188,36 @@ async function generateAtlases(records) {
   return { sheetCount, byteSizes }
 }
 
+async function generateFaceAtlases(records) {
+  const sheetCount = Math.ceil(records.length / CATS_PER_ATLAS)
+  const byteSizes = []
+
+  await fs.mkdir(FACE_ATLAS_DIR, { recursive: true })
+  await removeOldFaceAtlases()
+  for (let sheet = 0; sheet < sheetCount; sheet += 1) {
+    const buffer = Buffer.alloc(FACE_ATLAS_WIDTH * FACE_ATLAS_HEIGHT * 4)
+    const start = sheet * CATS_PER_ATLAS
+    const end = Math.min(start + CATS_PER_ATLAS, records.length)
+    for (let index = start; index < end; index += 1) {
+      const record = records[index]
+      paintFace(buffer, mooncatparser(record.catId), record)
+    }
+
+    const filename = `face-atlas-${String(sheet).padStart(3, '0')}.webp`
+    const outputPath = path.join(FACE_ATLAS_DIR, filename)
+    const temporaryPath = `${outputPath}.tmp-${process.pid}`
+    await sharp(buffer, {
+      raw: { width: FACE_ATLAS_WIDTH, height: FACE_ATLAS_HEIGHT, channels: 4 },
+    })
+      .webp({ lossless: true, effort: 6 })
+      .toFile(temporaryPath)
+    await fs.rename(temporaryPath, outputPath)
+    byteSizes.push((await fs.stat(outputPath)).size)
+  }
+
+  return { sheetCount, byteSizes }
+}
+
 async function main() {
   if (typeof mooncatparser !== 'function') {
     throw new Error('Could not load the official mooncatparser 1.0.0 package')
@@ -161,6 +232,7 @@ async function main() {
   await fs.mkdir(ATLAS_DIR, { recursive: true })
   await removeOldAtlases()
   const { sheetCount, byteSizes } = await generateAtlases(records)
+  const { sheetCount: faceSheetCount, byteSizes: faceByteSizes } = await generateFaceAtlases(records)
   await writeAtomic(INDEX_PATH, `${JSON.stringify(index)}\n`)
 
   const metadataBytes = (await fs.stat(INDEX_PATH)).size
@@ -197,13 +269,31 @@ async function main() {
       mapping: 'rescueOrder -> floor(rescueOrder / catsPerAtlas), rescueOrder % catsPerAtlas',
       bytes: byteSizes,
     },
+    faceAtlas: {
+      directory: 'data/face-atlases',
+      pattern: 'face-atlas-{sheet:03}.webp',
+      columns: ATLAS_COLUMNS,
+      rows: ATLAS_ROWS,
+      catsPerAtlas: CATS_PER_ATLAS,
+      sheetCount: faceSheetCount,
+      cellWidth: FACE_CELL_WIDTH,
+      cellHeight: FACE_CELL_HEIGHT,
+      width: FACE_ATLAS_WIDTH,
+      height: FACE_ATLAS_HEIGHT,
+      format: 'webp',
+      compression: 'lossless',
+      mapping: 'rescueOrder -> floor(rescueOrder / catsPerAtlas), rescueOrder % catsPerAtlas',
+      bytes: faceByteSizes,
+    },
   }
   await writeAtomic(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`)
 
   const totalAtlasBytes = byteSizes.reduce((total, size) => total + size, 0)
+  const totalFaceAtlasBytes = faceByteSizes.reduce((total, size) => total + size, 0)
   console.log(
     `Generated ${records.length.toLocaleString()} cats, ${sheetCount} lossless WebP atlases ` +
-      `(${totalAtlasBytes.toLocaleString()} bytes) and ${metadataBytes.toLocaleString()} bytes of metadata.`,
+      `(${totalAtlasBytes.toLocaleString()} bytes), ${faceSheetCount} face atlases ` +
+      `(${totalFaceAtlasBytes.toLocaleString()} bytes), and ${metadataBytes.toLocaleString()} bytes of metadata.`,
   )
   console.log(`Source: ${sourcePath}`)
   console.log(`Source SHA-256: ${sha256(sourceBuffer)}`)

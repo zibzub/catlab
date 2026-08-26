@@ -9,6 +9,29 @@ export const CELL_WIDTH = 21
 export const CELL_HEIGHT = 22
 export const ATLAS_WIDTH = ATLAS_COLUMNS * CELL_WIDTH
 export const ATLAS_HEIGHT = ATLAS_ROWS * CELL_HEIGHT
+export const FACE_CELL_WIDTH = 11
+export const FACE_CELL_HEIGHT = 11
+export const FACE_ATLAS_WIDTH = ATLAS_COLUMNS * FACE_CELL_WIDTH
+export const FACE_ATLAS_HEIGHT = ATLAS_ROWS * FACE_CELL_HEIGHT
+export const FACE_MASK = [
+  '00111111100',
+  '11111111110',
+  '11111111111',
+  '01111111111',
+  '00111111111',
+  '00111111111',
+  '00111111111',
+  '01111111111',
+  '11111111111',
+  '11111111110',
+  '00111111100',
+]
+export const FACE_CROP_ORIGINS = {
+  standing: { left: [0, 0], right: [10, 0] },
+  sleeping: { left: [1, 0], right: [8, 0] },
+  pouncing: { left: [1, 0], right: [5, 0] },
+  stalking: { left: [0, 6], right: [9, 6] },
+}
 export const INDEX_SCHEMA_VERSION = 1
 export const MANIFEST_SCHEMA_VERSION = 1
 

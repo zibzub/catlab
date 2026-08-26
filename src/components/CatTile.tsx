@@ -1,11 +1,12 @@
 import { memo } from 'react'
 import { MoonCatSprite } from './MoonCatSprite'
-import type { AtlasManifest, CatRecord, GridSize, GridViewMode } from '../types'
+import type { AtlasManifest, CatRecord, GridArtMode, GridSize, GridViewMode } from '../types'
 
 interface CatTileProps {
   cat: CatRecord
   manifest: AtlasManifest
   viewMode: GridViewMode
+  artMode: GridArtMode
   gridSize: GridSize
   selected: boolean
   onToggle: (rescueOrder: number) => void
@@ -15,6 +16,7 @@ export const CatTile = memo(function CatTile({
   cat,
   manifest,
   viewMode,
+  artMode,
   gridSize,
   selected,
   onToggle,
@@ -22,13 +24,13 @@ export const CatTile = memo(function CatTile({
   const label = `MoonCat rescue order ${cat.rescueOrder}, ${cat.catId}, ${cat.hueName} ${cat.pattern}`
   return (
     <button
-      className={`cat-tile cat-tile--${viewMode} cat-tile--size-${gridSize}${selected ? ' cat-tile--selected' : ''}`}
+      className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${selected ? ' cat-tile--selected' : ''}`}
       type="button"
       aria-label={label}
       aria-pressed={selected}
       onClick={() => onToggle(cat.rescueOrder)}
     >
-      <MoonCatSprite cat={cat} manifest={manifest} variant={viewMode} gridSize={gridSize} />
+      <MoonCatSprite cat={cat} manifest={manifest} variant={viewMode} artMode={artMode} gridSize={gridSize} />
       {viewMode === 'compact' ? (
         <span className="cat-tile__compact-id">{cat.rescueOrder.toLocaleString()}</span>
       ) : (
