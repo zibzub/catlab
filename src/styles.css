@@ -618,6 +618,7 @@ h1 {
   width: 12px;
   height: 18px;
   margin-top: -1px;
+  transform: translateX(-4px);
   border: 1px solid rgba(178, 197, 219, 0.28);
   border-radius: 3px;
   background:
@@ -646,6 +647,7 @@ h1 {
 .cat-grid-fader::-moz-range-thumb {
   width: 12px;
   height: 18px;
+  transform: translateX(-1px);
   border: 1px solid rgba(178, 197, 219, 0.28);
   border-radius: 3px;
   background: linear-gradient(145deg, #2c3848, #171f2b);
@@ -1184,7 +1186,9 @@ h1 {
   }
 
   .cat-grid-shell {
-    min-height: 420px;
+    flex: 0 0 clamp(420px, calc(100dvh - 260px), 680px);
+    height: clamp(420px, calc(100dvh - 260px), 680px);
+    min-height: 0;
   }
 
   .palette-panel {
@@ -1270,7 +1274,9 @@ h1 {
   }
 
   .cat-grid-shell {
-    min-height: 400px;
+    flex: 0 0 clamp(400px, 60dvh, 560px);
+    height: clamp(400px, 60dvh, 560px);
+    min-height: 0;
   }
 
   .cat-grid-fader {

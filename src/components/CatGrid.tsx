@@ -32,12 +32,13 @@ export function CatGrid({
   const [width, setWidth] = useState(0)
   const columnCount = columnsForWidth(width, viewMode)
   const rowCount = Math.ceil(cats.length / columnCount)
+  const overscan = width <= 900 ? 2 : 5
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => (viewMode === 'compact' ? 142 : 225),
     getItemKey: (index) => `row-${index}`,
-    overscan: 5,
+    overscan,
   })
 
   useEffect(() => {
