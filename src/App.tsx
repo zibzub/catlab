@@ -112,6 +112,7 @@ export default function App() {
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(() => new Set())
   const [viewMode, setViewMode] = useState<GridViewMode>('compact')
   const [showRings, setShowRings] = useState(true)
+  const [showStars, setShowStars] = useState(false)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
 
   useEffect(() => {
@@ -222,6 +223,17 @@ export default function App() {
                   </span>
                   AC rings
                 </button>
+                <button
+                  type="button"
+                  className={`rings-toggle${showStars ? ' is-active' : ''}`}
+                  aria-pressed={showStars}
+                  onClick={() => setShowStars((current) => !current)}
+                >
+                  <span className="rings-toggle__icon" aria-hidden="true">
+                    ✦
+                  </span>
+                  Stars
+                </button>
               </div>
             </div>
           </div>
@@ -238,6 +250,7 @@ export default function App() {
             manifest={manifest}
             viewMode={viewMode}
             showRings={showRings}
+            showStars={showStars}
             selectedOrders={selectedOrders}
             onToggle={toggleSelection}
           />

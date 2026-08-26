@@ -8,6 +8,7 @@ interface CatGridProps {
   manifest: AtlasManifest
   viewMode: GridViewMode
   showRings: boolean
+  showStars: boolean
   selectedOrders: Set<number>
   onToggle: (rescueOrder: number) => void
 }
@@ -27,10 +28,13 @@ export function CatGrid({
   manifest,
   viewMode,
   showRings,
+  showStars,
   selectedOrders,
   onToggle,
 }: CatGridProps) {
   const scrollElementRef = useRef<HTMLDivElement>(null)
+  const smallStarsRef = useRef<HTMLDivElement>(null)
+  const largeStarsRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const faderRef = useRef<HTMLInputElement>(null)
   const [width, setWidth] = useState(0)
@@ -59,6 +63,33 @@ export function CatGrid({
     scrollElementRef.current?.scrollTo({ top: 0 })
     rowVirtualizer.measure()
   }, [cats, columnCount, rowVirtualizer, viewMode])
+
+  useEffect(() => {
+    const scrollElement = scrollElementRef.current
+    const smallStars = smallStarsRef.current
+    const largeStars = largeStarsRef.current
+    if (!showStars || !scrollElement || !smallStars || !largeStars) return
+
+    let frameId = 0
+    const updateParallax = () => {
+      frameId = 0
+      const scrollTop = scrollElement.scrollTop
+      smallStars.style.setProperty('--star-parallax-y', `${scrollTop * -0.12}px`)
+      largeStars.style.setProperty('--star-parallax-y', `${scrollTop * -0.055}px`)
+    }
+    const handleScroll = () => {
+      if (frameId !== 0) return
+      frameId = requestAnimationFrame(updateParallax)
+    }
+
+    scrollElement.addEventListener('scroll', handleScroll, { passive: true })
+    updateParallax()
+
+    return () => {
+      scrollElement.removeEventListener('scroll', handleScroll)
+      if (frameId !== 0) cancelAnimationFrame(frameId)
+    }
+  }, [cats, columnCount, showStars, viewMode])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -97,7 +128,17 @@ export function CatGrid({
   return (
     <div className="cat-grid-shell">
       <div className="cat-grid-frame">
-        <div className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}`}>
+        <div
+          className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}${
+            showStars ? ' cat-grid-viewport--stars' : ''
+          }`}
+        >
+          {showStars && (
+            <div className="cat-grid-stars" aria-hidden="true">
+              <div className="cat-grid-stars__layer cat-grid-stars__layer--small" ref={smallStarsRef} />
+              <div className="cat-grid-stars__layer cat-grid-stars__layer--large" ref={largeStarsRef} />
+            </div>
+          )}
           <div className="cat-grid-scroll" ref={scrollElementRef}>
             <div
               className="cat-grid-canvas"
