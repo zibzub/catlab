@@ -30,6 +30,38 @@ import type {
   GridViewMode,
 } from './types'
 
+const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
+
+interface CollectionDisplayPreferences {
+  viewMode?: GridViewMode
+  gridSize?: GridSize
+  showRings?: boolean
+  showStars?: boolean
+  showVignette?: boolean
+}
+
+function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(COLLECTION_DISPLAY_PREFS_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    return {
+      viewMode: parsed.viewMode === 'compact' || parsed.viewMode === 'detailed' || parsed.viewMode === 'list'
+        ? parsed.viewMode
+        : undefined,
+      gridSize: parsed.gridSize === 'small' || parsed.gridSize === 'medium' || parsed.gridSize === 'large'
+        ? parsed.gridSize
+        : undefined,
+      showRings: typeof parsed.showRings === 'boolean' ? parsed.showRings : undefined,
+      showStars: typeof parsed.showStars === 'boolean' ? parsed.showStars : undefined,
+      showVignette: typeof parsed.showVignette === 'boolean' ? parsed.showVignette : undefined,
+    }
+  } catch {
+    return {}
+  }
+}
+
 function AppHeader({
   catalogCount,
   selectedCount,
@@ -107,12 +139,13 @@ export default function App() {
   const [names, setNames] = useState<MoonCatNames>({})
   const [classifications, setClassifications] = useState<MoonCatClassifications | null>(null)
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(() => new Set())
-  const [viewMode, setViewMode] = useState<GridViewMode>('compact')
+  const [displayPreferences] = useState(loadCollectionDisplayPreferences)
+  const [viewMode, setViewMode] = useState<GridViewMode>(displayPreferences.viewMode ?? 'compact')
   const [artMode, setArtMode] = useState<GridArtMode>('bodies')
-  const [gridSize, setGridSize] = useState<GridSize>('medium')
-  const [showRings, setShowRings] = useState(true)
-  const [showStars, setShowStars] = useState(true)
-  const [showVignette, setShowVignette] = useState(true)
+  const [gridSize, setGridSize] = useState<GridSize>(displayPreferences.gridSize ?? 'medium')
+  const [showRings, setShowRings] = useState(displayPreferences.showRings ?? true)
+  const [showStars, setShowStars] = useState(displayPreferences.showStars ?? true)
+  const [showVignette, setShowVignette] = useState(displayPreferences.showVignette ?? true)
   const [interactionMode, setInteractionMode] = useState<CollectionInteractionMode>('select')
   const [inspectedCat, setInspectedCat] = useState<CatRecord | null>(null)
   const inspectTriggerRef = useRef<HTMLButtonElement | null>(null)
@@ -120,6 +153,20 @@ export default function App() {
   const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
   const [composePlacedObjects, setComposePlacedObjects] = useState<ComposePlacedObject[]>([])
   const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(COLLECTION_DISPLAY_PREFS_KEY, JSON.stringify({
+        viewMode,
+        gridSize,
+        showRings,
+        showStars,
+        showVignette,
+      }))
+    } catch {
+      // Persistence is optional; keep the app usable when storage is unavailable.
+    }
+  }, [gridSize, showRings, showStars, showVignette, viewMode])
 
   useEffect(() => {
     let active = true
