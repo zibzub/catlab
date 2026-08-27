@@ -1211,7 +1211,6 @@ h1 {
 }
 
 .cat-tile__identity,
-.cat-tile__status,
 .cat-tile__traits {
   display: flex;
   align-items: center;
@@ -1257,20 +1256,6 @@ h1 {
   margin-left: 5px;
   color: var(--faint);
   content: "·";
-}
-
-.cat-tile__status {
-  justify-content: space-between;
-  gap: 5px;
-  margin-top: auto;
-  color: var(--accent-bright);
-  font-size: 0.61rem;
-  font-weight: 750;
-}
-
-.cat-tile__status span {
-  color: var(--faint);
-  font-weight: 600;
 }
 
 .grid-empty,
@@ -1941,14 +1926,6 @@ h1 {
   }
 
   .cat-tile__traits {
-    display: none;
-  }
-
-  .cat-tile__status {
-    margin-top: 3px;
-  }
-
-  .cat-tile__status span {
     display: none;
   }
 
@@ -5866,14 +5843,14 @@ h1 {
 }
 
 .cat-tile--detailed .cat-tile__details {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
 }
 
 .cat-tile__name {
   display: -webkit-box;
   width: 100%;
   max-width: 100%;
-  min-height: 15px;
+  min-height: 30px;
   max-height: 30px;
   flex: 0 0 auto;
   overflow: hidden;

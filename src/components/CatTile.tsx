@@ -64,22 +64,12 @@ export const CatTile = memo(function CatTile({
             <strong>{cat.rescueOrder}</strong>
             <span className="cat-tile__year">{cat.rescueYear}</span>
           </span>
-          {name && <span className="cat-tile__name" title={name}>{name}</span>}
+          <span className="cat-tile__name" title={name || undefined}>{name ?? ''}</span>
           <span className="cat-tile__id">{cat.catId}</span>
           <span className="cat-tile__traits">
             <span>{cat.hueName}</span>
             <span>{cat.pattern}</span>
             <span>{cat.pose}</span>
-          </span>
-          <span className="cat-tile__status">
-            {cat.genesis ? 'Genesis' : cat.pale ? 'Pale' : cat.facing}
-            <span>
-              {selected
-                ? 'In palette'
-                : interactionMode === 'inspect'
-                  ? 'Inspect details'
-                  : 'Add to palette'}
-            </span>
           </span>
         </span>
       )}
