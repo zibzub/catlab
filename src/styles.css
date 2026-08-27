@@ -5439,56 +5439,27 @@ h1 {
 }
 
 .art-mode-icon {
-  position: relative;
   display: block;
-  width: 16px;
-  height: 16px;
-  color: currentColor;
+  width: 17px;
+  height: 17px;
+  background-color: currentColor;
+  image-rendering: pixelated;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
 }
 
-.art-mode-icon--full::before {
-  position: absolute;
-  top: 1px;
-  left: 5px;
-  width: 6px;
-  height: 6px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  content: '';
+.art-mode-icon--full {
+  mask-image: url('/icons/full.png');
+  -webkit-mask-image: url('/icons/full.png');
 }
 
-.art-mode-icon--full::after {
-  position: absolute;
-  bottom: 1px;
-  left: 3px;
-  width: 10px;
-  height: 8px;
-  border: 1px solid currentColor;
-  border-radius: 5px 5px 2px 2px;
-  content: '';
-}
-
-.art-mode-icon--face::before {
-  position: absolute;
-  top: 2px;
-  left: 1px;
-  width: 14px;
-  height: 12px;
-  background: currentColor;
-  clip-path: polygon(0 25%, 23% 0, 34% 18%, 66% 18%, 77% 0, 100% 25%, 88% 100%, 12% 100%);
-  content: '';
-}
-
-.art-mode-icon--face::after {
-  position: absolute;
-  top: 7px;
-  left: 5px;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: var(--console-surface-inset, var(--control-surface-deep));
-  box-shadow: 4px 0 0 var(--console-surface-inset, var(--control-surface-deep));
-  content: '';
+.art-mode-icon--face {
+  mask-image: url('/icons/face.png');
+  -webkit-mask-image: url('/icons/face.png');
 }
 
 .quick-layout-toggle button {
