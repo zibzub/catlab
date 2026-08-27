@@ -64,7 +64,13 @@ export const CatTile = memo(function CatTile({
           </span>
           <span className="cat-tile__status">
             {cat.genesis ? 'Genesis' : cat.pale ? 'Pale' : cat.facing}
-            <span>{selected ? 'In palette' : 'Add to palette'}</span>
+            <span>
+              {selected
+                ? 'In palette'
+                : interactionMode === 'inspect'
+                  ? 'Inspect details'
+                  : 'Add to palette'}
+            </span>
           </span>
         </span>
       )}

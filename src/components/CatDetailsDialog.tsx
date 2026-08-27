@@ -285,7 +285,6 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
                 <span className="cat-details-action-icon cat-details-external-icon" aria-hidden="true" />
               </a>
             </div>
-            <p>OpenSea applies to acclimated MoonCats and may not resolve every cat.</p>
           </footer>
           <div
             className="cat-details-actions"
@@ -325,7 +324,6 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
                 <span>Save Card</span>
                 <span className="cat-details-action-icon cat-details-download-icon" aria-hidden="true" />
               </button>
-              <p className="cat-details-actions-note">OpenSea applies to acclimated MoonCats and may not resolve every cat.</p>
               <div className={`cat-details-actions-status${exportStatus && exportStatus !== 'Card saved.' ? ' is-error' : ''}`} role="status" aria-live="polite">
                 {exportStatus}
               </div>

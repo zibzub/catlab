@@ -3021,7 +3021,7 @@ h1 {
   border: 0;
   border-radius: 7px;
   background: rgba(255, 249, 231, 0.72);
-  color: hotpink;
+  color: var(--accent-bright);
   font: inherit;
   font-size: 25px;
   line-height: 1;
@@ -3032,7 +3032,7 @@ h1 {
 .cat-details-close:hover,
 .cat-details-close:focus-visible {
   opacity: 1;
-  outline: 2px solid hotpink;
+  outline: 2px solid var(--accent-bright);
   outline-offset: 2px;
 }
 
@@ -3053,7 +3053,7 @@ h1 {
 
 .cat-details-image-window:focus-visible {
   z-index: 4;
-  outline: 3px solid hotpink;
+  outline: 3px solid var(--accent-bright);
   outline-offset: -3px;
 }
 
@@ -3086,7 +3086,7 @@ h1 {
   bottom: 8px;
   width: 32px;
   height: 34px;
-  color: hotpink;
+  color: var(--accent-bright);
   pointer-events: none;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
@@ -3271,7 +3271,7 @@ h1 {
   justify-content: center;
   gap: 8px;
   padding: 7px 18px;
-  border: 3px solid hotpink;
+  border: 3px solid var(--accent-bright);
   border-radius: 999px;
   background: rgba(9, 9, 14, 0.9);
   color: rgba(255, 247, 252, 0.94);
@@ -3287,9 +3287,9 @@ h1 {
 .cat-details-actions-panel a:focus-visible,
 .cat-details-actions-panel button:hover,
 .cat-details-actions-panel button:focus-visible {
-  border-color: hotpink;
-  background: rgba(34, 17, 31, 0.9);
-  box-shadow: 0 0 12px rgba(255, 105, 180, 0.9);
+  border-color: var(--accent-bright);
+  background: rgba(24, 24, 48, 0.9);
+  box-shadow: 0 0 12px rgba(129, 129, 255, 0.72);
   outline: none;
 }
 
@@ -3317,7 +3317,7 @@ h1 {
 }
 
 .cat-details-actions-status.is-error {
-  color: hotpink;
+  color: var(--accent-bright);
 }
 
 .cat-details-dialog:focus,
