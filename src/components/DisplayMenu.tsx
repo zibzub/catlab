@@ -61,10 +61,11 @@ export function DisplayMenu({
         aria-expanded={open}
         aria-controls="fx-menu-panel"
         aria-haspopup="dialog"
+        aria-label="Display effects"
+        title="Display effects"
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="collection-toolbar__button-label">Fx</span>
-        <span className="collection-toolbar__button-chevron" aria-hidden="true">⌄</span>
+        <span className="display-effects-icon" aria-hidden="true" />
       </button>
       {open && (
         <div

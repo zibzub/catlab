@@ -132,7 +132,7 @@ export function FilterBar({
             type="search"
             value={filters.query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search ID or name"
+            placeholder="ID or name"
           />
           {filters.query && (
             <button
@@ -188,6 +188,7 @@ export function FilterBar({
         </div>
 
         <div className="collection-toolbar__actions">
+          <div className="collection-toolbar__action-row collection-toolbar__action-row--primary">
           <button
             ref={filtersTriggerRef}
             className={`collection-toolbar__button${filtersOpen || selectedFilterCount > 0 ? ' is-active' : ''}`}
@@ -225,6 +226,8 @@ export function FilterBar({
               <span className="art-mode-icon art-mode-icon--face" aria-hidden="true" />
             </button>
           </div>
+          </div>
+          <div className="collection-toolbar__action-row collection-toolbar__action-row--secondary">
           <div className="quick-layout-toggle" role="group" aria-label="Quick collection layout">
             {(['small', 'medium', 'large'] as const).map((size) => {
               const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
@@ -279,6 +282,7 @@ export function FilterBar({
             onStarsChange={onStarsChange}
             onVignetteChange={onVignetteChange}
           />
+          </div>
         </div>
       </div>
 

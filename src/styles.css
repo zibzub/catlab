@@ -3405,6 +3405,10 @@ h1 {
   gap: 7px;
 }
 
+.collection-toolbar__action-row {
+  display: contents;
+}
+
 .collection-toolbar__secondary {
   display: contents;
 }
@@ -4087,7 +4091,8 @@ h1 {
   .collection-toolbar__row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
+    column-gap: 6px;
+    row-gap: 8px;
   }
 
   .collection-toolbar__row > .grid-mode-toggle {
@@ -4097,9 +4102,10 @@ h1 {
   }
 
   .collection-toolbar__row > .search-control {
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 2;
     min-width: 0;
+    width: 100%;
   }
 
   .collection-toolbar__secondary {
@@ -4145,10 +4151,21 @@ h1 {
   }
 
   .collection-toolbar__actions {
+    display: flex;
     grid-column: 2;
-    grid-row: 1;
-    min-width: 0;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: stretch;
+    gap: 8px;
     margin-left: 0;
+  }
+
+  .collection-toolbar__action-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
   }
 
   .collection-toolbar__button {
@@ -4169,7 +4186,7 @@ h1 {
     z-index: 32;
     top: 70px;
     right: 10px;
-    width: min(382px, calc(100vw - 20px));
+    width: min(230px, calc(100vw - 20px));
     max-height: calc(100dvh - 84px);
   }
 
@@ -5388,7 +5405,7 @@ h1 {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  height: 31px;
+  height: 35px;
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--console-divider-strong, var(--control-border));
@@ -5401,7 +5418,7 @@ h1 {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  height: 31px;
+  height: 35px;
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--console-divider-strong, var(--control-border));
@@ -5412,8 +5429,8 @@ h1 {
 
 .art-mode-toggle button {
   display: grid;
-  width: 25px;
-  height: 23px;
+  width: 29px;
+  height: 27px;
   padding: 0;
   place-items: center;
   border: 1px solid transparent;
@@ -5440,8 +5457,8 @@ h1 {
 
 .art-mode-icon {
   display: block;
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   background-color: currentColor;
   image-rendering: pixelated;
   mask-position: center;
@@ -5464,8 +5481,8 @@ h1 {
 
 .quick-layout-toggle button {
   display: grid;
-  width: 25px;
-  height: 23px;
+  width: 29px;
+  height: 27px;
   padding: 0;
   place-items: center;
   border: 1px solid transparent;
@@ -5491,27 +5508,41 @@ h1 {
 }
 
 .display-menu__trigger--fx {
-  min-width: 43px;
-  gap: 4px;
-  padding-right: 8px;
-  padding-left: 8px;
+  width: 35px;
+  min-width: 35px;
+  padding: 0;
 }
 
-.display-menu__trigger--fx .collection-toolbar__button-label {
-  letter-spacing: 0.04em;
+.display-effects-icon {
+  position: relative;
+  display: block;
+  width: 17px;
+  height: 12px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.display-effects-icon::after {
+  position: absolute;
+  right: 4px;
+  bottom: -4px;
+  left: 4px;
+  height: 1px;
+  background: currentColor;
+  content: '';
 }
 
 .details-view-icon {
   display: block;
-  width: 10px;
-  height: 16px;
+  width: 12px;
+  height: 19px;
   border: 1px solid currentColor;
   border-radius: 2px;
 }
 
 .list-view-icon {
   display: flex;
-  width: 16px;
+  width: 18px;
   flex-direction: column;
   gap: 3px;
 }
@@ -5799,28 +5830,11 @@ h1 {
 }
 
 @media (max-width: 620px) {
-  .quick-layout-toggle {
-    gap: 1px;
-    padding-right: 2px;
-    padding-left: 2px;
-  }
-
-  .quick-layout-toggle button {
-    width: 22px;
-  }
-
+  .quick-layout-toggle,
   .art-mode-toggle {
     gap: 1px;
     padding-right: 2px;
     padding-left: 2px;
-  }
-
-  .art-mode-toggle button {
-    width: 22px;
-  }
-
-  .collection-toolbar__actions {
-    gap: 4px;
   }
 
   .cat-list-shell {
@@ -5879,7 +5893,7 @@ h1 {
 
 @media (max-width: 430px) {
   .collection-toolbar__actions > .collection-toolbar__button > span:not(.collection-toolbar__button-icon):not(.collection-toolbar__count),
-  .collection-toolbar__actions .display-menu > .collection-toolbar__button > span:not(.collection-toolbar__button-icon):not(.collection-toolbar__button-chevron):not(.collection-toolbar__button-label) {
+  .collection-toolbar__actions .display-menu > .collection-toolbar__button > span:not(.collection-toolbar__button-icon):not(.collection-toolbar__button-chevron):not(.collection-toolbar__button-label):not(.display-effects-icon) {
     display: none;
   }
 }
