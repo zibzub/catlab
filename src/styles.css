@@ -2187,6 +2187,12 @@ h1 {
   cursor: move;
 }
 
+.compose-cat:focus,
+.compose-cat:focus-visible {
+  outline: 0;
+  outline-offset: 0;
+}
+
 .compose-stage .moveable-control-box {
   --moveable-color: #a4a4ff;
   z-index: 50;
@@ -2204,6 +2210,38 @@ h1 {
   border: 2px solid #fff;
   background: var(--accent-bright);
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+}
+
+.compose-stage .moveable-compose-object-toggle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 12;
+  min-width: 43px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 6px;
+  color: #fff;
+  background: rgba(35, 35, 73, 0.94);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  pointer-events: auto;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.compose-stage .moveable-compose-object-toggle:hover {
+  border-color: #fff;
+  background: var(--accent-bright);
+  color: #17172c;
+}
+
+.compose-stage .moveable-compose-object-toggle:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .compose-stage .moveable-direction[data-rotation="0"] {

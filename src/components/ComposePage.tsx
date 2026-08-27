@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import Moveable, { type OnDrag, type OnRotate, type OnScale } from 'react-moveable'
+import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type Renderer } from 'react-moveable'
 import { renderComposition, type ComposeBackground, type ComposePlacedCat } from '../composeExport'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
@@ -12,6 +12,48 @@ interface ComposePageProps {
 
 const ART_SCALE: Record<GridArtMode, number> = { bodies: 3, faces: 4 }
 const EMPTY_STAGE_RATIO = 4 / 3
+
+interface ComposeObjectToggleOptions {
+  label: string
+  nextLabel: string
+  onToggle: () => void
+}
+
+interface ComposeObjectToggleProps {
+  composeObjectToggle?: ComposeObjectToggleOptions
+}
+
+const ComposeObjectToggleAble: Able<ComposeObjectToggleProps> = {
+  name: 'composeObjectToggle',
+  props: ['composeObjectToggle'],
+  events: [],
+  render(moveable: MoveableManagerInterface<ComposeObjectToggleProps>, React: Renderer) {
+    const options = moveable.props.composeObjectToggle
+    if (!options) return []
+
+    const { renderPoses, rotation } = moveable.getState()
+    const x = (renderPoses[2][0] + renderPoses[3][0]) / 2
+    const y = (renderPoses[2][1] + renderPoses[3][1]) / 2 + 26
+    const zoom = moveable.props.zoom ?? 1
+
+    return [React.createElement('button', {
+      key: 'compose-object-toggle',
+      className: 'moveable-compose-object-toggle',
+      type: 'button',
+      'aria-label': `${options.label} view. Switch to ${options.nextLabel}.`,
+      title: `Switch to ${options.nextLabel}`,
+      style: {
+        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}rad) scale(${zoom})`,
+      },
+      onPointerDown: (event: Event) => event.stopPropagation(),
+      onClick: (event: Event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        options.onToggle()
+      },
+    }, options.label)]
+  },
+}
 
 function atlasSheetPath(atlas: AtlasManifest['atlas'] | AtlasManifest['faceAtlas'], sheet: number) {
   const filename = atlas.pattern.replace('{sheet:03}', String(sheet).padStart(3, '0'))
@@ -28,6 +70,7 @@ function nextLayer(placed: ComposePlacedCat[]) {
 
 export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
+  const moveableRef = useRef<Moveable>(null)
   const [placedCats, setPlacedCats] = useState<ComposePlacedCat[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [background, setBackground] = useState<ComposeBackground | null>(null)
@@ -66,7 +109,7 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
       const target = event.target
       if (
         target instanceof HTMLElement &&
-        (target.matches('input, textarea, select') || target.isContentEditable)
+        ((target.matches('button, input, textarea, select') && !target.matches('.compose-cat')) || target.isContentEditable)
       ) {
         return
       }
@@ -97,6 +140,7 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
             y: clamp(item.y + (direction[1] * step) / rect.height, 0, 1),
           }
         : item))
+      window.requestAnimationFrame(() => moveableRef.current?.updateRect())
     }
 
     document.addEventListener('keydown', handleKeyDown)
@@ -122,6 +166,7 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
       y: 0.5,
       scale: 1,
       rotation: 0,
+      opacity: 1,
       z: nextLayer(current),
     }])
     setSelectedId(id)
@@ -130,6 +175,7 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
   function updateSelected(update: Partial<ComposePlacedCat>) {
     if (!selectedId) return
     setPlacedCats((current) => current.map((item) => (item.id === selectedId ? { ...item, ...update } : item)))
+    window.requestAnimationFrame(() => moveableRef.current?.updateRect())
   }
 
   function handleBackground(event: React.ChangeEvent<HTMLInputElement>) {
@@ -275,6 +321,7 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
                   backgroundImage: `url(${atlasSheetPath(atlas, sheet)})`,
                   backgroundPosition: `-${column * atlas.cellWidth * artScale}px -${row * atlas.cellHeight * artScale}px`,
                   backgroundSize: `${atlas.width * artScale}px ${atlas.height * artScale}px`,
+                  opacity: item.opacity,
                   left: `${item.x * 100}%`,
                   top: `${item.y * 100}%`,
                   zIndex: item.z + 1,
@@ -294,8 +341,17 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
                 })}
             </div>
             <Moveable
+              ref={moveableRef}
+              ables={[ComposeObjectToggleAble]}
               target={selectedId ? `[data-compose-id="${selectedId}"]` : null}
               container={stageRef.current}
+              props={{
+                composeObjectToggle: selected ? {
+                  label: selected.artMode === 'bodies' ? 'Full' : 'Face',
+                  nextLabel: selected.artMode === 'bodies' ? 'Face' : 'Full',
+                  onToggle: () => updateSelected({ artMode: selected.artMode === 'bodies' ? 'faces' : 'bodies' }),
+                } : undefined,
+              }}
               draggable
               scalable
               keepRatio
@@ -396,6 +452,10 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
                 <button type="button" className={selected.artMode === 'bodies' ? 'is-active' : ''} aria-pressed={selected.artMode === 'bodies'} onClick={() => updateSelected({ artMode: 'bodies' })}>Full</button>
                 <button type="button" className={selected.artMode === 'faces' ? 'is-active' : ''} aria-pressed={selected.artMode === 'faces'} onClick={() => updateSelected({ artMode: 'faces' })}>Face</button>
               </div>
+              <label className="compose-range">
+                <span>Opacity <output>{Math.round(selected.opacity * 100)}%</output></span>
+                <input aria-label="Selected cat opacity" type="range" min="0" max="1" step="0.01" value={selected.opacity} onChange={(event) => updateSelected({ opacity: Number(event.currentTarget.value) })} />
+              </label>
               <label className="compose-range">
                 <span>Scale <output>{selected.scale.toFixed(2)}×</output></span>
                 <input type="range" min="0.4" max="12" step="0.05" value={selected.scale} onChange={(event) => updateSelected({ scale: Number(event.currentTarget.value) })} />
