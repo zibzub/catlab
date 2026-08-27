@@ -11,6 +11,7 @@ interface PaletteProps {
   onMobileClose: () => void
   onRemove: (rescueOrder: number) => void
   onClear: () => void
+  onCompose: () => void
 }
 
 export function Palette({
@@ -21,6 +22,7 @@ export function Palette({
   onMobileClose,
   onRemove,
   onClear,
+  onCompose,
 }: PaletteProps) {
   const [exportArt, setExportArt] = useState<GridArtMode>('bodies')
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png')
@@ -82,9 +84,14 @@ export function Palette({
           </div>
           <div className="palette-panel__intro">
             <p>Click any bare MoonCat to keep it here for the next CatLab tool.</p>
-            <button type="button" className="palette-clear" onClick={onClear} disabled={cats.length === 0}>
-              Clear
-            </button>
+            <div className="palette-panel__actions">
+              <button type="button" className="palette-compose" onClick={onCompose}>
+                Compose
+              </button>
+              <button type="button" className="palette-clear" onClick={onClear} disabled={cats.length === 0}>
+                Clear
+              </button>
+            </div>
           </div>
           {cats.length > 0 && (
             <section className="palette-export" aria-labelledby="palette-export-title">

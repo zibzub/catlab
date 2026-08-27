@@ -1,0 +1,427 @@
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import Moveable, { type OnDrag, type OnRotate, type OnScale } from 'react-moveable'
+import { renderComposition, type ComposeBackground, type ComposePlacedCat } from '../composeExport'
+import { assetPath } from '../data'
+import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
+
+interface ComposePageProps {
+  cats: CatRecord[]
+  manifest: AtlasManifest
+  onBack: () => void
+}
+
+const ART_SCALE: Record<GridArtMode, number> = { bodies: 3, faces: 4 }
+const EMPTY_STAGE_RATIO = 4 / 3
+
+function atlasSheetPath(atlas: AtlasManifest['atlas'] | AtlasManifest['faceAtlas'], sheet: number) {
+  const filename = atlas.pattern.replace('{sheet:03}', String(sheet).padStart(3, '0'))
+  return assetPath(`${atlas.directory}/${filename}`)
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function nextLayer(placed: ComposePlacedCat[]) {
+  return placed.reduce((highest, item) => Math.max(highest, item.z), -1) + 1
+}
+
+export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [placedCats, setPlacedCats] = useState<ComposePlacedCat[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [background, setBackground] = useState<ComposeBackground | null>(null)
+  const [backgroundError, setBackgroundError] = useState<string | null>(null)
+  const [exportBusy, setExportBusy] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (background) URL.revokeObjectURL(background.url)
+    }
+  }, [background])
+
+  useEffect(() => {
+    function handleDocumentPointerDown(event: PointerEvent) {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (
+        target.closest('[data-compose-id]') ||
+        target.closest('.moveable-control-box') ||
+        target.closest('.compose-selected')
+      ) {
+        return
+      }
+      setSelectedId(null)
+    }
+
+    document.addEventListener('pointerdown', handleDocumentPointerDown)
+    return () => document.removeEventListener('pointerdown', handleDocumentPointerDown)
+  }, [])
+
+  useEffect(() => {
+    if (!selectedId) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        (target.matches('input, textarea, select') || target.isContentEditable)
+      ) {
+        return
+      }
+
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault()
+        setPlacedCats((current) => current.filter((item) => item.id !== selectedId))
+        setSelectedId(null)
+        return
+      }
+
+      const directions: Record<string, [number, number]> = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+      }
+      const direction = directions[event.key]
+      const rect = stageRef.current?.getBoundingClientRect()
+      if (!direction || !rect) return
+
+      event.preventDefault()
+      const step = event.shiftKey ? 10 : 1
+      setPlacedCats((current) => current.map((item) => item.id === selectedId
+        ? {
+            ...item,
+            x: clamp(item.x + (direction[0] * step) / rect.width, 0, 1),
+            y: clamp(item.y + (direction[1] * step) / rect.height, 0, 1),
+          }
+        : item))
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [selectedId])
+
+  const selected = placedCats.find((item) => item.id === selectedId) ?? null
+  const selectedCat = selected ? cats.find((cat) => cat.rescueOrder === selected.rescueOrder) ?? null : null
+  const stageRatio = background ? background.width / background.height : EMPTY_STAGE_RATIO
+  const stageStyle = {
+    '--compose-ratio': stageRatio,
+  } as CSSProperties
+
+  const sourceCats = cats
+
+  function addCat(cat: CatRecord) {
+    const id = `${cat.rescueOrder}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    setPlacedCats((current) => [...current, {
+      id,
+      rescueOrder: cat.rescueOrder,
+      artMode: 'bodies',
+      x: 0.5,
+      y: 0.5,
+      scale: 1,
+      rotation: 0,
+      z: nextLayer(current),
+    }])
+    setSelectedId(id)
+  }
+
+  function updateSelected(update: Partial<ComposePlacedCat>) {
+    if (!selectedId) return
+    setPlacedCats((current) => current.map((item) => (item.id === selectedId ? { ...item, ...update } : item)))
+  }
+
+  function handleBackground(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    const image = new Image()
+    image.onload = () => {
+      setBackground({ url, width: image.naturalWidth, height: image.naturalHeight, name: file.name })
+      setBackgroundError(null)
+      setExportError(null)
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(url)
+      setBackgroundError('That image could not be read. Choose another local image.')
+    }
+    image.src = url
+    event.currentTarget.value = ''
+  }
+
+  function moveableTargetId(target: Element) {
+    return target.getAttribute('data-compose-id')
+  }
+
+  function handleMoveableDrag(event: OnDrag) {
+    const rect = stageRef.current?.getBoundingClientRect()
+    const id = moveableTargetId(event.target)
+    if (!id || !rect) return
+    setPlacedCats((current) => current.map((item) => {
+      if (item.id !== id) return item
+      return {
+        ...item,
+        x: clamp(item.x + event.delta[0] / rect.width, 0, 1),
+        y: clamp(item.y + event.delta[1] / rect.height, 0, 1),
+      }
+    }))
+  }
+
+  function handleMoveableScale(event: OnScale) {
+    const id = moveableTargetId(event.target)
+    if (!id) return
+    setPlacedCats((current) => current.map((item) => item.id === id
+      ? { ...item, scale: clamp(event.scale[0], 0.4, 12) }
+      : item))
+  }
+
+  function handleMoveableRotate(event: OnRotate) {
+    const id = moveableTargetId(event.target)
+    if (!id) return
+    setPlacedCats((current) => current.map((item) => item.id === id
+      ? { ...item, rotation: event.rotation }
+      : item))
+  }
+
+  function reorderSelected(direction: 'forward' | 'backward' | 'front' | 'back') {
+    if (!selectedId) return
+    setPlacedCats((current) => {
+      const ordered = [...current].sort((a, b) => a.z - b.z)
+      const index = ordered.findIndex((item) => item.id === selectedId)
+      if (index < 0) return current
+      let target = index
+      if (direction === 'forward') target = Math.min(index + 1, ordered.length - 1)
+      if (direction === 'backward') target = Math.max(index - 1, 0)
+      if (direction === 'front') target = ordered.length - 1
+      if (direction === 'back') target = 0
+      if (target === index) return current
+      const [moved] = ordered.splice(index, 1)
+      ordered.splice(target, 0, moved)
+      return ordered.map((item, z) => ({ ...item, z }))
+    })
+  }
+
+  async function handleExport() {
+    const stageWidth = stageRef.current?.getBoundingClientRect().width ?? 0
+    if (stageWidth <= 0 || exportBusy) return
+    setExportBusy(true)
+    setExportError(null)
+    try {
+      const blob = await renderComposition({
+        placedCats,
+        cats,
+        manifest,
+        background,
+        stageWidth,
+      })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'catlab-composition.png'
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 0)
+    } catch (error: unknown) {
+      setExportError(error instanceof Error ? error.message : 'Could not export the composition.')
+    } finally {
+      setExportBusy(false)
+    }
+  }
+
+  return (
+    <main className="compose-page">
+      <section className="compose-workspace" aria-labelledby="compose-title">
+        <div className="compose-heading">
+          <div>
+            <p className="eyebrow">Local composition tool</p>
+            <h1 id="compose-title">Compose</h1>
+            <p>Build a simple scene from your Palette. Everything stays in this browser.</p>
+          </div>
+          <button className="compose-back" type="button" onClick={onBack}>← Collection</button>
+        </div>
+
+        <div className="compose-stage-wrap">
+          <div
+            className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}`}
+            ref={stageRef}
+            style={stageStyle}
+
+          >
+            <div className="compose-stage__content">
+              {background ? (
+                <img className="compose-stage__background" src={background.url} alt="" draggable="false" />
+              ) : (
+                <div className="compose-stage__empty" aria-hidden="true">
+                  <span>+</span>
+                  <strong>Add a background</strong>
+                  <small>Your local image will fit this stage.</small>
+                </div>
+              )}
+              {placedCats
+                .slice()
+                .sort((a, b) => a.z - b.z)
+                .map((item) => {
+                const cat = cats.find((candidate) => candidate.rescueOrder === item.rescueOrder)
+                if (!cat) return null
+                const atlas = item.artMode === 'faces' ? manifest.faceAtlas : manifest.atlas
+                const cell = cat.rescueOrder % atlas.catsPerAtlas
+                const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
+                const column = cell % atlas.columns
+                const row = Math.floor(cell / atlas.columns)
+                const artScale = ART_SCALE[item.artMode]
+                const spriteStyle = {
+                  width: atlas.cellWidth * artScale,
+                  height: atlas.cellHeight * artScale,
+                  backgroundImage: `url(${atlasSheetPath(atlas, sheet)})`,
+                  backgroundPosition: `-${column * atlas.cellWidth * artScale}px -${row * atlas.cellHeight * artScale}px`,
+                  backgroundSize: `${atlas.width * artScale}px ${atlas.height * artScale}px`,
+                  left: `${item.x * 100}%`,
+                  top: `${item.y * 100}%`,
+                  zIndex: item.z + 1,
+                  transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale})`,
+                } as CSSProperties
+                  return (
+                    <button
+                      className="compose-cat"
+                      key={item.id}
+                      type="button"
+                      aria-label={`MoonCat ${cat.rescueOrder}, ${item.artMode === 'faces' ? 'Face' : 'Full'}`}
+                      data-compose-id={item.id}
+                      style={spriteStyle}
+                      onClick={() => setSelectedId(item.id)}
+                    />
+                  )
+                })}
+            </div>
+            <Moveable
+              target={selectedId ? `[data-compose-id="${selectedId}"]` : null}
+              container={stageRef.current}
+              draggable
+              scalable
+              keepRatio
+              rotatable
+              origin={false}
+              renderDirections={['nw', 'ne', 'sw', 'se']}
+              rotationPosition="top"
+              throttleDrag={0}
+              throttleScale={0}
+              throttleRotate={0}
+              onDrag={handleMoveableDrag}
+              onScale={handleMoveableScale}
+              onRotate={handleMoveableRotate}
+            />
+          </div>
+        </div>
+      </section>
+
+      <aside className="compose-controls" aria-label="Compose controls">
+        <section className="compose-card compose-sources" aria-labelledby="compose-sources-title">
+          <div className="compose-card__header">
+            <div>
+              <p className="eyebrow">Palette source</p>
+              <h2 id="compose-sources-title">Selected cats</h2>
+            </div>
+            <span className="compose-count">{sourceCats.length}</span>
+          </div>
+          {sourceCats.length === 0 ? (
+            <p className="compose-help">Select cats in the collection first. They will appear here as sources.</p>
+          ) : (
+            <div className="compose-source-list">
+              {sourceCats.map((cat) => {
+                const atlas = manifest.atlas
+                const cell = cat.rescueOrder % atlas.catsPerAtlas
+                const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
+                const column = cell % atlas.columns
+                const row = Math.floor(cell / atlas.columns)
+                const sourceScale = 2
+                return (
+                  <button
+                    className="compose-source"
+                    key={cat.rescueOrder}
+                    type="button"
+                    onClick={() => addCat(cat)}
+                    title={`Add MoonCat ${cat.rescueOrder}`}
+                  >
+                    <span
+                      className="compose-source__sprite"
+                      style={{
+                        backgroundImage: `url(${atlasSheetPath(atlas, sheet)})`,
+                        backgroundPosition: `-${column * atlas.cellWidth * sourceScale}px -${row * atlas.cellHeight * sourceScale}px`,
+                        backgroundSize: `${atlas.width * sourceScale}px ${atlas.height * sourceScale}px`,
+                      }}
+                      aria-hidden="true"
+                    />
+                    <strong>{cat.rescueOrder.toLocaleString()}</strong>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <p className="compose-help">Tap a source to add another instance. Repeats are allowed.</p>
+        </section>
+
+        <section className="compose-card compose-background" aria-labelledby="compose-background-title">
+          <div className="compose-card__header">
+            <div>
+              <p className="eyebrow">Local only</p>
+              <h2 id="compose-background-title">Background</h2>
+            </div>
+            {background && <span className="compose-file-name" title={background.name}>{background.name}</span>}
+          </div>
+          <label className="compose-upload">
+            <span>{background ? 'Replace image' : 'Choose image'}</span>
+            <input type="file" accept="image/*" onChange={handleBackground} />
+          </label>
+          {background && <button className="compose-text-button" type="button" onClick={() => setBackground(null)}>Remove background</button>}
+          {backgroundError && <p className="compose-message compose-message--error" role="alert">{backgroundError}</p>}
+        </section>
+
+        <section className="compose-card compose-selected" aria-labelledby="compose-selected-title">
+          <div className="compose-card__header">
+            <div>
+              <p className="eyebrow">Inspector</p>
+              <h2 id="compose-selected-title">Selected layer</h2>
+            </div>
+            {selected && <span className="compose-layer-number">{selected.z + 1}</span>}
+          </div>
+          {!selected || !selectedCat ? (
+            <p className="compose-help">Select a placed cat to edit its layer, art, and transforms.</p>
+          ) : (
+            <>
+              <div className="compose-selected-id">
+                <strong>MoonCat {selectedCat.rescueOrder.toLocaleString()}</strong>
+                <span>{selectedCat.catId}</span>
+              </div>
+              <div className="compose-art-options" role="group" aria-label="Placed cat art">
+                <button type="button" className={selected.artMode === 'bodies' ? 'is-active' : ''} aria-pressed={selected.artMode === 'bodies'} onClick={() => updateSelected({ artMode: 'bodies' })}>Full</button>
+                <button type="button" className={selected.artMode === 'faces' ? 'is-active' : ''} aria-pressed={selected.artMode === 'faces'} onClick={() => updateSelected({ artMode: 'faces' })}>Face</button>
+              </div>
+              <label className="compose-range">
+                <span>Scale <output>{selected.scale.toFixed(2)}×</output></span>
+                <input type="range" min="0.4" max="12" step="0.05" value={selected.scale} onChange={(event) => updateSelected({ scale: Number(event.currentTarget.value) })} />
+              </label>
+              <label className="compose-range">
+                <span>Rotation <output>{selected.rotation}°</output></span>
+                <input type="range" min="-180" max="180" step="1" value={selected.rotation} onChange={(event) => updateSelected({ rotation: Number(event.currentTarget.value) })} />
+              </label>
+              <div className="compose-layer-actions" role="group" aria-label="Layer order">
+                <button type="button" onClick={() => reorderSelected('back')}>Back</button>
+                <button type="button" onClick={() => reorderSelected('backward')}>Behind</button>
+                <button type="button" onClick={() => reorderSelected('forward')}>Forward</button>
+                <button type="button" onClick={() => reorderSelected('front')}>Front</button>
+              </div>
+              <button className="compose-remove" type="button" onClick={() => { setPlacedCats((current) => current.filter((item) => item.id !== selected.id)); setSelectedId(null) }}>Remove selected</button>
+            </>
+          )}
+        </section>
+
+        <div className="compose-footer-actions">
+          <button className="compose-clear" type="button" disabled={placedCats.length === 0} onClick={() => { setPlacedCats([]); setSelectedId(null) }}>Clear composition</button>
+          <button className="compose-export" type="button" disabled={exportBusy} onClick={handleExport}>{exportBusy ? 'Preparing…' : 'Export PNG'}</button>
+        </div>
+        <p className="compose-export-note">PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.</p>
+        {exportError && <p className="compose-message compose-message--error" role="alert">{exportError}</p>}
+      </aside>
+    </main>
+  )
+}

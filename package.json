@@ -16,7 +16,8 @@
     "jszip": "^3.10.1",
     "mooncatparser": "1.0.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-moveable": "^0.56.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

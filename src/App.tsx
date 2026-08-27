@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CatGrid } from './components/CatGrid'
+import { ComposePage } from './components/ComposePage'
 import { FilterBar } from './components/FilterBar'
 import { Palette } from './components/Palette'
 import { loadGeneratedData } from './data'
@@ -20,11 +21,17 @@ const initialFilters: FilterState = {
 function AppHeader({
   catalogCount,
   selectedCount,
+  view,
+  onCollection,
+  onCompose,
   onPaletteOpen,
   paletteOpen,
 }: {
   catalogCount: number
   selectedCount: number
+  view?: 'collection' | 'compose'
+  onCollection?: () => void
+  onCompose?: () => void
   onPaletteOpen?: () => void
   paletteOpen?: boolean
 }) {
@@ -44,16 +51,28 @@ function AppHeader({
         <span className="header-divider" />
         <span>{catalogCount.toLocaleString()} native cats</span>
       </div>
-      <button
-        className="header-selection"
-        type="button"
-        aria-expanded={paletteOpen}
-        aria-controls="palette-drawer-content"
-        onClick={onPaletteOpen}
-      >
-        <span>Palette</span>
-        <strong>{selectedCount}</strong>
-      </button>
+      {view === 'compose' ? (
+        <button className="header-tool" type="button" onClick={onCollection}>Collection</button>
+      ) : (
+        <button className="header-tool" type="button" onClick={onCompose}>Compose</button>
+      )}
+      {view === 'compose' ? (
+        <div className="header-selection header-selection--static">
+          <span>Palette</span>
+          <strong>{selectedCount}</strong>
+        </div>
+      ) : (
+        <button
+          className="header-selection"
+          type="button"
+          aria-expanded={paletteOpen}
+          aria-controls="palette-drawer-content"
+          onClick={onPaletteOpen}
+        >
+          <span>Palette</span>
+          <strong>{selectedCount}</strong>
+        </button>
+      )}
     </header>
   )
 }
@@ -117,6 +136,7 @@ export default function App() {
   const [showStars, setShowStars] = useState(false)
   const [showVignette, setShowVignette] = useState(true)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
+  const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
 
   useEffect(() => {
     let active = true
@@ -174,11 +194,25 @@ export default function App() {
   if (!cats || !manifest) {
     return (
       <div className="app-shell app-shell--state">
-        <AppHeader catalogCount={0} selectedCount={0} />
+        <AppHeader catalogCount={0} selectedCount={0} view="collection" />
         <LoadingState
           message={error ?? 'Loading the local MoonCat index…'}
           error={Boolean(error)}
         />
+      </div>
+    )
+  }
+
+  if (appView === 'compose') {
+    return (
+      <div className="app-shell">
+        <AppHeader
+          catalogCount={cats.length}
+          selectedCount={selectedCats.length}
+          view="compose"
+          onCollection={() => setAppView('collection')}
+        />
+        <ComposePage cats={selectedCats} manifest={manifest} onBack={() => setAppView('collection')} />
       </div>
     )
   }
@@ -188,6 +222,11 @@ export default function App() {
       <AppHeader
         catalogCount={cats.length}
         selectedCount={selectedCats.length}
+        view="collection"
+        onCompose={() => {
+          setMobilePaletteOpen(false)
+          setAppView('compose')
+        }}
         onPaletteOpen={() => setMobilePaletteOpen(true)}
         paletteOpen={mobilePaletteOpen}
       />
@@ -329,6 +368,10 @@ export default function App() {
           onMobileClose={() => setMobilePaletteOpen(false)}
           onRemove={removeSelection}
           onClear={clearSelection}
+          onCompose={() => {
+            setMobilePaletteOpen(false)
+            setAppView('compose')
+          }}
         />
       </main>
     </div>
