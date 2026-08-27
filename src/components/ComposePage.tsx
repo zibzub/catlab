@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
 import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type Renderer } from 'react-moveable'
 import { renderComposition, type ComposeBackground, type ComposePlacedCat } from '../composeExport'
 import { assetPath } from '../data'
@@ -7,6 +7,10 @@ import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 interface ComposePageProps {
   cats: CatRecord[]
   manifest: AtlasManifest
+  placedCats: ComposePlacedCat[]
+  setPlacedCats: Dispatch<SetStateAction<ComposePlacedCat[]>>
+  background: ComposeBackground | null
+  onBackgroundChange: (background: ComposeBackground | null) => void
   onBack: () => void
 }
 
@@ -68,21 +72,13 @@ function nextLayer(placed: ComposePlacedCat[]) {
   return placed.reduce((highest, item) => Math.max(highest, item.z), -1) + 1
 }
 
-export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
+export function ComposePage({ cats, manifest, placedCats, setPlacedCats, background, onBackgroundChange, onBack }: ComposePageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const moveableRef = useRef<Moveable>(null)
-  const [placedCats, setPlacedCats] = useState<ComposePlacedCat[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [background, setBackground] = useState<ComposeBackground | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
   const [exportBusy, setExportBusy] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (background) URL.revokeObjectURL(background.url)
-    }
-  }, [background])
 
   useEffect(() => {
     function handleDocumentPointerDown(event: PointerEvent) {
@@ -184,7 +180,7 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
     const url = URL.createObjectURL(file)
     const image = new Image()
     image.onload = () => {
-      setBackground({ url, width: image.naturalWidth, height: image.naturalHeight, name: file.name })
+      onBackgroundChange({ url, width: image.naturalWidth, height: image.naturalHeight, name: file.name })
       setBackgroundError(null)
       setExportError(null)
     }
@@ -428,7 +424,7 @@ export function ComposePage({ cats, manifest, onBack }: ComposePageProps) {
             <span>{background ? 'Replace image' : 'Choose image'}</span>
             <input type="file" accept="image/*" onChange={handleBackground} />
           </label>
-          {background && <button className="compose-text-button" type="button" onClick={() => setBackground(null)}>Remove background</button>}
+          {background && <button className="compose-text-button" type="button" onClick={() => onBackgroundChange(null)}>Remove background</button>}
           {backgroundError && <p className="compose-message compose-message--error" role="alert">{backgroundError}</p>}
         </section>
 

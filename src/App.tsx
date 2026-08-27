@@ -4,6 +4,7 @@ import { ComposePage } from './components/ComposePage'
 import { FilterBar } from './components/FilterBar'
 import { Palette } from './components/Palette'
 import { loadGeneratedData } from './data'
+import type { ComposeBackground, ComposePlacedCat } from './composeExport'
 import type { AtlasManifest, CatRecord, FilterState, GridArtMode, GridSize, GridViewMode } from './types'
 
 const initialFilters: FilterState = {
@@ -137,6 +138,8 @@ export default function App() {
   const [showVignette, setShowVignette] = useState(true)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
   const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
+  const [composePlacedCats, setComposePlacedCats] = useState<ComposePlacedCat[]>([])
+  const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
 
   useEffect(() => {
     let active = true
@@ -191,6 +194,13 @@ export default function App() {
 
   const clearSelection = useCallback(() => setSelectedOrders(new Set()), [])
 
+  const updateComposeBackground = useCallback((next: ComposeBackground | null) => {
+    setComposeBackground((current) => {
+      if (current && current.url !== next?.url) URL.revokeObjectURL(current.url)
+      return next
+    })
+  }, [])
+
   if (!cats || !manifest) {
     return (
       <div className="app-shell app-shell--state">
@@ -212,7 +222,15 @@ export default function App() {
           view="compose"
           onCollection={() => setAppView('collection')}
         />
-        <ComposePage cats={selectedCats} manifest={manifest} onBack={() => setAppView('collection')} />
+        <ComposePage
+          cats={selectedCats}
+          manifest={manifest}
+          placedCats={composePlacedCats}
+          setPlacedCats={setComposePlacedCats}
+          background={composeBackground}
+          onBackgroundChange={updateComposeBackground}
+          onBack={() => setAppView('collection')}
+        />
       </div>
     )
   }
