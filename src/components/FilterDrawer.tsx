@@ -18,6 +18,14 @@ interface FilterDrawerProps {
 
 type FilterSectionKey = 'classification' | 'rescue' | 'coat' | 'traits' | 'naming'
 
+const RESCUE_CLASSIFICATION_KEYS = new Set(['day1', 'day2', 'week1', 'earlyRescues', 'sub100'])
+const TRAIT_CLASSIFICATION_KEYS = new Set(['genesis'])
+const CHARACTER_CLASSIFICATION_OPTIONS = CLASSIFICATION_FILTER_OPTIONS.filter(
+  (option) => !RESCUE_CLASSIFICATION_KEYS.has(option.value) && !TRAIT_CLASSIFICATION_KEYS.has(option.value),
+)
+const RESCUE_CLASSIFICATION_OPTIONS = CLASSIFICATION_FILTER_OPTIONS.filter((option) => RESCUE_CLASSIFICATION_KEYS.has(option.value))
+const TRAIT_CLASSIFICATION_OPTIONS = CLASSIFICATION_FILTER_OPTIONS.filter((option) => TRAIT_CLASSIFICATION_KEYS.has(option.value))
+
 function toggleValue<T>(values: T[], value: T) {
   return values.includes(value)
     ? values.filter((item) => item !== value)
@@ -149,10 +157,13 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
   const filteredHues = index.options.hueNames.filter((hue) => (
     hue.toLowerCase().includes(hueSearch.trim().toLowerCase())
   ))
-  const classificationCount = draft.classifications.length
-  const rescueCount = draft.rescueYears.length
+  const characterCatsCount = draft.classifications.filter((value) =>
+    CHARACTER_CLASSIFICATION_OPTIONS.some((option) => option.value === value),
+  ).length
+  const rescueCount = draft.rescueYears.length + draft.classifications.filter((value) => RESCUE_CLASSIFICATION_KEYS.has(value)).length
   const coatCount = draft.hueNames.length + draft.patterns.length + (draft.pale === 'all' ? 0 : 1)
   const traitsCount = draft.poses.length + draft.expressions.length + draft.facings.length
+    + draft.classifications.filter((value) => TRAIT_CLASSIFICATION_KEYS.has(value)).length
   const namingCount = draft.naming === 'all' ? 0 : 1
 
   const setSectionOpen = (section: FilterSectionKey) => {
@@ -198,13 +209,13 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
         <div className="filter-drawer__sections">
           <FilterAccordionSection
             id="classification"
-            title="Classification"
-            selectedCount={classificationCount}
+            title="Character Cats"
+            selectedCount={characterCatsCount}
             open={openSections.classification}
             onToggle={() => setSectionOpen('classification')}
           >
             <div className="filter-drawer__option-list">
-              {CLASSIFICATION_FILTER_OPTIONS.map((option) => {
+              {CHARACTER_CLASSIFICATION_OPTIONS.map((option) => {
                 const count = index.counts.classifications[option.value] ?? 0
                 return (
                   <FilterOption
@@ -230,6 +241,27 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
             open={openSections.rescue}
             onToggle={() => setSectionOpen('rescue')}
           >
+            <div className="filter-drawer__field">
+              <span className="filter-drawer__field-label">Rescue Groups</span>
+              <div className="filter-drawer__option-list">
+                {RESCUE_CLASSIFICATION_OPTIONS.map((option) => {
+                  const count = index.counts.classifications[option.value] ?? 0
+                  return (
+                    <FilterOption
+                      key={option.value}
+                      label={option.label}
+                      count={count}
+                      checked={draft.classifications.includes(option.value)}
+                      disabled={count === 0}
+                      onChange={() => setDraft((current) => ({
+                        ...current,
+                        classifications: toggleValue(current.classifications, option.value),
+                      }))}
+                    />
+                  )
+                })}
+              </div>
+            </div>
             <div className="filter-drawer__field">
               <span className="filter-drawer__field-label">Rescue Year</span>
               <div className="filter-drawer__option-list">
@@ -351,6 +383,27 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
             open={openSections.traits}
             onToggle={() => setSectionOpen('traits')}
           >
+            <div className="filter-drawer__field">
+              <span className="filter-drawer__field-label">Special</span>
+              <div className="filter-drawer__option-list">
+                {TRAIT_CLASSIFICATION_OPTIONS.map((option) => {
+                  const count = index.counts.classifications[option.value] ?? 0
+                  return (
+                    <FilterOption
+                      key={option.value}
+                      label={option.label}
+                      count={count}
+                      checked={draft.classifications.includes(option.value)}
+                      disabled={count === 0}
+                      onChange={() => setDraft((current) => ({
+                        ...current,
+                        classifications: toggleValue(current.classifications, option.value),
+                      }))}
+                    />
+                  )
+                })}
+              </div>
+            </div>
             {([
               ['Pose', 'poses', index.options.poses, index.counts.poses],
               ['Expression', 'expressions', index.options.expressions, index.counts.expressions],
