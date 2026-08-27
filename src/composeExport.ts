@@ -10,6 +10,8 @@ export interface ComposePlacedCat {
   scale: number
   rotation: number
   opacity: number
+  flipX: boolean
+  flipY: boolean
   z: number
 }
 
@@ -114,6 +116,7 @@ export async function renderComposition({
     context.globalAlpha = Math.min(1, Math.max(0, placed.opacity))
     context.translate(placed.x * dimensions.width, placed.y * dimensions.height)
     context.rotate((placed.rotation * Math.PI) / 180)
+    context.scale(placed.flipX ? -1 : 1, placed.flipY ? -1 : 1)
     context.drawImage(
       image,
       column * atlas.cellWidth,

@@ -74,6 +74,7 @@ function nextLayer(placed: ComposePlacedCat[]) {
 
 export function ComposePage({ cats, manifest, placedCats, setPlacedCats, background, onBackgroundChange, onBack }: ComposePageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
+  const backgroundInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
@@ -87,7 +88,7 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
       if (
         target.closest('[data-compose-id]') ||
         target.closest('.moveable-control-box') ||
-        target.closest('.compose-selected')
+        target.closest('.compose-controls')
       ) {
         return
       }
@@ -107,6 +108,12 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
         target instanceof HTMLElement &&
         ((target.matches('button, input, textarea, select') && !target.matches('.compose-cat')) || target.isContentEditable)
       ) {
+        return
+      }
+
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'd') {
+        event.preventDefault()
+        duplicateSelected()
         return
       }
 
@@ -163,8 +170,31 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
       scale: 1,
       rotation: 0,
       opacity: 1,
+      flipX: false,
+      flipY: false,
       z: nextLayer(current),
     }])
+    setSelectedId(id)
+  }
+
+  function duplicateSelected() {
+    if (!selectedId) return
+    const id = `${selectedId}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const offsetPosition = (value: number) => value > 0.92
+      ? clamp(value - 0.04, 0, 1)
+      : clamp(value + 0.04, 0, 1)
+
+    setPlacedCats((current) => {
+      const source = current.find((item) => item.id === selectedId)
+      if (!source) return current
+      return [...current, {
+        ...source,
+        id,
+        x: offsetPosition(source.x),
+        y: offsetPosition(source.y),
+        z: nextLayer(current),
+      }]
+    })
     setSelectedId(id)
   }
 
@@ -214,7 +244,7 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
     const id = moveableTargetId(event.target)
     if (!id) return
     setPlacedCats((current) => current.map((item) => item.id === id
-      ? { ...item, scale: clamp(event.scale[0], 0.4, 12) }
+      ? { ...item, scale: clamp(Math.abs(event.scale[0]), 0.4, 12) }
       : item))
   }
 
@@ -293,11 +323,16 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
               {background ? (
                 <img className="compose-stage__background" src={background.url} alt="" draggable="false" />
               ) : (
-                <div className="compose-stage__empty" aria-hidden="true">
+                <button
+                  className="compose-stage__empty"
+                  type="button"
+                  onClick={() => backgroundInputRef.current?.click()}
+                  aria-label="Choose a background image"
+                >
                   <span>+</span>
                   <strong>Add a background</strong>
                   <small>Your local image will fit this stage.</small>
-                </div>
+                </button>
               )}
               {placedCats
                 .slice()
@@ -321,7 +356,7 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
                   left: `${item.x * 100}%`,
                   top: `${item.y * 100}%`,
                   zIndex: item.z + 1,
-                  transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale})`,
+                  transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
                 } as CSSProperties
                   return (
                     <button
@@ -331,6 +366,12 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
                       aria-label={`MoonCat ${cat.rescueOrder}, ${item.artMode === 'faces' ? 'Face' : 'Full'}`}
                       data-compose-id={item.id}
                       style={spriteStyle}
+                      onPointerDown={(event) => {
+                        if (selectedId === item.id) return
+                        setSelectedId(item.id)
+                        const nativeEvent = event.nativeEvent
+                        window.requestAnimationFrame(() => moveableRef.current?.dragStart(nativeEvent))
+                      }}
                       onClick={() => setSelectedId(item.id)}
                     />
                   )
@@ -422,7 +463,7 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
           </div>
           <label className="compose-upload">
             <span>{background ? 'Replace image' : 'Choose image'}</span>
-            <input type="file" accept="image/*" onChange={handleBackground} />
+            <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackground} />
           </label>
           {background && <button className="compose-text-button" type="button" onClick={() => onBackgroundChange(null)}>Remove background</button>}
           {backgroundError && <p className="compose-message compose-message--error" role="alert">{backgroundError}</p>}
@@ -447,6 +488,13 @@ export function ComposePage({ cats, manifest, placedCats, setPlacedCats, backgro
               <div className="compose-art-options" role="group" aria-label="Placed cat art">
                 <button type="button" className={selected.artMode === 'bodies' ? 'is-active' : ''} aria-pressed={selected.artMode === 'bodies'} onClick={() => updateSelected({ artMode: 'bodies' })}>Full</button>
                 <button type="button" className={selected.artMode === 'faces' ? 'is-active' : ''} aria-pressed={selected.artMode === 'faces'} onClick={() => updateSelected({ artMode: 'faces' })}>Face</button>
+              </div>
+              <div className="compose-art-options compose-flip-options" role="group" aria-label="Flip selected cat">
+                <button type="button" className={selected.flipX ? 'is-active' : ''} aria-pressed={selected.flipX} onClick={() => updateSelected({ flipX: !selected.flipX })}>Flip Horizontal</button>
+                <button type="button" className={selected.flipY ? 'is-active' : ''} aria-pressed={selected.flipY} onClick={() => updateSelected({ flipY: !selected.flipY })}>Flip Vertical</button>
+              </div>
+              <div className="compose-object-actions">
+                <button className="compose-duplicate" type="button" onClick={duplicateSelected}>Duplicate selected</button>
               </div>
               <label className="compose-range">
                 <span>Opacity <output>{Math.round(selected.opacity * 100)}%</output></span>

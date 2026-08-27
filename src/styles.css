@@ -2129,6 +2129,10 @@ h1 {
 
 .compose-stage__empty {
   display: flex;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
   align-items: center;
   justify-content: center;
   flex-direction: column;
@@ -2441,6 +2445,10 @@ h1 {
   margin-bottom: 12px;
 }
 
+.compose-flip-options {
+  margin-bottom: 10px;
+}
+
 .compose-art-options button,
 .compose-layer-actions button,
 .compose-clear,
@@ -2497,6 +2505,28 @@ h1 {
 .compose-layer-actions {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 9px;
+}
+
+.compose-object-actions {
+  display: grid;
+  margin-bottom: 11px;
+}
+
+.compose-duplicate {
+  width: 100%;
+  height: 29px;
+  padding: 0 6px;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--control-surface-deep);
+  font-size: 0.61rem;
+  font-weight: 800;
+}
+
+.compose-duplicate:hover {
+  color: var(--ink);
+  background: var(--control-surface);
 }
 
 .compose-remove {
