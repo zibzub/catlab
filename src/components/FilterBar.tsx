@@ -94,11 +94,14 @@ export function FilterBar({
   return (
     <div className="collection-toolbar" ref={toolbarRef}>
       <div className="collection-toolbar__row">
-        <div className="grid-mode-toggle" role="group" aria-label="Collection interaction mode">
-          <span className="grid-mode-toggle__label">Mode</span>
+        <div
+          className={`grid-mode-toggle ${interactionMode === 'select' ? 'is-select' : 'is-inspect'}`}
+          role="group"
+          aria-label="Collection interaction mode"
+        >
           <button
             type="button"
-            className={interactionMode === 'select' ? 'is-active' : ''}
+            className={`grid-mode-toggle__choice grid-mode-toggle__choice--select${interactionMode === 'select' ? ' is-active' : ''}`}
             aria-pressed={interactionMode === 'select'}
             onClick={() => onInteractionModeChange('select')}
           >
@@ -106,7 +109,15 @@ export function FilterBar({
           </button>
           <button
             type="button"
-            className={interactionMode === 'inspect' ? 'is-active' : ''}
+            className="grid-mode-toggle__rocker"
+            aria-label={`Switch to ${interactionMode === 'select' ? 'Inspect' : 'Select'} mode`}
+            onClick={() => onInteractionModeChange(interactionMode === 'select' ? 'inspect' : 'select')}
+          >
+            <span className="grid-mode-toggle__rocker-face" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`grid-mode-toggle__choice grid-mode-toggle__choice--inspect${interactionMode === 'inspect' ? ' is-active' : ''}`}
             aria-pressed={interactionMode === 'inspect'}
             onClick={() => onInteractionModeChange('inspect')}
           >

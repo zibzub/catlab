@@ -110,7 +110,7 @@ export default function App() {
   const [artMode, setArtMode] = useState<GridArtMode>('bodies')
   const [gridSize, setGridSize] = useState<GridSize>('medium')
   const [showRings, setShowRings] = useState(true)
-  const [showStars, setShowStars] = useState(false)
+  const [showStars, setShowStars] = useState(true)
   const [showVignette, setShowVignette] = useState(true)
   const [interactionMode, setInteractionMode] = useState<CollectionInteractionMode>('select')
   const [inspectedCat, setInspectedCat] = useState<CatRecord | null>(null)
