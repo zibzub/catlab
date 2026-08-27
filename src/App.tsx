@@ -319,12 +319,13 @@ export default function App() {
             />
           ) : (
             <CatGrid
+              key={viewMode}
               cats={filteredCats}
               manifest={manifest}
               names={names}
               viewMode={viewMode}
               artMode={artMode}
-              gridSize={gridSize}
+              gridSize={viewMode === 'detailed' ? 'medium' : gridSize}
               showRings={showRings && artMode === 'bodies'}
               showStars={showStars}
               showVignette={showVignette}
