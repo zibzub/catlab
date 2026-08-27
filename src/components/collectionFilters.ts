@@ -57,6 +57,7 @@ export interface FilterIndex {
   totalCount: number
   classificationSets: Record<string, Set<number>>
   namedOrders: Set<number>
+  namesByOrder: Map<number, string>
   counts: FilterCounts
   options: {
     rescueYears: number[]
@@ -135,6 +136,7 @@ export function buildFilterIndex(
     naming: { named: 0, unnamed: 0 },
   }
   const namedOrders = new Set<number>()
+  const namesByOrder = new Map<number, string>()
 
   for (const cat of cats) {
     if (cat.genesis) classificationSets.genesis.add(cat.rescueOrder)
@@ -150,8 +152,10 @@ export function buildFilterIndex(
     increment(counts.facings, cat.facing)
     if (cat.pale) counts.pale.pale += 1
     else counts.pale.normal += 1
-    if (names[String(cat.rescueOrder)]) {
+    const catName = names[String(cat.rescueOrder)]
+    if (catName) {
       namedOrders.add(cat.rescueOrder)
+      namesByOrder.set(cat.rescueOrder, catName.toLowerCase())
       counts.naming.named += 1
     } else {
       counts.naming.unnamed += 1
@@ -170,6 +174,7 @@ export function buildFilterIndex(
     totalCount: cats.length,
     classificationSets,
     namedOrders,
+    namesByOrder,
     counts,
     options: {
       rescueYears: Object.keys(counts.rescueYears).map(Number).sort((a, b) => a - b),
@@ -188,8 +193,11 @@ function matchesAny<T>(selected: T[], value: T) {
 
 export function matchesFilters(cat: CatRecord, filters: FilterState, index: FilterIndex) {
   const query = filters.query.trim().toLowerCase()
-  if (query && !String(cat.rescueOrder).includes(query)) {
-    return false
+  if (query) {
+    const matchesQuery = /^\d+$/.test(query)
+      ? String(cat.rescueOrder).includes(query)
+      : index.namesByOrder.get(cat.rescueOrder)?.includes(query) ?? false
+    if (!matchesQuery) return false
   }
 
   if (

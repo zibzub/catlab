@@ -126,13 +126,13 @@ export function FilterBar({
         </div>
 
         <label className="search-control">
-          <span className="sr-only">Search rescue ID</span>
+          <span className="sr-only">Search rescue ID or MoonCat name</span>
           <span className="search-control__icon" aria-hidden="true">⌕</span>
           <input
             type="search"
             value={filters.query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search rescue ID"
+            placeholder="Search ID or name"
           />
           {filters.query && (
             <button
