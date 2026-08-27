@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CatDetailsDialog } from './components/CatDetailsDialog'
 import { CatGrid } from './components/CatGrid'
+import { CatList } from './components/CatList'
 import { ComposePage } from './components/ComposePage'
 import { FilterBar } from './components/FilterBar'
 import {
@@ -203,6 +204,11 @@ export default function App() {
 
   const clearSelection = useCallback(() => setSelectedOrders(new Set()), [])
 
+  const chooseGridSize = useCallback((size: GridSize) => {
+    setGridSize(size)
+    setViewMode('compact')
+  }, [])
+
   const inspectCat = useCallback((cat: CatRecord, trigger: HTMLButtonElement) => {
     inspectTriggerRef.current = trigger
     setInspectedCat(cat)
@@ -293,27 +299,41 @@ export default function App() {
               onInteractionModeChange={setInteractionMode}
               onViewModeChange={setViewMode}
               onArtModeChange={setArtMode}
-              onGridSizeChange={setGridSize}
+              onGridSizeChange={chooseGridSize}
               onRingsChange={setShowRings}
               onStarsChange={setShowStars}
               onVignetteChange={setShowVignette}
             />
           </div>
-          <CatGrid
-            cats={filteredCats}
-            manifest={manifest}
-            names={names}
-            viewMode={viewMode}
-            artMode={artMode}
-            gridSize={gridSize}
-            showRings={showRings && artMode === 'bodies'}
-            showStars={showStars}
-            showVignette={showVignette}
-            selectedOrders={selectedOrders}
-            interactionMode={interactionMode}
-            onToggle={toggleSelection}
-            onInspect={inspectCat}
-          />
+          {viewMode === 'list' ? (
+            <CatList
+              cats={filteredCats}
+              manifest={manifest}
+              names={names}
+              artMode={artMode}
+              showRings={showRings && artMode === 'bodies'}
+              selectedOrders={selectedOrders}
+              interactionMode={interactionMode}
+              onToggle={toggleSelection}
+              onInspect={inspectCat}
+            />
+          ) : (
+            <CatGrid
+              cats={filteredCats}
+              manifest={manifest}
+              names={names}
+              viewMode={viewMode}
+              artMode={artMode}
+              gridSize={gridSize}
+              showRings={showRings && artMode === 'bodies'}
+              showStars={showStars}
+              showVignette={showVignette}
+              selectedOrders={selectedOrders}
+              interactionMode={interactionMode}
+              onToggle={toggleSelection}
+              onInspect={inspectCat}
+            />
+          )}
         </section>
         <Palette
           cats={selectedCats}

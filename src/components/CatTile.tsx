@@ -55,13 +55,13 @@ export const CatTile = memo(function CatTile({
       <MoonCatSprite cat={cat} manifest={manifest} variant={viewMode} artMode={artMode} gridSize={gridSize} />
       {viewMode === 'compact' ? (
         <span className="cat-tile__compact-id">
-          <span className="cat-tile__compact-number">{cat.rescueOrder.toLocaleString()}</span>
+          <span className="cat-tile__compact-number">{cat.rescueOrder}</span>
           {name && <span className="cat-tile__compact-name" title={name}>{name}</span>}
         </span>
       ) : (
         <span className="cat-tile__details">
           <span className="cat-tile__identity">
-            <strong>{cat.rescueOrder.toLocaleString()}</strong>
+            <strong>{cat.rescueOrder}</strong>
             <span className="cat-tile__year">{cat.rescueYear}</span>
           </span>
           {name && <span className="cat-tile__name" title={name}>{name}</span>}

@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GridArtMode, GridSize, GridViewMode } from '../types'
+import type { GridArtMode, GridViewMode } from '../types'
 
 interface DisplayMenuProps {
   viewMode: GridViewMode
   artMode: GridArtMode
-  gridSize: GridSize
   showRings: boolean
   showStars: boolean
   showVignette: boolean
   onViewModeChange: (value: GridViewMode) => void
   onArtModeChange: (value: GridArtMode) => void
-  onGridSizeChange: (value: GridSize) => void
   onRingsChange: (value: boolean) => void
   onStarsChange: (value: boolean) => void
   onVignetteChange: (value: boolean) => void
@@ -19,13 +17,11 @@ interface DisplayMenuProps {
 export function DisplayMenu({
   viewMode,
   artMode,
-  gridSize,
   showRings,
   showStars,
   showVignette,
   onViewModeChange,
   onArtModeChange,
-  onGridSizeChange,
   onRingsChange,
   onStarsChange,
   onVignetteChange,
@@ -88,7 +84,7 @@ export function DisplayMenu({
           <div className="display-menu__header">
             <div>
               <p className="eyebrow">Collection display</p>
-              <strong>Arrange the grid</strong>
+              <strong>Arrange the collection</strong>
             </div>
             <button className="display-menu__close" type="button" onClick={() => closeMenu()}>
               <span aria-hidden="true">×</span>
@@ -115,6 +111,14 @@ export function DisplayMenu({
                 >
                   Details
                 </button>
+                <button
+                  type="button"
+                  className={viewMode === 'list' ? 'is-active' : ''}
+                  aria-pressed={viewMode === 'list'}
+                  onClick={() => onViewModeChange('list')}
+                >
+                  List
+                </button>
               </div>
             </div>
             <div className="display-menu__group">
@@ -136,30 +140,6 @@ export function DisplayMenu({
                 >
                   Face
                 </button>
-              </div>
-            </div>
-            <div className="display-menu__group display-menu__group--size">
-              <span className="display-menu__label">Grid size</span>
-              <div className="grid-size-toggle" role="group" aria-label="Grid size">
-                {(['small', 'medium', 'large'] as const).map((size) => {
-                  const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
-                  const label = size[0].toUpperCase() + size.slice(1)
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      className={gridSize === size ? 'is-active' : ''}
-                      aria-label={`${label} cats`}
-                      title={`${label} cats`}
-                      aria-pressed={gridSize === size}
-                      onClick={() => onGridSizeChange(size)}
-                    >
-                      <span className={`grid-size-icon grid-size-icon--${size}`} aria-hidden="true">
-                        {Array.from({ length: cellCount }, (_, index) => <span key={index} />)}
-                      </span>
-                    </button>
-                  )
-                })}
               </div>
             </div>
             <div className="display-menu__effects" aria-label="Grid effects">

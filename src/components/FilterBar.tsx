@@ -206,17 +206,50 @@ export function FilterBar({
           <DisplayMenu
             viewMode={viewMode}
             artMode={artMode}
-            gridSize={gridSize}
             showRings={showRings}
             showStars={showStars}
             showVignette={showVignette}
             onViewModeChange={onViewModeChange}
             onArtModeChange={onArtModeChange}
-            onGridSizeChange={onGridSizeChange}
             onRingsChange={onRingsChange}
             onStarsChange={onStarsChange}
             onVignetteChange={onVignetteChange}
           />
+          <div className="quick-layout-toggle" role="group" aria-label="Quick collection layout">
+            {(['small', 'medium', 'large'] as const).map((size) => {
+              const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
+              const label = size[0].toUpperCase() + size.slice(1)
+              return (
+                <button
+                  key={size}
+                  type="button"
+                  className={viewMode === 'compact' && gridSize === size ? 'is-active' : ''}
+                  aria-label={`${label} compact grid`}
+                  title={`${label} compact grid`}
+                  aria-pressed={viewMode === 'compact' && gridSize === size}
+                  onClick={() => onGridSizeChange(size)}
+                >
+                  <span className={`grid-size-icon grid-size-icon--${size}`} aria-hidden="true">
+                    {Array.from({ length: cellCount }, (_, index) => <span key={index} />)}
+                  </span>
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              className={`quick-layout-toggle__list${viewMode === 'list' ? ' is-active' : ''}`}
+              aria-label="List view"
+              title="List view"
+              aria-pressed={viewMode === 'list'}
+              onClick={() => onViewModeChange('list')}
+            >
+              <span className="list-view-icon" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 

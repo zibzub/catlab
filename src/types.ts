@@ -12,7 +12,7 @@ export interface CatRecord {
   genesis: boolean
 }
 
-export type GridViewMode = 'compact' | 'detailed'
+export type GridViewMode = 'compact' | 'detailed' | 'list'
 
 export type GridArtMode = 'bodies' | 'faces'
 
@@ -86,6 +86,8 @@ export interface FilterState {
   classifications: string[]
   rescueYears: number[]
   hueNames: string[]
+  hueValueMin: number | null
+  hueValueMax: number | null
   pale: 'all' | 'pale' | 'normal'
   patterns: string[]
   poses: string[]

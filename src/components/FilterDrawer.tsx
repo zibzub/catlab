@@ -32,6 +32,12 @@ function toggleValue<T>(values: T[], value: T) {
     : [...values, value]
 }
 
+function parseHueBound(value: string) {
+  if (value.trim() === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
 function FilterOption({
   label,
   count,
@@ -161,7 +167,10 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
     CHARACTER_CLASSIFICATION_OPTIONS.some((option) => option.value === value),
   ).length
   const rescueCount = draft.rescueYears.length + draft.classifications.filter((value) => RESCUE_CLASSIFICATION_KEYS.has(value)).length
-  const coatCount = draft.hueNames.length + draft.patterns.length + (draft.pale === 'all' ? 0 : 1)
+  const coatCount = draft.hueNames.length
+    + (draft.hueValueMin !== null || draft.hueValueMax !== null ? 1 : 0)
+    + draft.patterns.length
+    + (draft.pale === 'all' ? 0 : 1)
   const traitsCount = draft.poses.length + draft.expressions.length + draft.facings.length
     + draft.classifications.filter((value) => TRAIT_CLASSIFICATION_KEYS.has(value)).length
   const namingCount = draft.naming === 'all' ? 0 : 1
@@ -326,6 +335,44 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
                   />
                 ))}
                 {filteredHues.length === 0 && <span className="filter-drawer__empty">No hues match.</span>}
+              </div>
+            </div>
+            <div className="filter-drawer__field">
+              <div className="filter-drawer__field-header">
+                <span className="filter-drawer__field-label">Hue Value</span>
+                <span className="filter-drawer__field-meta">inclusive range</span>
+              </div>
+              <div className="filter-drawer__hue-range">
+                <label className="filter-drawer__number-field">
+                  <span>Min</span>
+                  <input
+                    type="number"
+                    step="1"
+                    inputMode="numeric"
+                    value={draft.hueValueMin ?? ''}
+                    aria-label="Minimum hue value"
+                    placeholder="Any"
+                    onChange={(event) => setDraft((current) => ({
+                      ...current,
+                      hueValueMin: parseHueBound(event.target.value),
+                    }))}
+                  />
+                </label>
+                <label className="filter-drawer__number-field">
+                  <span>Max</span>
+                  <input
+                    type="number"
+                    step="1"
+                    inputMode="numeric"
+                    value={draft.hueValueMax ?? ''}
+                    aria-label="Maximum hue value"
+                    placeholder="Any"
+                    onChange={(event) => setDraft((current) => ({
+                      ...current,
+                      hueValueMax: parseHueBound(event.target.value),
+                    }))}
+                  />
+                </label>
               </div>
             </div>
             <div className="filter-drawer__field">

@@ -193,7 +193,7 @@ export function Palette({
                 <li className="palette-item" key={cat.rescueOrder}>
                   <MoonCatSprite cat={cat} manifest={manifest} variant="palette" />
                   <span className="palette-item__details">
-                    <strong>{cat.rescueOrder.toLocaleString()}</strong>
+                    <strong>{cat.rescueOrder}</strong>
                     <span>{cat.catId}</span>
                     <small>
                       {cat.hueName} · {cat.pattern}

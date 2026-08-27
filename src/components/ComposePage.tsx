@@ -571,7 +571,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                       }}
                       aria-hidden="true"
                     />
-                    <strong>{cat.rescueOrder.toLocaleString()}</strong>
+                    <strong>{cat.rescueOrder}</strong>
                   </button>
                 )
               })}
@@ -611,7 +611,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
               <div className="compose-selected-id">
                 {selected.kind === 'cat' && selectedCat ? (
                   <>
-                    <strong>MoonCat {selectedCat.rescueOrder.toLocaleString()}</strong>
+                    <strong>MoonCat {selectedCat.rescueOrder}</strong>
                     <span>{selectedCat.catId}</span>
                   </>
                 ) : (

@@ -28,6 +28,7 @@ export type RemovableFilterKey =
   | 'classifications'
   | 'rescueYears'
   | 'hueNames'
+  | 'hueValue'
   | 'pale'
   | 'patterns'
   | 'poses'
@@ -91,6 +92,8 @@ export function createEmptyFilterState(): FilterState {
     classifications: [],
     rescueYears: [],
     hueNames: [],
+    hueValueMin: null,
+    hueValueMax: null,
     pale: 'all',
     patterns: [],
     poses: [],
@@ -208,6 +211,8 @@ export function matchesFilters(cat: CatRecord, filters: FilterState, index: Filt
   }
   if (!matchesAny(filters.rescueYears, cat.rescueYear)) return false
   if (!matchesAny(filters.hueNames, cat.hueName)) return false
+  if (filters.hueValueMin !== null && cat.hueInt < filters.hueValueMin) return false
+  if (filters.hueValueMax !== null && cat.hueInt > filters.hueValueMax) return false
   if (filters.pale === 'pale' && !cat.pale) return false
   if (filters.pale === 'normal' && cat.pale) return false
   if (!matchesAny(filters.patterns, cat.pattern)) return false
@@ -224,6 +229,7 @@ export function activeFilterCount(filters: FilterState) {
     filters.classifications.length +
     filters.rescueYears.length +
     filters.hueNames.length +
+    (filters.hueValueMin !== null || filters.hueValueMax !== null ? 1 : 0) +
     filters.patterns.length +
     filters.poses.length +
     filters.expressions.length +
@@ -248,6 +254,10 @@ export function removeFilterValue(
       break
     case 'hueNames':
       next.hueNames = next.hueNames.filter((item) => item !== value)
+      break
+    case 'hueValue':
+      next.hueValueMin = null
+      next.hueValueMax = null
       break
     case 'pale':
       next.pale = 'all'
@@ -285,6 +295,14 @@ export function getActiveFilterChips(filters: FilterState): ActiveFilterChip[] {
   })
   filters.rescueYears.forEach((value) => chips.push({ key: 'rescueYears', value, label: `Year ${value}` }))
   filters.hueNames.forEach((value) => chips.push({ key: 'hueNames', value, label: `Hue ${titleCase(value)}` }))
+  if (filters.hueValueMin !== null || filters.hueValueMax !== null) {
+    const range = filters.hueValueMin !== null && filters.hueValueMax !== null
+      ? `${filters.hueValueMin}–${filters.hueValueMax}`
+      : filters.hueValueMin !== null
+        ? `≥${filters.hueValueMin}`
+        : `≤${filters.hueValueMax}`
+    chips.push({ key: 'hueValue', value: 'range', label: `Hue value ${range}` })
+  }
   filters.pale !== 'all' && chips.push({
     key: 'pale',
     value: filters.pale,

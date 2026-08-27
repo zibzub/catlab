@@ -29,6 +29,10 @@ export const MoonCatSprite = memo(function MoonCatSprite({
   const row = Math.floor(cell / atlas.columns)
   const scale = variant === 'palette'
     ? 3
+    : variant === 'list'
+      ? artMode === 'faces'
+        ? gridSize === 'small' ? 4 : 6
+        : gridSize === 'small' ? 2 : 3
     : artMode === 'faces'
       ? variant === 'compact'
         ? { small: 4, medium: 5, large: 6 }[gridSize]
