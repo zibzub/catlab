@@ -188,11 +188,7 @@ function matchesAny<T>(selected: T[], value: T) {
 
 export function matchesFilters(cat: CatRecord, filters: FilterState, index: FilterIndex) {
   const query = filters.query.trim().toLowerCase()
-  if (
-    query &&
-    !String(cat.rescueOrder).includes(query) &&
-    !cat.catId.toLowerCase().includes(query)
-  ) {
+  if (query && !String(cat.rescueOrder).includes(query)) {
     return false
   }
 

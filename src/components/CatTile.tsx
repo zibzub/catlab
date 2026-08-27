@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { MoonCatSprite } from './MoonCatSprite'
+import type { MoonCatNames } from '../mooncatDetails'
 import type {
   AtlasManifest,
   CatRecord,
@@ -12,6 +13,7 @@ import type {
 interface CatTileProps {
   cat: CatRecord
   manifest: AtlasManifest
+  names: MoonCatNames
   viewMode: GridViewMode
   artMode: GridArtMode
   gridSize: GridSize
@@ -24,6 +26,7 @@ interface CatTileProps {
 export const CatTile = memo(function CatTile({
   cat,
   manifest,
+  names,
   viewMode,
   artMode,
   gridSize,
@@ -32,9 +35,11 @@ export const CatTile = memo(function CatTile({
   onToggle,
   onInspect,
 }: CatTileProps) {
+  const name = names[String(cat.rescueOrder)]
+  const nameSuffix = name ? `, ${name}` : ''
   const label = interactionMode === 'inspect'
-    ? `Inspect MoonCat rescue order ${cat.rescueOrder}, ${cat.catId}, ${cat.hueName} ${cat.pattern}`
-    : `MoonCat rescue order ${cat.rescueOrder}, ${cat.catId}, ${cat.hueName} ${cat.pattern}`
+    ? `Inspect MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
+    : `MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
   return (
     <button
       className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${selected ? ' cat-tile--selected' : ''}`}
@@ -49,13 +54,17 @@ export const CatTile = memo(function CatTile({
     >
       <MoonCatSprite cat={cat} manifest={manifest} variant={viewMode} artMode={artMode} gridSize={gridSize} />
       {viewMode === 'compact' ? (
-        <span className="cat-tile__compact-id">{cat.rescueOrder.toLocaleString()}</span>
+        <span className="cat-tile__compact-id">
+          <span className="cat-tile__compact-number">{cat.rescueOrder.toLocaleString()}</span>
+          {name && <span className="cat-tile__compact-name" title={name}>{name}</span>}
+        </span>
       ) : (
         <span className="cat-tile__details">
           <span className="cat-tile__identity">
             <strong>{cat.rescueOrder.toLocaleString()}</strong>
             <span className="cat-tile__year">{cat.rescueYear}</span>
           </span>
+          {name && <span className="cat-tile__name" title={name}>{name}</span>}
           <span className="cat-tile__id">{cat.catId}</span>
           <span className="cat-tile__traits">
             <span>{cat.hueName}</span>

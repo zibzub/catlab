@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CatTile } from './CatTile'
+import type { MoonCatNames } from '../mooncatDetails'
 import type {
   AtlasManifest,
   CatRecord,
@@ -13,6 +14,7 @@ import type {
 interface CatGridProps {
   cats: CatRecord[]
   manifest: AtlasManifest
+  names: MoonCatNames
   viewMode: GridViewMode
   artMode: GridArtMode
   gridSize: GridSize
@@ -69,6 +71,7 @@ function rowEstimateFor(viewMode: GridViewMode, artMode: GridArtMode, gridSize: 
 export function CatGrid({
   cats,
   manifest,
+  names,
   viewMode,
   artMode,
   gridSize,
@@ -212,6 +215,7 @@ export function CatGrid({
                         key={cat.rescueOrder}
                         cat={cat}
                         manifest={manifest}
+                        names={names}
                         viewMode={viewMode}
                         artMode={artMode}
                         gridSize={gridSize}

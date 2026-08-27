@@ -302,6 +302,7 @@ export default function App() {
           <CatGrid
             cats={filteredCats}
             manifest={manifest}
+            names={names}
             viewMode={viewMode}
             artMode={artMode}
             gridSize={gridSize}

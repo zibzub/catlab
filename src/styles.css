@@ -1106,6 +1106,10 @@ h1 {
   transform: translateY(-4px);
 }
 
+.cat-tile--detailed:hover {
+  transform: none;
+}
+
 .cat-tile--compact .cat-art {
   width: 100%;
   flex: 0 0 var(--cat-compact-art-height);
@@ -1134,18 +1138,6 @@ h1 {
   font-weight: 700;
   line-height: 22px;
   text-align: center;
-}
-
-.cat-tile--size-small .cat-tile__compact-id {
-  flex-basis: 20px;
-  font-size: 0.74rem;
-  line-height: 20px;
-}
-
-.cat-tile--size-large .cat-tile__compact-id {
-  flex-basis: 24px;
-  font-size: 0.9rem;
-  line-height: 24px;
 }
 
 .cat-tile--compact.cat-tile--selected .cat-tile__compact-id {
@@ -5409,5 +5401,90 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .grid-mode-toggle__rocker-face {
     transition: none;
+  }
+}
+
+/* Optional MoonCat name readouts. Unnamed compact tiles retain their original
+   single ID line, while named tiles grow only for the line they render. */
+.cat-tile__compact-id {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 22px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  color: var(--console-ink, var(--ink));
+  background: linear-gradient(to bottom, transparent 0 4px, #0c0e14 4px);
+  line-height: 1.1;
+}
+
+.cat-tile__compact-number {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--console-ink, var(--ink));
+  font-family: var(--console-micro-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 22px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cat-tile__compact-name {
+  display: -webkit-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 16px;
+  max-height: 32px;
+  overflow: hidden;
+  padding: 0 2px 2px;
+  color: var(--console-muted, var(--muted));
+  font-family: var(--console-micro-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.59rem;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.cat-tile--compact.cat-tile--selected .cat-tile__compact-number {
+  color: #f0efff;
+}
+
+.cat-tile--detailed .cat-tile__details {
+  flex: 0 0 auto;
+}
+
+.cat-tile__name {
+  display: -webkit-box;
+  width: 100%;
+  max-width: 100%;
+  min-height: 15px;
+  max-height: 30px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  padding-bottom: 2px;
+  color: var(--console-muted, var(--muted));
+  font-family: var(--console-micro-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 15px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (max-width: 620px) {
+  .cat-tile__compact-number {
+    font-weight: 800;
   }
 }
