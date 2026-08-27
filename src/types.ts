@@ -18,6 +18,8 @@ export type GridArtMode = 'bodies' | 'faces'
 
 export type GridSize = 'small' | 'medium' | 'large'
 
+export type CollectionInteractionMode = 'select' | 'inspect'
+
 export interface EncodedIndex {
   schemaVersion: number
   count: number

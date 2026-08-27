@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CatTile } from './CatTile'
-import type { AtlasManifest, CatRecord, GridArtMode, GridSize, GridViewMode } from '../types'
+import type {
+  AtlasManifest,
+  CatRecord,
+  CollectionInteractionMode,
+  GridArtMode,
+  GridSize,
+  GridViewMode,
+} from '../types'
 
 interface CatGridProps {
   cats: CatRecord[]
@@ -13,7 +20,9 @@ interface CatGridProps {
   showStars: boolean
   showVignette: boolean
   selectedOrders: Set<number>
+  interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
+  onInspect: (cat: CatRecord, trigger: HTMLButtonElement) => void
 }
 
 function columnsForWidth(width: number, viewMode: GridViewMode, artMode: GridArtMode, gridSize: GridSize) {
@@ -67,7 +76,9 @@ export function CatGrid({
   showStars,
   showVignette,
   selectedOrders,
+  interactionMode,
   onToggle,
+  onInspect,
 }: CatGridProps) {
   const scrollElementRef = useRef<HTMLDivElement>(null)
   const smallStarsRef = useRef<HTMLDivElement>(null)
@@ -205,7 +216,9 @@ export function CatGrid({
                         artMode={artMode}
                         gridSize={gridSize}
                         selected={selectedOrders.has(cat.rescueOrder)}
+                        interactionMode={interactionMode}
                         onToggle={onToggle}
+                        onInspect={onInspect}
                       />
                     ))}
                   </div>

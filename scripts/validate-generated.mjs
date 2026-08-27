@@ -19,11 +19,13 @@ import {
   MANIFEST_SCHEMA_VERSION,
   validateEncodedIndex,
 } from './lib/catalog.mjs'
+import { validateClassificationArtifact } from './lib/mooncat-classifications.mjs'
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname)
 const DATA_DIR = path.join(ROOT, 'public/data')
 const INDEX_PATH = path.join(DATA_DIR, 'mooncats.json')
 const MANIFEST_PATH = path.join(DATA_DIR, 'atlas-manifest.json')
+const CLASSIFICATIONS_PATH = path.join(DATA_DIR, 'mooncat-classifications.json')
 const ATLAS_DIR = path.join(DATA_DIR, 'atlases')
 const FACE_ATLAS_DIR = path.join(DATA_DIR, 'face-atlases')
 const require = createRequire(import.meta.url)
@@ -143,6 +145,7 @@ function assertFaceAtlasPixels(faceAtlasBuffers, index) {
 async function main() {
   const index = await readJson(INDEX_PATH)
   validateEncodedIndex(index)
+  validateClassificationArtifact(await readJson(CLASSIFICATIONS_PATH))
 
   const manifest = await readJson(MANIFEST_PATH)
   if (manifest.schemaVersion !== MANIFEST_SCHEMA_VERSION) {

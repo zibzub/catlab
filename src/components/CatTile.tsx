@@ -1,6 +1,13 @@
 import { memo } from 'react'
 import { MoonCatSprite } from './MoonCatSprite'
-import type { AtlasManifest, CatRecord, GridArtMode, GridSize, GridViewMode } from '../types'
+import type {
+  AtlasManifest,
+  CatRecord,
+  CollectionInteractionMode,
+  GridArtMode,
+  GridSize,
+  GridViewMode,
+} from '../types'
 
 interface CatTileProps {
   cat: CatRecord
@@ -9,7 +16,9 @@ interface CatTileProps {
   artMode: GridArtMode
   gridSize: GridSize
   selected: boolean
+  interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
+  onInspect: (cat: CatRecord, trigger: HTMLButtonElement) => void
 }
 
 export const CatTile = memo(function CatTile({
@@ -19,16 +28,24 @@ export const CatTile = memo(function CatTile({
   artMode,
   gridSize,
   selected,
+  interactionMode,
   onToggle,
+  onInspect,
 }: CatTileProps) {
-  const label = `MoonCat rescue order ${cat.rescueOrder}, ${cat.catId}, ${cat.hueName} ${cat.pattern}`
+  const label = interactionMode === 'inspect'
+    ? `Inspect MoonCat rescue order ${cat.rescueOrder}, ${cat.catId}, ${cat.hueName} ${cat.pattern}`
+    : `MoonCat rescue order ${cat.rescueOrder}, ${cat.catId}, ${cat.hueName} ${cat.pattern}`
   return (
     <button
       className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${selected ? ' cat-tile--selected' : ''}`}
       type="button"
       aria-label={label}
-      aria-pressed={selected}
-      onClick={() => onToggle(cat.rescueOrder)}
+      aria-pressed={interactionMode === 'select' ? selected : undefined}
+      aria-haspopup={interactionMode === 'inspect' ? 'dialog' : undefined}
+      onClick={(event) => {
+        if (interactionMode === 'inspect') onInspect(cat, event.currentTarget)
+        else onToggle(cat.rescueOrder)
+      }}
     >
       <MoonCatSprite cat={cat} manifest={manifest} variant={viewMode} artMode={artMode} gridSize={gridSize} />
       {viewMode === 'compact' ? (

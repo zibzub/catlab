@@ -9,6 +9,8 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck",
     "generate": "node scripts/generate-assets.mjs",
+    "generate:classifications": "node scripts/generate-classifications.mjs",
+    "validate:classifications": "node scripts/validate-classifications.mjs",
     "validate:generated": "node scripts/validate-generated.mjs"
   },
   "dependencies": {

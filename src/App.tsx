@@ -1,11 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { CatDetailsDialog } from './components/CatDetailsDialog'
 import { CatGrid } from './components/CatGrid'
 import { ComposePage } from './components/ComposePage'
 import { FilterBar } from './components/FilterBar'
 import { Palette } from './components/Palette'
 import { loadGeneratedData } from './data'
 import type { ComposeBackground, ComposePlacedObject } from './composeExport'
-import type { AtlasManifest, CatRecord, FilterState, GridArtMode, GridSize, GridViewMode } from './types'
+import type {
+  AtlasManifest,
+  CatRecord,
+  CollectionInteractionMode,
+  FilterState,
+  GridArtMode,
+  GridSize,
+  GridViewMode,
+} from './types'
 
 const initialFilters: FilterState = {
   query: '',
@@ -136,6 +145,9 @@ export default function App() {
   const [showRings, setShowRings] = useState(true)
   const [showStars, setShowStars] = useState(false)
   const [showVignette, setShowVignette] = useState(true)
+  const [interactionMode, setInteractionMode] = useState<CollectionInteractionMode>('select')
+  const [inspectedCat, setInspectedCat] = useState<CatRecord | null>(null)
+  const inspectTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
   const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
   const [composePlacedObjects, setComposePlacedObjects] = useState<ComposePlacedObject[]>([])
@@ -193,6 +205,20 @@ export default function App() {
   }, [])
 
   const clearSelection = useCallback(() => setSelectedOrders(new Set()), [])
+
+  const inspectCat = useCallback((cat: CatRecord, trigger: HTMLButtonElement) => {
+    inspectTriggerRef.current = trigger
+    setInspectedCat(cat)
+  }, [])
+
+  const closeInspectedCat = useCallback(() => {
+    const trigger = inspectTriggerRef.current
+    inspectTriggerRef.current = null
+    setInspectedCat(null)
+    if (trigger?.isConnected) {
+      window.requestAnimationFrame(() => trigger.focus())
+    }
+  }, [])
 
   const updateComposeBackground = useCallback((next: ComposeBackground | null) => {
     setComposeBackground((current) => {
@@ -253,7 +279,28 @@ export default function App() {
           <div className="collection-panel__heading">
             <div className="collection-heading-tools">
               <div className="collection-view-controls">
-                  <div className="collection-control-group collection-control-group--layout">
+                <div className="collection-control-group collection-control-group--mode">
+                  <div className="grid-mode-toggle" role="group" aria-label="Mode">
+                    <span className="grid-mode-toggle__label">Mode</span>
+                    <button
+                      type="button"
+                      className={interactionMode === 'select' ? 'is-active' : ''}
+                      aria-pressed={interactionMode === 'select'}
+                      onClick={() => setInteractionMode('select')}
+                    >
+                      Select
+                    </button>
+                    <button
+                      type="button"
+                      className={interactionMode === 'inspect' ? 'is-active' : ''}
+                      aria-pressed={interactionMode === 'inspect'}
+                      onClick={() => setInteractionMode('inspect')}
+                    >
+                      Inspect
+                    </button>
+                  </div>
+                </div>
+                <div className="collection-control-group collection-control-group--layout">
                   <div className="grid-view-toggle" role="group" aria-label="Grid view">
                     <span className="grid-view-toggle__label">View</span>
                     <button
@@ -375,7 +422,9 @@ export default function App() {
             showStars={showStars}
             showVignette={showVignette}
             selectedOrders={selectedOrders}
+            interactionMode={interactionMode}
             onToggle={toggleSelection}
+            onInspect={inspectCat}
           />
         </section>
         <Palette
@@ -392,6 +441,11 @@ export default function App() {
           }}
         />
       </main>
+      <CatDetailsDialog
+        cat={inspectedCat}
+        manifest={manifest}
+        onClose={closeInspectedCat}
+      />
     </div>
   )
 }
