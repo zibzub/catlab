@@ -6,7 +6,6 @@ interface DisplayMenuProps {
   showRings: boolean
   showStars: boolean
   showVignette: boolean
-  onArtModeChange: (value: GridArtMode) => void
   onRingsChange: (value: boolean) => void
   onStarsChange: (value: boolean) => void
   onVignetteChange: (value: boolean) => void
@@ -17,7 +16,6 @@ export function DisplayMenu({
   showRings,
   showStars,
   showVignette,
-  onArtModeChange,
   onRingsChange,
   onStarsChange,
   onVignetteChange,
@@ -58,57 +56,35 @@ export function DisplayMenu({
     <div className="display-menu" ref={menuRef}>
       <button
         ref={triggerRef}
-        className={`collection-toolbar__button${open ? ' is-active' : ''}`}
+        className={`collection-toolbar__button display-menu__trigger display-menu__trigger--fx${open ? ' is-active' : ''}`}
         type="button"
         aria-expanded={open}
-        aria-controls="display-menu-panel"
+        aria-controls="fx-menu-panel"
         aria-haspopup="dialog"
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="collection-toolbar__button-icon" aria-hidden="true">☷</span>
-        <span>Display</span>
+        <span className="collection-toolbar__button-label">Fx</span>
         <span className="collection-toolbar__button-chevron" aria-hidden="true">⌄</span>
       </button>
       {open && (
         <div
           ref={panelRef}
           className="display-menu__panel"
-          id="display-menu-panel"
+          id="fx-menu-panel"
           role="dialog"
-          aria-label="Display options"
+          aria-label="Visual effects"
         >
           <div className="display-menu__header">
             <div>
-              <p className="eyebrow">Collection display</p>
-              <strong>Arrange the collection</strong>
+              <p className="eyebrow">Visual effects</p>
+              <strong>Tune the field</strong>
             </div>
             <button className="display-menu__close" type="button" onClick={() => closeMenu()}>
               <span aria-hidden="true">×</span>
-              <span className="sr-only">Close display options</span>
+              <span className="sr-only">Close Fx options</span>
             </button>
           </div>
           <div className="display-menu__body">
-            <div className="display-menu__group">
-              <span className="display-menu__label">Art</span>
-              <div className="grid-art-toggle" role="group" aria-label="Art">
-                <button
-                  type="button"
-                  className={artMode === 'bodies' ? 'is-active' : ''}
-                  aria-pressed={artMode === 'bodies'}
-                  onClick={() => onArtModeChange('bodies')}
-                >
-                  Full
-                </button>
-                <button
-                  type="button"
-                  className={artMode === 'faces' ? 'is-active' : ''}
-                  aria-pressed={artMode === 'faces'}
-                  onClick={() => onArtModeChange('faces')}
-                >
-                  Face
-                </button>
-              </div>
-            </div>
             <div className="display-menu__effects" aria-label="Grid effects">
               <button
                 type="button"

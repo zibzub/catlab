@@ -203,16 +203,28 @@ export function FilterBar({
               <span className="collection-toolbar__count">{selectedFilterCount}</span>
             )}
           </button>
-          <DisplayMenu
-            artMode={artMode}
-            showRings={showRings}
-            showStars={showStars}
-            showVignette={showVignette}
-            onArtModeChange={onArtModeChange}
-            onRingsChange={onRingsChange}
-            onStarsChange={onStarsChange}
-            onVignetteChange={onVignetteChange}
-          />
+          <div className="art-mode-toggle" role="group" aria-label="Art mode">
+            <button
+              type="button"
+              className={artMode === 'bodies' ? 'is-active' : ''}
+              aria-label="Full body art"
+              title="Full body art"
+              aria-pressed={artMode === 'bodies'}
+              onClick={() => onArtModeChange('bodies')}
+            >
+              <span className="art-mode-icon art-mode-icon--full" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={artMode === 'faces' ? 'is-active' : ''}
+              aria-label="Face art"
+              title="Face art"
+              aria-pressed={artMode === 'faces'}
+              onClick={() => onArtModeChange('faces')}
+            >
+              <span className="art-mode-icon art-mode-icon--face" aria-hidden="true" />
+            </button>
+          </div>
           <div className="quick-layout-toggle" role="group" aria-label="Quick collection layout">
             {(['small', 'medium', 'large'] as const).map((size) => {
               const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
@@ -258,6 +270,15 @@ export function FilterBar({
               </span>
             </button>
           </div>
+          <DisplayMenu
+            artMode={artMode}
+            showRings={showRings}
+            showStars={showStars}
+            showVignette={showVignette}
+            onRingsChange={onRingsChange}
+            onStarsChange={onStarsChange}
+            onVignetteChange={onVignetteChange}
+          />
         </div>
       </div>
 
