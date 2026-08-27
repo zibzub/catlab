@@ -2197,6 +2197,27 @@ h1 {
   outline-offset: 0;
 }
 
+.compose-text {
+  position: absolute;
+  display: block;
+  width: max-content;
+  max-width: none;
+  padding: 2px 6px;
+  cursor: move;
+  line-height: 1.1;
+  text-align: center;
+  transform-origin: center;
+  touch-action: none;
+  user-select: none;
+  white-space: pre-wrap;
+}
+
+.compose-text:focus,
+.compose-text:focus-visible {
+  outline: 0;
+  outline-offset: 0;
+}
+
 .compose-stage .moveable-control-box {
   --moveable-color: #a4a4ff;
   z-index: 50;
@@ -2434,6 +2455,58 @@ h1 {
   white-space: nowrap;
 }
 
+.compose-text-options {
+  margin-bottom: 12px;
+}
+
+.compose-text-field,
+.compose-color-field {
+  display: flex;
+  color: var(--muted);
+  font-size: 0.64rem;
+}
+
+.compose-text-field {
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 11px;
+}
+
+.compose-text-field textarea {
+  width: 100%;
+  min-height: 66px;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  color: var(--ink);
+  background: var(--control-surface-deep);
+  font: 0.7rem/1.3 ui-sans-serif, system-ui, sans-serif;
+}
+
+.compose-color-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 11px;
+}
+
+.compose-color-field {
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.compose-color-field input[type='color'] {
+  width: 36px;
+  height: 25px;
+  padding: 2px;
+  border: 1px solid var(--control-border);
+  border-radius: 5px;
+  background: var(--control-surface-deep);
+  cursor: pointer;
+}
+
 .compose-art-options,
 .compose-layer-actions {
   display: grid;
@@ -2452,6 +2525,7 @@ h1 {
 .compose-art-options button,
 .compose-layer-actions button,
 .compose-clear,
+.compose-add-text,
 .compose-remove {
   min-width: 0;
   height: 29px;
@@ -2466,7 +2540,8 @@ h1 {
 
 .compose-art-options button:hover,
 .compose-layer-actions button:hover,
-.compose-clear:hover:not(:disabled) {
+.compose-clear:hover:not(:disabled),
+.compose-add-text:hover {
   color: var(--ink);
   background: var(--control-surface);
 }
@@ -2543,8 +2618,13 @@ h1 {
 
 .compose-footer-actions {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
+}
+
+.compose-add-text {
+  height: 34px;
+  padding: 0 8px;
 }
 
 .compose-clear:disabled {

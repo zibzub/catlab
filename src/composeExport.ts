@@ -1,10 +1,8 @@
 import { assetPath } from './data'
 import type { AtlasManifest, CatRecord, GridArtMode } from './types'
 
-export interface ComposePlacedCat {
+interface ComposePlacedTransform {
   id: string
-  rescueOrder: number
-  artMode: GridArtMode
   x: number
   y: number
   scale: number
@@ -15,6 +13,24 @@ export interface ComposePlacedCat {
   z: number
 }
 
+export interface ComposePlacedCat extends ComposePlacedTransform {
+  kind: 'cat'
+  rescueOrder: number
+  artMode: GridArtMode
+}
+
+export interface ComposePlacedText extends ComposePlacedTransform {
+  kind: 'text'
+  text: string
+  fill: string
+  stroke: string
+  strokeWidth: number
+  fontSize: number
+  fontFamily: string
+}
+
+export type ComposePlacedObject = ComposePlacedCat | ComposePlacedText
+
 export interface ComposeBackground {
   url: string
   width: number
@@ -23,7 +39,7 @@ export interface ComposeBackground {
 }
 
 export interface ComposeExportOptions {
-  placedCats: ComposePlacedCat[]
+  placedObjects: ComposePlacedObject[]
   cats: CatRecord[]
   manifest: AtlasManifest
   background: ComposeBackground | null
@@ -77,7 +93,7 @@ function imageBlob(canvas: HTMLCanvasElement) {
 }
 
 export async function renderComposition({
-  placedCats,
+  placedObjects,
   cats,
   manifest,
   background,
@@ -98,36 +114,61 @@ export async function renderComposition({
   context.imageSmoothingEnabled = false
   const outputScale = dimensions.width / Math.max(1, stageWidth)
   const catsByOrder = new Map(cats.map((cat) => [cat.rescueOrder, cat]))
-  const ordered = [...placedCats].sort((a, b) => a.z - b.z)
+  const ordered = [...placedObjects].sort((a, b) => a.z - b.z)
 
   for (const placed of ordered) {
-    const cat = catsByOrder.get(placed.rescueOrder)
-    if (!cat) continue
-    const atlas = placed.artMode === 'faces' ? manifest.faceAtlas : manifest.atlas
-    const cell = cat.rescueOrder % atlas.catsPerAtlas
-    const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
-    const column = cell % atlas.columns
-    const row = Math.floor(cell / atlas.columns)
-    const image = await loadImage(atlasSheetPath(atlas, sheet))
-    const width = atlas.cellWidth * COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
-    const height = atlas.cellHeight * COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
-
     context.save()
     context.globalAlpha = Math.min(1, Math.max(0, placed.opacity))
     context.translate(placed.x * dimensions.width, placed.y * dimensions.height)
     context.rotate((placed.rotation * Math.PI) / 180)
-    context.scale(placed.flipX ? -1 : 1, placed.flipY ? -1 : 1)
-    context.drawImage(
-      image,
-      column * atlas.cellWidth,
-      row * atlas.cellHeight,
-      atlas.cellWidth,
-      atlas.cellHeight,
-      -width / 2,
-      -height / 2,
-      width,
-      height,
-    )
+    if (placed.kind === 'cat') {
+      const cat = catsByOrder.get(placed.rescueOrder)
+      if (!cat) {
+        context.restore()
+        continue
+      }
+      const atlas = placed.artMode === 'faces' ? manifest.faceAtlas : manifest.atlas
+      const cell = cat.rescueOrder % atlas.catsPerAtlas
+      const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
+      const column = cell % atlas.columns
+      const row = Math.floor(cell / atlas.columns)
+      const image = await loadImage(atlasSheetPath(atlas, sheet))
+      const width = atlas.cellWidth * COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
+      const height = atlas.cellHeight * COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
+
+      context.scale(placed.flipX ? -1 : 1, placed.flipY ? -1 : 1)
+      context.drawImage(
+        image,
+        column * atlas.cellWidth,
+        row * atlas.cellHeight,
+        atlas.cellWidth,
+        atlas.cellHeight,
+        -width / 2,
+        -height / 2,
+        width,
+        height,
+      )
+    } else {
+      context.scale(
+        (placed.flipX ? -1 : 1) * placed.scale * outputScale,
+        (placed.flipY ? -1 : 1) * placed.scale * outputScale,
+      )
+      context.font = `${placed.fontSize}px ${placed.fontFamily}`
+      context.textAlign = 'center'
+      context.textBaseline = 'middle'
+      context.lineJoin = 'round'
+      context.lineWidth = placed.strokeWidth
+      context.fillStyle = placed.fill
+      context.strokeStyle = placed.stroke
+      const lines = placed.text.split('\n')
+      const lineHeight = placed.fontSize * 1.1
+      const firstLineY = -((lines.length - 1) * lineHeight) / 2
+      lines.forEach((line, index) => {
+        const y = firstLineY + index * lineHeight
+        if (placed.strokeWidth > 0) context.strokeText(line, 0, y)
+        context.fillText(line, 0, y)
+      })
+    }
     context.restore()
   }
 
