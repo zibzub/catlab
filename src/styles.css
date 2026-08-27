@@ -5422,6 +5422,14 @@ h1 {
   z-index: 1;
 }
 
+.details-view-icon {
+  display: block;
+  width: 10px;
+  height: 16px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
 .list-view-icon {
   display: flex;
   width: 16px;

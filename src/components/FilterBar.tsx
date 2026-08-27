@@ -204,12 +204,10 @@ export function FilterBar({
             )}
           </button>
           <DisplayMenu
-            viewMode={viewMode}
             artMode={artMode}
             showRings={showRings}
             showStars={showStars}
             showVignette={showVignette}
-            onViewModeChange={onViewModeChange}
             onArtModeChange={onArtModeChange}
             onRingsChange={onRingsChange}
             onStarsChange={onStarsChange}
@@ -235,6 +233,16 @@ export function FilterBar({
                 </button>
               )
             })}
+            <button
+              type="button"
+              className={`quick-layout-toggle__details${viewMode === 'detailed' ? ' is-active' : ''}`}
+              aria-label="Details view"
+              title="Details view"
+              aria-pressed={viewMode === 'detailed'}
+              onClick={() => onViewModeChange('detailed')}
+            >
+              <span className="details-view-icon" aria-hidden="true" />
+            </button>
             <button
               type="button"
               className={`quick-layout-toggle__list${viewMode === 'list' ? ' is-active' : ''}`}

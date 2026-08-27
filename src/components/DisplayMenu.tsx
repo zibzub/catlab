@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GridArtMode, GridViewMode } from '../types'
+import type { GridArtMode } from '../types'
 
 interface DisplayMenuProps {
-  viewMode: GridViewMode
   artMode: GridArtMode
   showRings: boolean
   showStars: boolean
   showVignette: boolean
-  onViewModeChange: (value: GridViewMode) => void
   onArtModeChange: (value: GridArtMode) => void
   onRingsChange: (value: boolean) => void
   onStarsChange: (value: boolean) => void
@@ -15,12 +13,10 @@ interface DisplayMenuProps {
 }
 
 export function DisplayMenu({
-  viewMode,
   artMode,
   showRings,
   showStars,
   showVignette,
-  onViewModeChange,
   onArtModeChange,
   onRingsChange,
   onStarsChange,
@@ -92,35 +88,6 @@ export function DisplayMenu({
             </button>
           </div>
           <div className="display-menu__body">
-            <div className="display-menu__group">
-              <span className="display-menu__label">View</span>
-              <div className="grid-view-toggle" role="group" aria-label="Grid view">
-                <button
-                  type="button"
-                  className={viewMode === 'compact' ? 'is-active' : ''}
-                  aria-pressed={viewMode === 'compact'}
-                  onClick={() => onViewModeChange('compact')}
-                >
-                  Compact
-                </button>
-                <button
-                  type="button"
-                  className={viewMode === 'detailed' ? 'is-active' : ''}
-                  aria-pressed={viewMode === 'detailed'}
-                  onClick={() => onViewModeChange('detailed')}
-                >
-                  Details
-                </button>
-                <button
-                  type="button"
-                  className={viewMode === 'list' ? 'is-active' : ''}
-                  aria-pressed={viewMode === 'list'}
-                  onClick={() => onViewModeChange('list')}
-                >
-                  List
-                </button>
-              </div>
-            </div>
             <div className="display-menu__group">
               <span className="display-menu__label">Art</span>
               <div className="grid-art-toggle" role="group" aria-label="Art">
