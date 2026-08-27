@@ -1002,7 +1002,6 @@ h1 {
   text-align: left;
   transition:
     border-color 150ms ease,
-    background 150ms ease,
     transform 150ms ease,
     box-shadow 150ms ease;
 }
@@ -1107,7 +1106,7 @@ h1 {
 }
 
 .cat-tile--detailed:hover {
-  transform: none;
+  transform: translateY(-4px);
 }
 
 .cat-tile--compact .cat-art {
