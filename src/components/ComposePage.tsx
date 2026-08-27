@@ -17,6 +17,11 @@ interface ComposePageProps {
 const ART_SCALE: Record<GridArtMode, number> = { bodies: 3, faces: 4 }
 const EMPTY_STAGE_RATIO = 4 / 3
 const COMPOSE_TEXT_FONT = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+const COMPOSE_TEXT_FONTS = [
+  { label: 'System sans', value: COMPOSE_TEXT_FONT },
+  { label: 'System serif', value: 'ui-serif, Georgia, Cambria, "Times New Roman", serif' },
+  { label: 'Monospace', value: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' },
+] as const
 
 interface ComposeObjectToggleOptions {
   label: string
@@ -77,7 +82,9 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const stageRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
+  const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [editingTextId, setEditingTextId] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
   const [exportBusy, setExportBusy] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -93,6 +100,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       ) {
         return
       }
+      setEditingTextId(null)
       setSelectedId(null)
     }
 
@@ -104,6 +112,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     if (!selectedId) return
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (editingTextId) return
       const target = event.target
       if (
         target instanceof HTMLElement &&
@@ -149,7 +158,16 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [selectedId])
+  }, [editingTextId, selectedId])
+
+  useEffect(() => {
+    if (!editingTextId) return
+    window.requestAnimationFrame(() => {
+      const editor = inlineTextEditorRef.current
+      editor?.focus()
+      editor?.setSelectionRange(editor.value.length, editor.value.length)
+    })
+  }, [editingTextId])
 
   const selected = placedObjects.find((item) => item.id === selectedId) ?? null
   const selectedCat = selected?.kind === 'cat' ? cats.find((cat) => cat.rescueOrder === selected.rescueOrder) ?? null : null
@@ -226,6 +244,12 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   function updateSelected(update: Partial<ComposePlacedObject>) {
     if (!selectedId) return
     setPlacedObjects((current) => current.map((item) => (item.id === selectedId ? { ...item, ...update } as ComposePlacedObject : item)))
+    window.requestAnimationFrame(() => moveableRef.current?.updateRect())
+  }
+
+  function finishTextEditing() {
+    if (!editingTextId) return
+    setEditingTextId(null)
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
   }
 
@@ -420,6 +444,37 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                   WebkitTextStroke: `${item.strokeWidth}px ${item.stroke}`,
                   transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
                 } as CSSProperties
+                if (editingTextId === item.id) {
+                  return (
+                    <textarea
+                      ref={inlineTextEditorRef}
+                      className="compose-text compose-text-editor"
+                      key={item.id}
+                      aria-label="Edit text layer"
+                      data-compose-id={item.id}
+                      rows={Math.max(3, item.text.split('\n').length)}
+                      value={item.text}
+                      style={{
+                        ...textStyle,
+                        width: 'min(70vw, 420px)',
+                        maxWidth: 'calc(100vw - 48px)',
+                        minHeight: '100px',
+                        color: item.fill,
+                        paintOrder: 'normal',
+                        WebkitTextStroke: '0 transparent',
+                      }}
+                      onChange={(event) => updateSelected({ text: event.currentTarget.value })}
+                      onBlur={finishTextEditing}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          event.preventDefault()
+                          finishTextEditing()
+                        }
+                      }}
+                      onPointerDown={(event) => event.stopPropagation()}
+                    />
+                  )
+                }
                 return (
                   <div
                     className="compose-text"
@@ -431,6 +486,12 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                     style={textStyle}
                     onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
                     onClick={() => setSelectedId(item.id)}
+                    onDoubleClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      setSelectedId(item.id)
+                      setEditingTextId(item.id)
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault()
@@ -446,7 +507,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
             <Moveable
               ref={moveableRef}
               ables={[ComposeObjectToggleAble]}
-              target={selectedId ? `[data-compose-id="${selectedId}"]` : null}
+              target={selectedId && !editingTextId ? `[data-compose-id="${selectedId}"]` : null}
               container={stageRef.current}
               props={{
                 composeObjectToggle: selected?.kind === 'cat' ? {
@@ -572,14 +633,20 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                     <span>Text</span>
                     <textarea rows={3} value={selected.text} onChange={(event) => updateSelected({ text: event.currentTarget.value })} />
                   </label>
+                  <label className="compose-text-field">
+                    <span>Font family</span>
+                    <select value={selected.fontFamily} onChange={(event) => updateSelected({ fontFamily: event.currentTarget.value })}>
+                      {COMPOSE_TEXT_FONTS.map((font) => <option key={font.label} value={font.value}>{font.label}</option>)}
+                    </select>
+                  </label>
                   <div className="compose-color-options">
                     <label className="compose-color-field">
-                      <span>Fill</span>
                       <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
+                      <span>Fill</span>
                     </label>
                     <label className="compose-color-field">
-                      <span>Outline</span>
                       <input type="color" value={selected.stroke} onChange={(event) => updateSelected({ stroke: event.currentTarget.value })} />
+                      <span>Outline</span>
                     </label>
                   </div>
                   <label className="compose-range">
