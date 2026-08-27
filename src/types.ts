@@ -81,16 +81,15 @@ export interface AtlasManifest {
   }
 }
 
-export type SelectFilter = 'all' | string
-
 export interface FilterState {
   query: string
-  hueName: SelectFilter
-  pattern: SelectFilter
-  pose: SelectFilter
-  expression: SelectFilter
-  facing: SelectFilter
-  rescueYear: SelectFilter
-  pale: 'all' | 'pale' | 'not-pale'
-  genesis: 'all' | 'genesis' | 'not-genesis'
+  classifications: string[]
+  rescueYears: number[]
+  hueNames: string[]
+  pale: 'all' | 'pale' | 'normal'
+  patterns: string[]
+  poses: string[]
+  expressions: string[]
+  facings: string[]
+  naming: 'all' | 'named' | 'unnamed'
 }

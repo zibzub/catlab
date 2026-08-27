@@ -1,79 +1,126 @@
-import { useState } from 'react'
-import type { FilterState } from '../types'
-
-interface FilterOptions {
-  hueNames: string[]
-  patterns: string[]
-  poses: string[]
-  expressions: string[]
-  facings: string[]
-  rescueYears: number[]
-  hasGenesis: boolean
-}
+import { useEffect, useRef, useState } from 'react'
+import { activeFilterCount, getActiveFilterChips, type FilterIndex, type RemovableFilterKey } from './collectionFilters'
+import { DisplayMenu } from './DisplayMenu'
+import { FilterDrawer } from './FilterDrawer'
+import type {
+  CollectionInteractionMode,
+  FilterState,
+  GridArtMode,
+  GridSize,
+  GridViewMode,
+} from '../types'
 
 interface FilterBarProps {
   filters: FilterState
-  options: FilterOptions
+  filterIndex: FilterIndex
   resultCount: number
   totalCount: number
-  onChange: (key: keyof FilterState, value: string) => void
-  onClear: () => void
-}
-
-function titleCase(value: string) {
-  return value.replace(/\b\w/g, (character) => character.toUpperCase())
-}
-
-function SelectFilter({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: string
-  options: Array<{ value: string; label: string }>
-  onChange: (value: string) => void
-}) {
-  return (
-    <label className="filter-control">
-      <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
+  interactionMode: CollectionInteractionMode
+  viewMode: GridViewMode
+  artMode: GridArtMode
+  gridSize: GridSize
+  showRings: boolean
+  showStars: boolean
+  showVignette: boolean
+  onQueryChange: (query: string) => void
+  onApplyFilters: (filters: FilterState) => void
+  onClearFilters: () => void
+  onRemoveFilter: (key: RemovableFilterKey, value: string | number) => void
+  onInteractionModeChange: (mode: CollectionInteractionMode) => void
+  onViewModeChange: (mode: GridViewMode) => void
+  onArtModeChange: (mode: GridArtMode) => void
+  onGridSizeChange: (size: GridSize) => void
+  onRingsChange: (show: boolean) => void
+  onStarsChange: (show: boolean) => void
+  onVignetteChange: (show: boolean) => void
 }
 
 export function FilterBar({
   filters,
-  options,
+  filterIndex,
   resultCount,
   totalCount,
-  onChange,
-  onClear,
+  interactionMode,
+  viewMode,
+  artMode,
+  gridSize,
+  showRings,
+  showStars,
+  showVignette,
+  onQueryChange,
+  onApplyFilters,
+  onClearFilters,
+  onRemoveFilter,
+  onInteractionModeChange,
+  onViewModeChange,
+  onArtModeChange,
+  onGridSizeChange,
+  onRingsChange,
+  onStarsChange,
+  onVignetteChange,
 }: FilterBarProps) {
-  const [expanded, setExpanded] = useState(false)
-  const hasFilters = Object.values(filters).some((value) => value !== 'all' && value !== '')
-  const valueOptions = (values: string[]) => [
-    { value: 'all', label: 'All' },
-    ...values.map((value) => ({ value, label: titleCase(value) })),
-  ]
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [chipLimit, setChipLimit] = useState(4)
+  const filtersTriggerRef = useRef<HTMLButtonElement>(null)
+  const selectedFilterCount = activeFilterCount(filters)
+  const chips = getActiveFilterChips(filters)
+  const visibleChips = chips.slice(0, chipLimit)
+  const hiddenChipCount = Math.max(0, chips.length - visibleChips.length)
+
+  const toolbarRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const toolbar = toolbarRef.current
+    if (!toolbar) return
+
+    const updateChipLimit = (width: number) => {
+      setChipLimit(width <= 620 ? 2 : width <= 900 ? 1 : width <= 1180 ? 2 : 4)
+    }
+
+    updateChipLimit(toolbar.getBoundingClientRect().width)
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (entry) updateChipLimit(entry.contentRect.width)
+    })
+    observer.observe(toolbar)
+    return () => observer.disconnect()
+  }, [])
+
+  const closeFilters = () => {
+    setFiltersOpen(false)
+    window.requestAnimationFrame(() => filtersTriggerRef.current?.focus())
+  }
 
   return (
-    <div className={`filter-bar${expanded ? ' filter-bar--expanded' : ' filter-bar--collapsed'}`}>
-      <div className="filter-bar__topline">
+    <div className="collection-toolbar" ref={toolbarRef}>
+      <div className="collection-toolbar__row">
+        <div className="grid-mode-toggle" role="group" aria-label="Collection interaction mode">
+          <span className="grid-mode-toggle__label">Mode</span>
+          <button
+            type="button"
+            className={interactionMode === 'select' ? 'is-active' : ''}
+            aria-pressed={interactionMode === 'select'}
+            onClick={() => onInteractionModeChange('select')}
+          >
+            Select
+          </button>
+          <button
+            type="button"
+            className={interactionMode === 'inspect' ? 'is-active' : ''}
+            aria-pressed={interactionMode === 'inspect'}
+            onClick={() => onInteractionModeChange('inspect')}
+          >
+            Inspect
+          </button>
+        </div>
+
         <label className="search-control">
           <span className="sr-only">Search rescue order or cat ID</span>
-          <span className="search-control__icon">⌕</span>
+          <span className="search-control__icon" aria-hidden="true">⌕</span>
           <input
             type="search"
             value={filters.query}
-            onChange={(event) => onChange('query', event.target.value)}
+            onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Search rescue order or cat ID"
           />
           {filters.query && (
@@ -81,98 +128,94 @@ export function FilterBar({
               className="search-control__clear"
               type="button"
               aria-label="Clear search"
-              onClick={() => onChange('query', '')}
+              onClick={() => onQueryChange('')}
             >
               ×
             </button>
           )}
         </label>
-        <div className="result-count" aria-live="polite">
-          <strong>{resultCount.toLocaleString()}</strong>
-          <span>of {totalCount.toLocaleString()} cats</span>
-        </div>
-        <button
-          className="filters-toggle"
-          type="button"
-          aria-expanded={expanded}
-          aria-controls="filter-options"
-          onClick={() => setExpanded((current) => !current)}
-        >
-          <span>Filters</span>
-          <span aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
-        </button>
-        {hasFilters && <span className="filter-bar__active">Active</span>}
-      </div>
-      <div className="filter-bar__body" id="filter-options" hidden={!expanded}>
-        <div className="filter-bar__actions">
-          <button className="clear-filters" type="button" onClick={onClear} disabled={!hasFilters}>
-            Clear filters
-          </button>
-        </div>
-        <div className="filter-bar__controls">
-          <SelectFilter
-            label="Hue"
-            value={filters.hueName}
-            options={valueOptions(options.hueNames)}
-            onChange={(value) => onChange('hueName', value)}
-          />
-          <SelectFilter
-            label="Pattern"
-            value={filters.pattern}
-            options={valueOptions(options.patterns)}
-            onChange={(value) => onChange('pattern', value)}
-          />
-          <SelectFilter
-            label="Pose"
-            value={filters.pose}
-            options={valueOptions(options.poses)}
-            onChange={(value) => onChange('pose', value)}
-          />
-          <SelectFilter
-            label="Expression"
-            value={filters.expression}
-            options={valueOptions(options.expressions)}
-            onChange={(value) => onChange('expression', value)}
-          />
-          <SelectFilter
-            label="Facing"
-            value={filters.facing}
-            options={valueOptions(options.facings)}
-            onChange={(value) => onChange('facing', value)}
-          />
-          <SelectFilter
-            label="Year"
-            value={filters.rescueYear}
-            options={[
-              { value: 'all', label: 'All years' },
-              ...options.rescueYears.map((year) => ({ value: String(year), label: String(year) })),
-            ]}
-            onChange={(value) => onChange('rescueYear', value)}
-          />
-          <SelectFilter
-            label="Pale"
-            value={filters.pale}
-            options={[
-              { value: 'all', label: 'All tones' },
-              { value: 'pale', label: 'Pale only' },
-              { value: 'not-pale', label: 'Not pale' },
-            ]}
-            onChange={(value) => onChange('pale', value)}
-          />
-          {options.hasGenesis && (
-            <SelectFilter
-              label="Genesis"
-              value={filters.genesis}
-              options={[
-                { value: 'all', label: 'All cats' },
-                { value: 'genesis', label: 'Genesis only' },
-                { value: 'not-genesis', label: 'Not Genesis' },
-              ]}
-              onChange={(value) => onChange('genesis', value)}
-            />
+
+        <div className="collection-toolbar__secondary">
+          <div className="result-count" aria-live="polite">
+            <strong>{resultCount.toLocaleString()}</strong>
+            <span>of {totalCount.toLocaleString()} cats</span>
+          </div>
+          {chips.length > 0 && (
+            <div className="active-filter-row" aria-label="Active filters">
+              <div className="active-filter-row__chips">
+                {visibleChips.map((chip) => (
+                  <button
+                    key={`${chip.key}-${String(chip.value)}`}
+                    className="active-filter-chip"
+                    type="button"
+                    onClick={() => onRemoveFilter(chip.key, chip.value)}
+                    aria-label={`Remove ${chip.label} filter`}
+                  >
+                    <span>{chip.label}</span>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                ))}
+              </div>
+              {hiddenChipCount > 0 && (
+                <button
+                  className="active-filter-overflow"
+                  type="button"
+                  aria-label={`Show ${hiddenChipCount} more active filters`}
+                  aria-expanded={filtersOpen}
+                  aria-controls="filter-drawer"
+                  aria-haspopup="dialog"
+                  onClick={() => setFiltersOpen(true)}
+                >
+                  +{hiddenChipCount}
+                </button>
+              )}
+              <button className="active-filter-row__clear" type="button" onClick={onClearFilters}>
+                Clear
+              </button>
+            </div>
           )}
         </div>
+
+        <div className="collection-toolbar__actions">
+          <button
+            ref={filtersTriggerRef}
+            className={`collection-toolbar__button${filtersOpen || selectedFilterCount > 0 ? ' is-active' : ''}`}
+            type="button"
+            aria-expanded={filtersOpen}
+            aria-controls="filter-drawer"
+            aria-haspopup="dialog"
+            onClick={() => setFiltersOpen((current) => !current)}
+          >
+            <span className="collection-toolbar__button-icon" aria-hidden="true">≡</span>
+            <span>Filters</span>
+            {selectedFilterCount > 0 && (
+              <span className="collection-toolbar__count">{selectedFilterCount}</span>
+            )}
+          </button>
+          <DisplayMenu
+            viewMode={viewMode}
+            artMode={artMode}
+            gridSize={gridSize}
+            showRings={showRings}
+            showStars={showStars}
+            showVignette={showVignette}
+            onViewModeChange={onViewModeChange}
+            onArtModeChange={onArtModeChange}
+            onGridSizeChange={onGridSizeChange}
+            onRingsChange={onRingsChange}
+            onStarsChange={onStarsChange}
+            onVignetteChange={onVignetteChange}
+          />
+        </div>
       </div>
+
+      <FilterDrawer
+        open={filtersOpen}
+        activeFilters={filters}
+        index={filterIndex}
+        onApply={onApplyFilters}
+        onClose={closeFilters}
+      />
     </div>
   )
 }

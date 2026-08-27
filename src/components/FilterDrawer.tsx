@@ -1,0 +1,429 @@
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  activeFilterCount,
+  CLASSIFICATION_FILTER_OPTIONS,
+  cloneFilterState,
+  createEmptyFilterState,
+  type FilterIndex,
+} from './collectionFilters'
+import type { FilterState } from '../types'
+
+interface FilterDrawerProps {
+  open: boolean
+  activeFilters: FilterState
+  index: FilterIndex
+  onApply: (filters: FilterState) => void
+  onClose: () => void
+}
+
+type FilterSectionKey = 'classification' | 'rescue' | 'coat' | 'traits' | 'naming'
+
+function toggleValue<T>(values: T[], value: T) {
+  return values.includes(value)
+    ? values.filter((item) => item !== value)
+    : [...values, value]
+}
+
+function FilterOption({
+  label,
+  count,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string
+  count: number
+  checked: boolean
+  onChange: () => void
+  disabled?: boolean
+}) {
+  return (
+    <label className={`filter-drawer__option${checked ? ' is-selected' : ''}${disabled ? ' is-disabled' : ''}`}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={onChange} />
+      <span className="filter-drawer__checkbox" aria-hidden="true" />
+      <span className="filter-drawer__option-label">{label}</span>
+      <span className="filter-drawer__option-count">{count.toLocaleString()}</span>
+    </label>
+  )
+}
+
+function RadioOption({
+  name,
+  value,
+  label,
+  count,
+  checked,
+  onChange,
+}: {
+  name: string
+  value: string
+  label: string
+  count: number
+  checked: boolean
+  onChange: () => void
+}) {
+  return (
+    <label className={`filter-drawer__option${checked ? ' is-selected' : ''}`}>
+      <input type="radio" name={name} value={value} checked={checked} onChange={onChange} />
+      <span className="filter-drawer__radio" aria-hidden="true" />
+      <span className="filter-drawer__option-label">{label}</span>
+      <span className="filter-drawer__option-count">{count.toLocaleString()}</span>
+    </label>
+  )
+}
+
+function FilterAccordionSection({
+  id,
+  title,
+  selectedCount,
+  open,
+  onToggle,
+  children,
+}: {
+  id: FilterSectionKey
+  title: string
+  selectedCount: number
+  open: boolean
+  onToggle: () => void
+  children: ReactNode
+}) {
+  const bodyId = `filter-drawer-section-${id}`
+  return (
+    <section className={`filter-drawer__section${open ? ' is-open' : ''}`}>
+      <h3 className="filter-drawer__section-heading">
+        <button
+          className="filter-drawer__section-toggle"
+          type="button"
+          aria-expanded={open}
+          aria-controls={bodyId}
+          onClick={onToggle}
+        >
+          <span>{title}</span>
+          {selectedCount > 0 && <span className="filter-drawer__section-count">{selectedCount}</span>}
+          <span className="filter-drawer__section-chevron" aria-hidden="true">{open ? '⌃' : '⌄'}</span>
+        </button>
+      </h3>
+      <div className="filter-drawer__section-body" id={bodyId} hidden={!open}>
+        {children}
+      </div>
+    </section>
+  )
+}
+
+export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: FilterDrawerProps) {
+  const [draft, setDraft] = useState<FilterState>(() => cloneFilterState(activeFilters))
+  const [hueSearch, setHueSearch] = useState('')
+  const [openSections, setOpenSections] = useState<Record<FilterSectionKey, boolean>>({
+    classification: true,
+    rescue: true,
+    coat: true,
+    traits: false,
+    naming: false,
+  })
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const wasOpenRef = useRef(false)
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      setDraft(cloneFilterState(activeFilters))
+      setHueSearch('')
+      window.requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }))
+    }
+    wasOpenRef.current = open
+  }, [activeFilters, open])
+
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose, open])
+
+  if (!open) return null
+
+  const draftCount = activeFilterCount(draft)
+  const filteredHues = index.options.hueNames.filter((hue) => (
+    hue.toLowerCase().includes(hueSearch.trim().toLowerCase())
+  ))
+  const classificationCount = draft.classifications.length
+  const rescueCount = draft.rescueYears.length
+  const coatCount = draft.hueNames.length + draft.patterns.length + (draft.pale === 'all' ? 0 : 1)
+  const traitsCount = draft.poses.length + draft.expressions.length + draft.facings.length
+  const namingCount = draft.naming === 'all' ? 0 : 1
+
+  const setSectionOpen = (section: FilterSectionKey) => {
+    setOpenSections((current) => ({ ...current, [section]: !current[section] }))
+  }
+
+  const clearDraft = () => {
+    setDraft({ ...createEmptyFilterState(), query: activeFilters.query })
+  }
+
+  const applyDraft = () => {
+    onApply({ ...cloneFilterState(draft), query: activeFilters.query })
+    onClose()
+  }
+
+  return (
+    <>
+      <button
+        className="filter-drawer__backdrop"
+        type="button"
+        aria-label="Close filters"
+        onClick={onClose}
+      />
+      <aside
+        className="filter-drawer"
+        id="filter-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="filter-drawer-title"
+      >
+        <div className="filter-drawer__header">
+          <div>
+            <p className="eyebrow">Collection filters</p>
+            <h2 id="filter-drawer-title">Filter MoonCats</h2>
+            <p className="filter-drawer__hint">OR within a filter · AND across filters</p>
+          </div>
+          <button ref={closeRef} className="filter-drawer__close" type="button" onClick={onClose}>
+            <span aria-hidden="true">×</span>
+            <span className="sr-only">Close filters</span>
+          </button>
+        </div>
+
+        <div className="filter-drawer__sections">
+          <FilterAccordionSection
+            id="classification"
+            title="Classification"
+            selectedCount={classificationCount}
+            open={openSections.classification}
+            onToggle={() => setSectionOpen('classification')}
+          >
+            <div className="filter-drawer__option-list">
+              {CLASSIFICATION_FILTER_OPTIONS.map((option) => {
+                const count = index.counts.classifications[option.value] ?? 0
+                return (
+                  <FilterOption
+                    key={option.value}
+                    label={option.label}
+                    count={count}
+                    checked={draft.classifications.includes(option.value)}
+                    disabled={count === 0}
+                    onChange={() => setDraft((current) => ({
+                      ...current,
+                      classifications: toggleValue(current.classifications, option.value),
+                    }))}
+                  />
+                )
+              })}
+            </div>
+          </FilterAccordionSection>
+
+          <FilterAccordionSection
+            id="rescue"
+            title="Rescue"
+            selectedCount={rescueCount}
+            open={openSections.rescue}
+            onToggle={() => setSectionOpen('rescue')}
+          >
+            <div className="filter-drawer__field">
+              <span className="filter-drawer__field-label">Rescue Year</span>
+              <div className="filter-drawer__option-list">
+                {index.options.rescueYears.map((year) => (
+                  <FilterOption
+                    key={year}
+                    label={String(year)}
+                    count={index.counts.rescueYears[String(year)] ?? 0}
+                    checked={draft.rescueYears.includes(year)}
+                    onChange={() => setDraft((current) => ({
+                      ...current,
+                      rescueYears: toggleValue(current.rescueYears, year),
+                    }))}
+                  />
+                ))}
+              </div>
+            </div>
+          </FilterAccordionSection>
+
+          <FilterAccordionSection
+            id="coat"
+            title="Coat"
+            selectedCount={coatCount}
+            open={openSections.coat}
+            onToggle={() => setSectionOpen('coat')}
+          >
+            <div className="filter-drawer__field">
+              <div className="filter-drawer__field-header">
+                <span className="filter-drawer__field-label">Hue Name</span>
+                <span className="filter-drawer__field-meta">{filteredHues.length} shown</span>
+              </div>
+              <label className="filter-drawer__inline-search">
+                <span className="sr-only">Search hue names</span>
+                <span aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  value={hueSearch}
+                  onChange={(event) => setHueSearch(event.target.value)}
+                  placeholder="Search hues"
+                />
+                {hueSearch && (
+                  <button
+                    type="button"
+                    aria-label="Clear hue search"
+                    onClick={() => setHueSearch('')}
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
+              <div className="filter-drawer__option-list filter-drawer__option-list--hues">
+                {filteredHues.map((hue) => (
+                  <FilterOption
+                    key={hue}
+                    label={hue.replace(/\b\w/g, (character) => character.toUpperCase())}
+                    count={index.counts.hueNames[hue] ?? 0}
+                    checked={draft.hueNames.includes(hue)}
+                    onChange={() => setDraft((current) => ({
+                      ...current,
+                      hueNames: toggleValue(current.hueNames, hue),
+                    }))}
+                  />
+                ))}
+                {filteredHues.length === 0 && <span className="filter-drawer__empty">No hues match.</span>}
+              </div>
+            </div>
+            <div className="filter-drawer__field">
+              <span className="filter-drawer__field-label">Pale / Normal</span>
+              <div className="filter-drawer__option-list">
+                <RadioOption
+                  name="coat-pale"
+                  value="all"
+                  label="All coats"
+                  count={index.totalCount}
+                  checked={draft.pale === 'all'}
+                  onChange={() => setDraft((current) => ({ ...current, pale: 'all' }))}
+                />
+                <RadioOption
+                  name="coat-pale"
+                  value="pale"
+                  label="Pale"
+                  count={index.counts.pale.pale}
+                  checked={draft.pale === 'pale'}
+                  onChange={() => setDraft((current) => ({ ...current, pale: 'pale' }))}
+                />
+                <RadioOption
+                  name="coat-pale"
+                  value="normal"
+                  label="Normal"
+                  count={index.counts.pale.normal}
+                  checked={draft.pale === 'normal'}
+                  onChange={() => setDraft((current) => ({ ...current, pale: 'normal' }))}
+                />
+              </div>
+            </div>
+            <div className="filter-drawer__field">
+              <span className="filter-drawer__field-label">Pattern</span>
+              <div className="filter-drawer__option-list">
+                {index.options.patterns.map((pattern) => (
+                  <FilterOption
+                    key={pattern}
+                    label={pattern.replace(/\b\w/g, (character) => character.toUpperCase())}
+                    count={index.counts.patterns[pattern] ?? 0}
+                    checked={draft.patterns.includes(pattern)}
+                    onChange={() => setDraft((current) => ({
+                      ...current,
+                      patterns: toggleValue(current.patterns, pattern),
+                    }))}
+                  />
+                ))}
+              </div>
+            </div>
+          </FilterAccordionSection>
+
+          <FilterAccordionSection
+            id="traits"
+            title="Traits"
+            selectedCount={traitsCount}
+            open={openSections.traits}
+            onToggle={() => setSectionOpen('traits')}
+          >
+            {([
+              ['Pose', 'poses', index.options.poses, index.counts.poses],
+              ['Expression', 'expressions', index.options.expressions, index.counts.expressions],
+              ['Facing', 'facings', index.options.facings, index.counts.facings],
+            ] as const).map(([label, key, values, counts]) => (
+              <div className="filter-drawer__field" key={key}>
+                <span className="filter-drawer__field-label">{label}</span>
+                <div className="filter-drawer__option-list">
+                  {values.map((value) => (
+                    <FilterOption
+                      key={value}
+                      label={value.replace(/\b\w/g, (character) => character.toUpperCase())}
+                      count={counts[value] ?? 0}
+                      checked={draft[key].includes(value)}
+                      onChange={() => setDraft((current) => ({
+                        ...current,
+                        [key]: toggleValue(current[key], value),
+                      }))}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </FilterAccordionSection>
+
+          <FilterAccordionSection
+            id="naming"
+            title="Naming"
+            selectedCount={namingCount}
+            open={openSections.naming}
+            onToggle={() => setSectionOpen('naming')}
+          >
+            <div className="filter-drawer__option-list">
+              <RadioOption
+                name="naming"
+                value="all"
+                label="All cats"
+                count={index.totalCount}
+                checked={draft.naming === 'all'}
+                onChange={() => setDraft((current) => ({ ...current, naming: 'all' }))}
+              />
+              <RadioOption
+                name="naming"
+                value="named"
+                label="Named"
+                count={index.counts.naming.named}
+                checked={draft.naming === 'named'}
+                onChange={() => setDraft((current) => ({ ...current, naming: 'named' }))}
+              />
+              <RadioOption
+                name="naming"
+                value="unnamed"
+                label="Unnamed"
+                count={index.counts.naming.unnamed}
+                checked={draft.naming === 'unnamed'}
+                onChange={() => setDraft((current) => ({ ...current, naming: 'unnamed' }))}
+              />
+            </div>
+          </FilterAccordionSection>
+        </div>
+
+        <div className="filter-drawer__footer">
+          <button className="filter-drawer__clear" type="button" onClick={clearDraft} disabled={draftCount === 0}>
+            Clear all
+          </button>
+          <div className="filter-drawer__footer-actions">
+            <button className="filter-drawer__cancel" type="button" onClick={onClose}>Cancel</button>
+            <button className="filter-drawer__apply" type="button" onClick={applyDraft}>
+              Apply{draftCount > 0 ? ` (${draftCount})` : ''}
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+}

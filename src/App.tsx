@@ -3,8 +3,21 @@ import { CatDetailsDialog } from './components/CatDetailsDialog'
 import { CatGrid } from './components/CatGrid'
 import { ComposePage } from './components/ComposePage'
 import { FilterBar } from './components/FilterBar'
+import {
+  buildFilterIndex,
+  createEmptyFilterState,
+  matchesFilters,
+  removeFilterValue,
+  type RemovableFilterKey,
+} from './components/collectionFilters'
 import { Palette } from './components/Palette'
 import { loadGeneratedData } from './data'
+import {
+  loadMoonCatClassifications,
+  loadMoonCatNames,
+  type MoonCatClassifications,
+  type MoonCatNames,
+} from './mooncatDetails'
 import type { ComposeBackground, ComposePlacedObject } from './composeExport'
 import type {
   AtlasManifest,
@@ -15,18 +28,6 @@ import type {
   GridSize,
   GridViewMode,
 } from './types'
-
-const initialFilters: FilterState = {
-  query: '',
-  hueName: 'all',
-  pattern: 'all',
-  pose: 'all',
-  expression: 'all',
-  facing: 'all',
-  rescueYear: 'all',
-  pale: 'all',
-  genesis: 'all',
-}
 
 function AppHeader({
   catalogCount,
@@ -97,47 +98,13 @@ function LoadingState({ message, error = false }: { message: string; error?: boo
   )
 }
 
-function filterOptions(cats: CatRecord[]) {
-  const values = (field: keyof CatRecord) =>
-    [...new Set(cats.map((cat) => String(cat[field])))].sort((a, b) => a.localeCompare(b))
-  return {
-    hueNames: values('hueName'),
-    patterns: values('pattern'),
-    poses: values('pose'),
-    expressions: values('expression'),
-    facings: values('facing'),
-    rescueYears: [...new Set(cats.map((cat) => cat.rescueYear))].sort((a, b) => a - b),
-    hasGenesis: cats.some((cat) => cat.genesis),
-  }
-}
-
-function matchesFilters(cat: CatRecord, filters: FilterState) {
-  const query = filters.query.trim().toLowerCase()
-  if (
-    query &&
-    !String(cat.rescueOrder).includes(query) &&
-    !cat.catId.toLowerCase().includes(query)
-  ) {
-    return false
-  }
-  if (filters.hueName !== 'all' && cat.hueName !== filters.hueName) return false
-  if (filters.pattern !== 'all' && cat.pattern !== filters.pattern) return false
-  if (filters.pose !== 'all' && cat.pose !== filters.pose) return false
-  if (filters.expression !== 'all' && cat.expression !== filters.expression) return false
-  if (filters.facing !== 'all' && cat.facing !== filters.facing) return false
-  if (filters.rescueYear !== 'all' && cat.rescueYear !== Number(filters.rescueYear)) return false
-  if (filters.pale === 'pale' && !cat.pale) return false
-  if (filters.pale === 'not-pale' && cat.pale) return false
-  if (filters.genesis === 'genesis' && !cat.genesis) return false
-  if (filters.genesis === 'not-genesis' && cat.genesis) return false
-  return true
-}
-
 export default function App() {
   const [cats, setCats] = useState<CatRecord[] | null>(null)
   const [manifest, setManifest] = useState<AtlasManifest | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<FilterState>(initialFilters)
+  const [filters, setFilters] = useState<FilterState>(createEmptyFilterState)
+  const [names, setNames] = useState<MoonCatNames>({})
+  const [classifications, setClassifications] = useState<MoonCatClassifications | null>(null)
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(() => new Set())
   const [viewMode, setViewMode] = useState<GridViewMode>('compact')
   const [artMode, setArtMode] = useState<GridArtMode>('bodies')
@@ -170,21 +137,51 @@ export default function App() {
     }
   }, [])
 
-  const options = useMemo(() => filterOptions(cats ?? []), [cats])
+  useEffect(() => {
+    let active = true
+    loadMoonCatNames().then((loadedNames) => {
+      if (active) setNames(loadedNames)
+    })
+    loadMoonCatClassifications()
+      .then((loadedClassifications) => {
+        if (active) setClassifications(loadedClassifications)
+      })
+      .catch(() => {
+        if (active) setClassifications(null)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const filterIndex = useMemo(
+    () => buildFilterIndex(cats ?? [], names, classifications),
+    [cats, classifications, names],
+  )
   const filteredCats = useMemo(
-    () => (cats ?? []).filter((cat) => matchesFilters(cat, filters)),
-    [cats, filters],
+    () => (cats ?? []).filter((cat) => matchesFilters(cat, filters, filterIndex)),
+    [cats, filterIndex, filters],
   )
   const selectedCats = useMemo(
     () => (cats ?? []).filter((cat) => selectedOrders.has(cat.rescueOrder)),
     [cats, selectedOrders],
   )
 
-  const updateFilter = useCallback((key: keyof FilterState, value: string) => {
-    setFilters((current) => ({ ...current, [key]: value }))
+  const updateQuery = useCallback((query: string) => {
+    setFilters((current) => ({ ...current, query }))
   }, [])
 
-  const clearFilters = useCallback(() => setFilters(initialFilters), [])
+  const applyFilters = useCallback((nextFilters: FilterState) => {
+    setFilters((current) => ({ ...nextFilters, query: current.query }))
+  }, [])
+
+  const clearFilters = useCallback(() => {
+    setFilters((current) => ({ ...createEmptyFilterState(), query: current.query }))
+  }, [])
+
+  const removeFilter = useCallback((key: RemovableFilterKey, value: string | number) => {
+    setFilters((current) => removeFilterValue(current, key, value))
+  }, [])
 
   const toggleSelection = useCallback((rescueOrder: number) => {
     setSelectedOrders((current) => {
@@ -277,141 +274,31 @@ export default function App() {
       <main className="workspace">
         <section className="collection-panel" aria-label="MoonCat collection">
           <div className="collection-panel__heading">
-            <div className="collection-heading-tools">
-              <div className="collection-view-controls">
-                <div className="collection-control-group collection-control-group--mode">
-                  <div className="grid-mode-toggle" role="group" aria-label="Mode">
-                    <span className="grid-mode-toggle__label">Mode</span>
-                    <button
-                      type="button"
-                      className={interactionMode === 'select' ? 'is-active' : ''}
-                      aria-pressed={interactionMode === 'select'}
-                      onClick={() => setInteractionMode('select')}
-                    >
-                      Select
-                    </button>
-                    <button
-                      type="button"
-                      className={interactionMode === 'inspect' ? 'is-active' : ''}
-                      aria-pressed={interactionMode === 'inspect'}
-                      onClick={() => setInteractionMode('inspect')}
-                    >
-                      Inspect
-                    </button>
-                  </div>
-                </div>
-                <div className="collection-control-group collection-control-group--layout">
-                  <div className="grid-view-toggle" role="group" aria-label="Grid view">
-                    <span className="grid-view-toggle__label">View</span>
-                    <button
-                      type="button"
-                      className={viewMode === 'compact' ? 'is-active' : ''}
-                      aria-pressed={viewMode === 'compact'}
-                      onClick={() => setViewMode('compact')}
-                    >
-                      Compact
-                    </button>
-                    <button
-                      type="button"
-                      className={viewMode === 'detailed' ? 'is-active' : ''}
-                      aria-pressed={viewMode === 'detailed'}
-                      onClick={() => setViewMode('detailed')}
-                    >
-                      Details
-                    </button>
-                  </div>
-                  <div className="grid-art-toggle" role="group" aria-label="Art">
-                    <span className="grid-art-toggle__label">Art</span>
-                    <button
-                      type="button"
-                      className={artMode === 'bodies' ? 'is-active' : ''}
-                      aria-pressed={artMode === 'bodies'}
-                      onClick={() => setArtMode('bodies')}
-                    >
-                      Full
-                    </button>
-                    <button
-                      type="button"
-                      className={artMode === 'faces' ? 'is-active' : ''}
-                      aria-pressed={artMode === 'faces'}
-                      onClick={() => setArtMode('faces')}
-                    >
-                      Face
-                    </button>
-                  </div>
-                  <div className="grid-size-toggle" role="group" aria-label="Grid size">
-                    {(['small', 'medium', 'large'] as const).map((size) => {
-                      const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
-                      const label = size[0].toUpperCase() + size.slice(1)
-                      return (
-                        <button
-                          key={size}
-                          type="button"
-                          className={gridSize === size ? 'is-active' : ''}
-                          aria-label={`${label} cats`}
-                          title={`${label} cats`}
-                          aria-pressed={gridSize === size}
-                          onClick={() => setGridSize(size)}
-                        >
-                          <span className={`grid-size-icon grid-size-icon--${size}`} aria-hidden="true">
-                            {Array.from({ length: cellCount }, (_, index) => (
-                              <span key={index} />
-                            ))}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div className="collection-control-group collection-control-group--effects">
-                  <button
-                    type="button"
-                    className={`rings-toggle${showRings && artMode === 'bodies' ? ' is-active' : ''}`}
-                    aria-pressed={showRings && artMode === 'bodies'}
-                    aria-disabled={artMode === 'faces'}
-                    disabled={artMode === 'faces'}
-                    title={artMode === 'faces' ? 'AC rings are available for Full only' : undefined}
-                    onClick={() => setShowRings((current) => !current)}
-                  >
-                    <span className="rings-toggle__icon" aria-hidden="true">
-                      ◉
-                    </span>
-                    AC rings
-                  </button>
-                  <button
-                    type="button"
-                    className={`rings-toggle${showStars ? ' is-active' : ''}`}
-                    aria-pressed={showStars}
-                    onClick={() => setShowStars((current) => !current)}
-                  >
-                    <span className="rings-toggle__icon" aria-hidden="true">
-                      ✦
-                    </span>
-                    Stars
-                  </button>
-                  <button
-                    type="button"
-                    className={`rings-toggle${showVignette ? ' is-active' : ''}`}
-                    aria-pressed={showVignette}
-                    onClick={() => setShowVignette((current) => !current)}
-                  >
-                    <span className="rings-toggle__icon" aria-hidden="true">
-                      ◌
-                    </span>
-                    Vignette
-                  </button>
-                </div>
-              </div>
-            </div>
+            <FilterBar
+              filters={filters}
+              filterIndex={filterIndex}
+              resultCount={filteredCats.length}
+              totalCount={cats.length}
+              interactionMode={interactionMode}
+              viewMode={viewMode}
+              artMode={artMode}
+              gridSize={gridSize}
+              showRings={showRings}
+              showStars={showStars}
+              showVignette={showVignette}
+              onQueryChange={updateQuery}
+              onApplyFilters={applyFilters}
+              onClearFilters={clearFilters}
+              onRemoveFilter={removeFilter}
+              onInteractionModeChange={setInteractionMode}
+              onViewModeChange={setViewMode}
+              onArtModeChange={setArtMode}
+              onGridSizeChange={setGridSize}
+              onRingsChange={setShowRings}
+              onStarsChange={setShowStars}
+              onVignetteChange={setShowVignette}
+            />
           </div>
-          <FilterBar
-            filters={filters}
-            options={options}
-            resultCount={filteredCats.length}
-            totalCount={cats.length}
-            onChange={updateFilter}
-            onClear={clearFilters}
-          />
           <CatGrid
             cats={filteredCats}
             manifest={manifest}
