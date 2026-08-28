@@ -243,6 +243,7 @@ export default function App() {
 
   const clearFilters = useCallback(() => {
     setFilters((current) => ({ ...createEmptyFilterState(), query: current.query }))
+    setColorLabSample(null)
   }, [])
 
   const removeFilter = useCallback((key: RemovableFilterKey, value: string | number) => {
@@ -358,6 +359,7 @@ export default function App() {
               showStars={showStars}
               showVignette={showVignette}
               colorLabOpen={colorLabOpen}
+              colorLabActive={colorLabMatchingOrders !== null}
               onQueryChange={updateQuery}
               onApplyFilters={applyFilters}
               onClearFilters={clearFilters}

@@ -3870,6 +3870,22 @@ h1 {
   background: rgba(102, 102, 246, 0.25);
 }
 
+.active-filter-indicator {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 25px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid rgba(129, 129, 255, 0.34);
+  border-left-color: rgba(129, 129, 255, 0.72);
+  border-radius: 999px;
+  color: #dedeff;
+  background: rgba(102, 102, 246, 0.13);
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .active-filter-row__clear {
   flex: 0 0 auto;
   min-height: 27px;
@@ -4868,7 +4884,8 @@ h1 {
 }
 
 .active-filter-chip span:last-child,
-.active-filter-overflow {
+.active-filter-overflow,
+.active-filter-indicator {
   color: var(--console-purple-bright);
 }
 
@@ -6647,25 +6664,49 @@ h1 {
   background: linear-gradient(100deg, rgba(112, 113, 246, 0.08), transparent 48%);
 }
 
-.colorlab-panel__header .eyebrow {
-  margin-bottom: 5px;
-  color: var(--console-purple-bright, var(--accent-bright));
-  font-family: var(--console-micro-font, ui-monospace, monospace);
-  font-size: 0.56rem;
-  letter-spacing: 0.1em;
+.colorlab-panel__header-copy {
+  min-width: 0;
+}
+
+.colorlab-panel__header-meta {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.colorlab-panel__mobile-summary {
+  display: none;
 }
 
 .colorlab-panel__header h2 {
   margin-bottom: 5px;
   color: var(--console-ink, var(--ink));
-  font-size: 1.06rem;
-  letter-spacing: -0.025em;
+  font-size: 1.42rem;
+  letter-spacing: -0.045em;
+  background: linear-gradient(100deg, var(--console-purple-bright, var(--accent-bright)), #d1a9ff 52%, #91d7cf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--console-purple-bright, var(--accent-bright));
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .colorlab-panel__header h2 {
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 .colorlab-panel__header p:last-child {
   margin-bottom: 0;
   color: var(--console-muted, var(--muted));
   font-size: 0.7rem;
+}
+
+.colorlab-panel__mobile-status {
+  display: none;
 }
 
 .colorlab-panel__signal {
@@ -6701,26 +6742,33 @@ h1 {
   padding: 13px;
 }
 
+.colorlab-sampler__layout {
+  display: grid;
+  grid-template-columns: minmax(82px, 112px) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
 .colorlab-sampler__controls {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
 }
 
 .colorlab-source-options {
-  display: flex;
+  display: grid;
   min-width: 0;
-  flex-wrap: wrap;
+  grid-template-columns: 1fr;
   gap: 7px;
 }
 
 .colorlab-source {
   display: grid;
-  width: 86px;
+  width: 100%;
   min-width: 0;
-  height: 61px;
+  height: 66px;
   grid-template-rows: 42px auto;
   gap: 3px;
   overflow: hidden;
@@ -6793,6 +6841,25 @@ h1 {
   white-space: nowrap;
 }
 
+.colorlab-sampler__clear {
+  min-height: 31px;
+  padding: 0 7px;
+  border: 1px solid rgba(153, 154, 255, 0.72);
+  border-radius: var(--console-radius-small, 4px);
+  color: var(--console-ink, var(--ink));
+  background: var(--console-purple-soft, var(--accent-soft));
+  cursor: pointer;
+  font-family: var(--console-micro-font, ui-monospace, monospace);
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.colorlab-sampler__clear:hover {
+  border-color: rgba(153, 154, 255, 0.96);
+  background: var(--console-purple, var(--accent));
+}
+
 .colorlab-upload:hover {
   border-color: rgba(153, 154, 255, 0.78);
   background: var(--console-purple-soft, var(--accent-soft));
@@ -6813,7 +6880,7 @@ h1 {
 .colorlab-canvas-wrap {
   position: relative;
   display: grid;
-  min-height: 194px;
+  min-height: 250px;
   place-items: center;
   overflow: hidden;
   padding: 8px;
@@ -6829,7 +6896,7 @@ h1 {
   display: block;
   width: auto;
   max-width: 100%;
-  max-height: min(34vh, 300px);
+  max-height: min(54vh, 520px);
   height: auto;
   cursor: crosshair;
   image-rendering: auto;
@@ -6869,14 +6936,6 @@ h1 {
 
 .colorlab-result__header {
   margin-bottom: 14px;
-}
-
-.colorlab-result__header .eyebrow {
-  margin-bottom: 5px;
-  color: var(--console-purple-bright, var(--accent-bright));
-  font-family: var(--console-micro-font, ui-monospace, monospace);
-  font-size: 0.55rem;
-  letter-spacing: 0.1em;
 }
 
 .colorlab-result h3 {
@@ -6954,23 +7013,6 @@ h1 {
   text-align: right;
 }
 
-.colorlab-result__clear {
-  width: 100%;
-  min-height: 31px;
-  border: 1px solid var(--console-divider-strong, var(--control-border));
-  border-radius: var(--console-radius-small, 4px);
-  color: var(--console-muted, var(--muted));
-  background: var(--console-surface, var(--panel));
-  font-family: var(--console-micro-font, ui-monospace, monospace);
-  font-size: 0.57rem;
-}
-
-.colorlab-result__clear:hover {
-  border-color: rgba(153, 154, 255, 0.78);
-  color: var(--console-ink, var(--ink));
-  background: var(--console-purple-soft, var(--accent-soft));
-}
-
 .colorlab-result__empty {
   display: grid;
   min-height: 116px;
@@ -7004,11 +7046,62 @@ h1 {
 @media (max-width: 900px) {
   .colorlab-panel__body {
     grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .colorlab-sampler,
+  .colorlab-sampler__layout {
+    display: contents;
+  }
+
+  .colorlab-sampler__controls {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    align-content: start;
+    padding: 13px;
+  }
+
+  .colorlab-source-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .colorlab-source {
+    height: 61px;
+  }
+
+  .colorlab-sampler__visual {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    min-width: 0;
+    padding: 0 13px 13px;
+  }
+
+  .colorlab-sampler__status {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    margin: 0 14px 10px;
   }
 
   .colorlab-result {
-    border-top: 1px solid var(--console-divider, var(--line));
+    grid-column: 1;
+    grid-row: 2;
+    border-top: 0;
     border-left: 0;
+  }
+
+  .colorlab-result__empty {
+    min-height: 0;
+    padding: 9px 11px;
+    text-align: left;
+  }
+
+  .colorlab-result__empty-mark {
+    display: none;
+  }
+
+  .colorlab-result__hint {
+    margin-top: 8px;
   }
 
   .colorlab-canvas {
@@ -7018,16 +7111,83 @@ h1 {
 
 @media (max-width: 620px) {
   .colorlab-panel__header {
-    display: block;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
   }
 
   .colorlab-panel__signal {
-    margin-top: 10px;
+    margin-top: 0;
+  }
+
+  .colorlab-panel__mobile-summary {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .colorlab-panel__mobile-swatch {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border: 1px solid rgba(238, 242, 245, 0.66);
+    border-radius: var(--console-radius-small, 4px);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .colorlab-panel__mobile-summary-copy {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+    color: var(--console-muted, var(--muted));
+    font-family: var(--console-micro-font, ui-monospace, monospace);
+    font-size: 0.54rem;
+    line-height: 1.25;
+    text-align: right;
+  }
+
+  .colorlab-panel__mobile-summary-copy strong,
+  .colorlab-panel__mobile-summary-copy span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .colorlab-panel__mobile-summary-copy strong {
+    color: var(--console-ink, var(--ink));
+    font-size: 0.6rem;
+  }
+
+  .colorlab-result {
+    display: none;
+  }
+
+  .colorlab-panel__body {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .colorlab-sampler,
+  .colorlab-sampler__layout {
+    display: contents;
+  }
+
+  .colorlab-sampler {
+    padding: 0;
+  }
+
+  .colorlab-result {
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .colorlab-sampler__controls {
+    grid-column: 1;
+    grid-row: 1;
     display: grid;
     align-items: stretch;
+    padding: 13px;
   }
 
   .colorlab-source-options {
@@ -7045,5 +7205,40 @@ h1 {
 
   .colorlab-canvas-wrap {
     min-height: 160px;
+  }
+
+  .colorlab-sampler__visual {
+    grid-column: 1;
+    grid-row: 3;
+    padding: 0 13px;
+  }
+
+  .colorlab-panel__mobile-status {
+    display: block;
+    margin-top: 5px;
+    color: var(--console-faint, var(--faint));
+    font-family: var(--console-micro-font, ui-monospace, monospace);
+    font-size: 0.56rem;
+    line-height: 1.35;
+  }
+
+  .colorlab-sampler__status {
+    display: none;
+  }
+
+  .colorlab-result {
+    border-top: 1px solid var(--console-divider, var(--line));
+    border-left: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .colorlab-panel__header {
+    display: block;
+  }
+
+  .colorlab-panel__header-meta {
+    margin-top: 10px;
+    align-items: flex-end;
   }
 }

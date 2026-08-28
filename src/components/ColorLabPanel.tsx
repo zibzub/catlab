@@ -160,7 +160,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
       selectedSample = findValidNearbySample(ctx, canvas.width, canvas.height, x, y)
     }
     if (!selectedSample) {
-      setStatus('That point is not a readable MoonCat coat color. Try the main body, away from outlines and shadows.')
+      setStatus('That point is not a readable MoonCat color. Try another point.')
       return
     }
 
@@ -197,68 +197,86 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
       hidden={!open}
     >
       <div className="colorlab-panel__header">
-        <div>
-          <p className="eyebrow">Collection tool / ColorLab</p>
-          <h2 id="colorlab-panel-title">Sample a MoonCat coat</h2>
-          <p>Choose a reference image, then click or tap the body color to narrow the Collection.</p>
+        <div className="colorlab-panel__header-copy">
+          <h2 id="colorlab-panel-title">ColorLab</h2>
+          <p>
+            Sample a color to narrow the collection
+            <span className="colorlab-panel__mobile-status" role="status">{status}</span>
+          </p>
         </div>
-        <div className="colorlab-panel__signal" aria-live="polite">
-          <span className="colorlab-panel__signal-dot" aria-hidden="true" />
-          <span>{match ? `Hue ${match.hueInt}` : 'Sampler ready'}</span>
+        <div className="colorlab-panel__header-meta">
+          {sample && (
+            <div className="colorlab-panel__mobile-summary" aria-live="polite" aria-label="Sampled color summary">
+              <span className="colorlab-panel__mobile-swatch" style={{ backgroundColor: sample.hex }} aria-hidden="true" />
+              <span className="colorlab-panel__mobile-summary-copy">
+                <strong>{hueLabel ?? 'Color match'}</strong>
+                <span>{detectionLabel(sample)}</span>
+                <span>{matchingCount.toLocaleString()} matching cats</span>
+              </span>
+            </div>
+          )}
+          <div className="colorlab-panel__signal" aria-live="polite">
+            <span className="colorlab-panel__signal-dot" aria-hidden="true" />
+            <span>{match ? `Hue ${match.hueInt}` : 'Sampler ready'}</span>
+          </div>
         </div>
       </div>
 
       <div className="colorlab-panel__body">
         <div className="colorlab-sampler">
-          <div className="colorlab-sampler__controls">
-            <div className="colorlab-source-options" aria-label="ColorLab example images">
-              {COLORLAB_DEFAULTS.map((source) => (
+          <div className="colorlab-sampler__layout">
+            <div className="colorlab-sampler__controls">
+              <div className="colorlab-source-options" aria-label="ColorLab example images">
+                {COLORLAB_DEFAULTS.map((source) => (
+                  <button
+                    key={source.src}
+                    className={`colorlab-source${activeImageSlot === source.slot ? ' is-active' : ''}`}
+                    type="button"
+                    aria-label={`Load ${source.label}`}
+                    aria-pressed={activeImageSlot === source.slot}
+                    onClick={() => void loadImageSource(source.src, source.slot)}
+                  >
+                    <img src={source.src} alt="" />
+                    <span>{source.label}</span>
+                  </button>
+                ))}
                 <button
-                  key={source.src}
-                  className={`colorlab-source${activeImageSlot === source.slot ? ' is-active' : ''}`}
+                  className={`colorlab-source colorlab-source--custom${activeImageSlot === 'custom' ? ' is-active' : ''}`}
                   type="button"
-                  aria-label={`Load ${source.label}`}
-                  aria-pressed={activeImageSlot === source.slot}
-                  onClick={() => void loadImageSource(source.src, source.slot)}
+                  aria-label={customImageUrl ? 'Load uploaded image' : 'Choose uploaded image'}
+                  aria-pressed={activeImageSlot === 'custom'}
+                  onClick={handleCustomImageClick}
                 >
-                  <img src={source.src} alt="" />
-                  <span>{source.label}</span>
+                  {customImageUrl ? <img src={customImageUrl} alt="" /> : <span className="colorlab-source__plus" aria-hidden="true">+</span>}
+                  <span>{customImageUrl ? 'Uploaded' : 'Your image'}</span>
                 </button>
-              ))}
-              <button
-                className={`colorlab-source colorlab-source--custom${activeImageSlot === 'custom' ? ' is-active' : ''}`}
-                type="button"
-                aria-label={customImageUrl ? 'Load uploaded image' : 'Choose uploaded image'}
-                aria-pressed={activeImageSlot === 'custom'}
-                onClick={handleCustomImageClick}
-              >
-                {customImageUrl ? <img src={customImageUrl} alt="" /> : <span className="colorlab-source__plus" aria-hidden="true">+</span>}
-                <span>{customImageUrl ? 'Uploaded' : 'Your image'}</span>
-              </button>
+              </div>
+              <label className="colorlab-upload">
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} />
+                <span>Upload image</span>
+              </label>
+              {sample && <button className="colorlab-sampler__clear" type="button" onClick={clearSample}>Clear color match</button>}
             </div>
-            <label className="colorlab-upload">
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} />
-              <span>Upload image</span>
-            </label>
-          </div>
 
-          <div className="colorlab-canvas-wrap">
-            <canvas
-              ref={canvasRef}
-              className={`colorlab-canvas${imageReady ? ' is-ready' : ''}`}
-              onPointerDown={handleCanvasPointerDown}
-              onPointerUp={handleCanvasPointerUp}
-              onPointerCancel={() => { pointerStartRef.current = null }}
-              aria-label="ColorLab image sampler"
-            />
-            {!imageReady && <div className="colorlab-canvas-placeholder">{status}</div>}
+            <div className="colorlab-sampler__visual">
+              <div className="colorlab-canvas-wrap">
+                <canvas
+                  ref={canvasRef}
+                  className={`colorlab-canvas${imageReady ? ' is-ready' : ''}`}
+                  onPointerDown={handleCanvasPointerDown}
+                  onPointerUp={handleCanvasPointerUp}
+                  onPointerCancel={() => { pointerStartRef.current = null }}
+                  aria-label="ColorLab image sampler"
+                />
+                {!imageReady && <div className="colorlab-canvas-placeholder">{status}</div>}
+              </div>
+              <p className="colorlab-sampler__status" role="status">{status}</p>
+            </div>
           </div>
-          <p className="colorlab-sampler__status" role="status">{status}</p>
         </div>
 
         <aside className="colorlab-result" aria-live="polite">
           <div className="colorlab-result__header">
-            <p className="eyebrow">Sample readout</p>
             <h3>{hueLabel ?? 'No color selected'}</h3>
           </div>
           {sample ? (
@@ -276,7 +294,6 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
                 <div><dt>Hue</dt><dd>{formatHue(sample)}</dd></div>
                 <div><dt>Filter</dt><dd>{match ? `${match.pale === true ? 'Pale' : match.pale === false ? 'Normal' : 'All'} · exact hue` : 'Not applied'}</dd></div>
               </dl>
-              <button className="colorlab-result__clear" type="button" onClick={clearSample}>Clear color match</button>
             </>
           ) : (
             <div className="colorlab-result__empty">

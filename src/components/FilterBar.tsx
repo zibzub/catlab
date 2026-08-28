@@ -23,6 +23,7 @@ interface FilterBarProps {
   showStars: boolean
   showVignette: boolean
   colorLabOpen: boolean
+  colorLabActive: boolean
   onQueryChange: (query: string) => void
   onApplyFilters: (filters: FilterState) => void
   onClearFilters: () => void
@@ -50,6 +51,7 @@ export function FilterBar({
   showStars,
   showVignette,
   colorLabOpen,
+  colorLabActive,
   onQueryChange,
   onApplyFilters,
   onClearFilters,
@@ -68,6 +70,7 @@ export function FilterBar({
   const filtersTriggerRef = useRef<HTMLButtonElement>(null)
   const selectedFilterCount = activeFilterCount(filters)
   const chips = getActiveFilterChips(filters)
+  const hasActiveFilters = chips.length > 0 || colorLabActive
   const visibleChips = chips.slice(0, chipLimit)
   const hiddenChipCount = Math.max(0, chips.length - visibleChips.length)
 
@@ -155,7 +158,7 @@ export function FilterBar({
             <strong>{resultCount.toLocaleString()}</strong>
             <span>of {totalCount.toLocaleString()} cats</span>
           </div>
-          {chips.length > 0 && (
+          {hasActiveFilters && (
             <div className="active-filter-row" aria-label="Active filters">
               <div className="active-filter-row__chips">
                 {visibleChips.map((chip) => (
@@ -171,6 +174,9 @@ export function FilterBar({
                   </button>
                 ))}
               </div>
+              {colorLabActive && (
+                <span className="active-filter-indicator" aria-label="ColorLab color match is active">ColorLab match</span>
+              )}
               {hiddenChipCount > 0 && (
                 <button
                   className="active-filter-overflow"
@@ -195,7 +201,7 @@ export function FilterBar({
           <div className="collection-toolbar__action-row collection-toolbar__action-row--primary">
           <button
             ref={filtersTriggerRef}
-            className={`collection-toolbar__button${filtersOpen || selectedFilterCount > 0 ? ' is-active' : ''}`}
+            className={`collection-toolbar__button${filtersOpen || selectedFilterCount > 0 || colorLabActive ? ' is-active' : ''}`}
             type="button"
             aria-expanded={filtersOpen}
             aria-controls="filter-drawer"

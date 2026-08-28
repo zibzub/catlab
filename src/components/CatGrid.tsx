@@ -108,7 +108,7 @@ export function CatGrid({
     const observer = new ResizeObserver(updateWidth)
     observer.observe(element)
     return () => observer.disconnect()
-  }, [])
+  }, [cats.length])
 
   useEffect(() => {
     scrollElementRef.current?.scrollTo({ top: 0 })
