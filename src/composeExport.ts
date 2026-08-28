@@ -1,4 +1,5 @@
 import { assetPath } from './data'
+import { getAlphaBounds } from './composeCatCrop'
 import type { AtlasManifest, CatRecord, GridArtMode } from './types'
 
 interface ComposePlacedTransform {
@@ -148,18 +149,31 @@ export async function renderComposition({
       const column = cell % atlas.columns
       const row = Math.floor(cell / atlas.columns)
       const image = await loadImage(atlasSheetPath(atlas, sheet))
-      const width = atlas.cellWidth * COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
-      const height = atlas.cellHeight * COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
+      const sourceX = column * atlas.cellWidth
+      const sourceY = row * atlas.cellHeight
+      const bounds = getAlphaBounds({
+        image,
+        cacheKey: atlasSheetPath(atlas, sheet),
+        sourceX,
+        sourceY,
+        width: atlas.cellWidth,
+        height: atlas.cellHeight,
+      })
+      const catScale = COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
+      const width = bounds.width * catScale
+      const height = bounds.height * catScale
+      const offsetX = (bounds.x + bounds.width / 2 - atlas.cellWidth / 2) * catScale
+      const offsetY = (bounds.y + bounds.height / 2 - atlas.cellHeight / 2) * catScale
 
       context.scale(placed.flipX ? -1 : 1, placed.flipY ? -1 : 1)
       context.drawImage(
         image,
-        column * atlas.cellWidth,
-        row * atlas.cellHeight,
-        atlas.cellWidth,
-        atlas.cellHeight,
-        -width / 2,
-        -height / 2,
+        sourceX + bounds.x,
+        sourceY + bounds.y,
+        bounds.width,
+        bounds.height,
+        offsetX - width / 2,
+        offsetY - height / 2,
         width,
         height,
       )

@@ -1,5 +1,6 @@
 import JSZip from 'jszip'
 import { assetPath } from './data'
+import { getAlphaBounds } from './composeCatCrop'
 import type { AtlasManifest, CatRecord, GridArtMode } from './types'
 
 export const MAX_EXPORT_CATS = 10
@@ -59,21 +60,31 @@ function renderCat(cat: CatRecord, manifest: AtlasManifest, options: ExportOptio
   const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
   const column = cell % atlas.columns
   const row = Math.floor(cell / atlas.columns)
-  const canvas = document.createElement('canvas')
-  canvas.width = atlas.cellWidth * scale
-  canvas.height = atlas.cellHeight * scale
-  const context = canvas.getContext('2d')
-  if (!context) throw new Error('Your browser could not create an export canvas.')
-  context.imageSmoothingEnabled = false
 
   return loadAtlasImage(atlasSheetPath(atlas, sheet)).then(async (image) => {
+    const sourceX = column * atlas.cellWidth
+    const sourceY = row * atlas.cellHeight
+    const bounds = getAlphaBounds({
+      image,
+      cacheKey: atlasSheetPath(atlas, sheet),
+      sourceX,
+      sourceY,
+      width: atlas.cellWidth,
+      height: atlas.cellHeight,
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = bounds.width * scale
+    canvas.height = bounds.height * scale
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Your browser could not create an export canvas.')
+    context.imageSmoothingEnabled = false
     context.clearRect(0, 0, canvas.width, canvas.height)
     context.drawImage(
       image,
-      column * atlas.cellWidth,
-      row * atlas.cellHeight,
-      atlas.cellWidth,
-      atlas.cellHeight,
+      sourceX + bounds.x,
+      sourceY + bounds.y,
+      bounds.width,
+      bounds.height,
       0,
       0,
       canvas.width,
