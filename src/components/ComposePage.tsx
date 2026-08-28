@@ -375,32 +375,78 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
           <button className="compose-back" type="button" onClick={onBack}>← Collection</button>
         </div>
 
-        <div className="compose-stage-wrap">
-          <div
-            className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}`}
-            ref={stageRef}
-            style={stageStyle}
+        <div className="compose-action-bar" aria-label="Composition actions">
+          <div className="compose-action-bar__title">
+            <span className="compose-action-bar__eyebrow">Document</span>
+            <strong>Composition</strong>
+          </div>
+          <div className="compose-action-bar__future" aria-label="Project actions coming soon">
+            <button type="button" disabled title="Open projects are coming soon">Open</button>
+            <button type="button" disabled title="Save projects are coming soon">Save</button>
+          </div>
+          <div className="compose-action-bar__actions">
+            <button
+              className="compose-clear"
+              type="button"
+              disabled={placedObjects.length === 0}
+              onClick={() => { setPlacedObjects([]); setSelectedId(null) }}
+            >
+              Clear composition
+            </button>
+            <button className="compose-export" type="button" disabled={exportBusy} onClick={handleExport}>
+              {exportBusy ? 'Preparing…' : 'Export PNG'}
+            </button>
+          </div>
+        </div>
+        <div className="compose-action-status">
+          <p className="compose-export-note">PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.</p>
+          {exportError && <p className="compose-message compose-message--error" role="alert">{exportError}</p>}
+        </div>
 
-          >
-            <div className="compose-stage__content">
-              {background ? (
-                <img className="compose-stage__background" src={background.url} alt="" draggable="false" />
-              ) : (
-                <button
-                  className="compose-stage__empty"
-                  type="button"
-                  onClick={() => backgroundInputRef.current?.click()}
-                  aria-label="Choose a background image"
-                >
-                  <span>+</span>
-                  <strong>Add a background</strong>
-                  <small>Your local image will fit this stage.</small>
-                </button>
-              )}
-              {placedObjects
-                .slice()
-                .sort((a, b) => a.z - b.z)
-                .map((item) => {
+        <div className="compose-canvas-area">
+          <nav className="compose-tool-rail" aria-label="Canvas tools">
+            <button className="compose-tool is-active" type="button" aria-label="Select and move" aria-pressed="true" title="Select and move">
+              <span className="compose-tool__icon" aria-hidden="true">↖</span>
+              <span className="compose-tool__label">Select / Move</span>
+            </button>
+            <button className="compose-tool" type="button" disabled aria-label="Rectangle tool coming soon" title="Rectangle tool coming soon">
+              <span className="compose-tool__icon" aria-hidden="true">□</span>
+              <span className="compose-tool__label">Rectangle</span>
+            </button>
+            <button className="compose-tool" type="button" onClick={addText} aria-label="Add text" title="Add text">
+              <span className="compose-tool__icon" aria-hidden="true">T</span>
+              <span className="compose-tool__label">Text</span>
+            </button>
+            <button className="compose-tool" type="button" disabled aria-label="Eyedropper tool coming soon" title="Eyedropper tool coming soon">
+              <span className="compose-tool__icon" aria-hidden="true">⌖</span>
+              <span className="compose-tool__label">Eyedropper</span>
+            </button>
+          </nav>
+          <div className="compose-stage-wrap">
+            <div
+              className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}`}
+              ref={stageRef}
+              style={stageStyle}
+            >
+              <div className="compose-stage__content">
+                {background ? (
+                  <img className="compose-stage__background" src={background.url} alt="" draggable="false" />
+                ) : (
+                  <button
+                    className="compose-stage__empty"
+                    type="button"
+                    onClick={() => backgroundInputRef.current?.click()}
+                    aria-label="Choose a background image"
+                  >
+                    <span>+</span>
+                    <strong>Add a background</strong>
+                    <small>Your local image will fit this stage.</small>
+                  </button>
+                )}
+                {placedObjects
+                  .slice()
+                  .sort((a, b) => a.z - b.z)
+                  .map((item) => {
                 if (item.kind === 'cat') {
                   const cat = cats.find((candidate) => candidate.rescueOrder === item.rescueOrder)
                   if (!cat) return null
@@ -509,34 +555,35 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                     {item.text}
                   </div>
                 )
-              })}
+                  })}
+              </div>
+              <Moveable
+                ref={moveableRef}
+                ables={[ComposeObjectToggleAble]}
+                target={selectedId && !editingTextId ? `[data-compose-id="${selectedId}"]` : null}
+                container={stageRef.current}
+                props={{
+                  composeObjectToggle: selected?.kind === 'cat' ? {
+                    label: selected.artMode === 'bodies' ? 'Full' : 'Face',
+                    nextLabel: selected.artMode === 'bodies' ? 'Face' : 'Full',
+                    onToggle: () => updateSelected({ artMode: selected.artMode === 'bodies' ? 'faces' : 'bodies' }),
+                  } : undefined,
+                }}
+                draggable
+                scalable
+                keepRatio
+                rotatable
+                origin={false}
+                renderDirections={['nw', 'ne', 'sw', 'se']}
+                rotationPosition="top"
+                throttleDrag={0}
+                throttleScale={0}
+                throttleRotate={0}
+                onDrag={handleMoveableDrag}
+                onScale={handleMoveableScale}
+                onRotate={handleMoveableRotate}
+              />
             </div>
-            <Moveable
-              ref={moveableRef}
-              ables={[ComposeObjectToggleAble]}
-              target={selectedId && !editingTextId ? `[data-compose-id="${selectedId}"]` : null}
-              container={stageRef.current}
-              props={{
-                composeObjectToggle: selected?.kind === 'cat' ? {
-                  label: selected.artMode === 'bodies' ? 'Full' : 'Face',
-                  nextLabel: selected.artMode === 'bodies' ? 'Face' : 'Full',
-                  onToggle: () => updateSelected({ artMode: selected.artMode === 'bodies' ? 'faces' : 'bodies' }),
-                } : undefined,
-              }}
-              draggable
-              scalable
-              keepRatio
-              rotatable
-              origin={false}
-              renderDirections={['nw', 'ne', 'sw', 'se']}
-              rotationPosition="top"
-              throttleDrag={0}
-              throttleScale={0}
-              throttleRotate={0}
-              onDrag={handleMoveableDrag}
-              onScale={handleMoveableScale}
-              onRotate={handleMoveableRotate}
-            />
           </div>
         </div>
       </section>
@@ -696,13 +743,6 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
           )}
         </section>
 
-        <div className="compose-footer-actions">
-          <button className="compose-add-text" type="button" onClick={addText}>Add text</button>
-          <button className="compose-clear" type="button" disabled={placedObjects.length === 0} onClick={() => { setPlacedObjects([]); setSelectedId(null) }}>Clear composition</button>
-          <button className="compose-export" type="button" disabled={exportBusy} onClick={handleExport}>{exportBusy ? 'Preparing…' : 'Export PNG'}</button>
-        </div>
-        <p className="compose-export-note">PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.</p>
-        {exportError && <p className="compose-message compose-message--error" role="alert">{exportError}</p>}
       </aside>
     </main>
   )
