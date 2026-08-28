@@ -60,11 +60,11 @@ function columnsForWidth(width: number, viewMode: GridViewMode, artMode: GridArt
 function rowEstimateFor(viewMode: GridViewMode, artMode: GridArtMode, gridSize: GridSize) {
   if (artMode === 'faces') {
     return viewMode === 'compact'
-      ? { small: 104, medium: 116, large: 138 }[gridSize]
+      ? { small: 114, medium: 126, large: 148 }[gridSize]
       : { small: 178, medium: 194, large: 224 }[gridSize]
   }
   return viewMode === 'compact'
-    ? { small: 116, medium: 142, large: 168 }[gridSize]
+    ? { small: 126, medium: 152, large: 178 }[gridSize]
     : { small: 205, medium: 225, large: 250 }[gridSize]
 }
 

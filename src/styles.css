@@ -1014,7 +1014,7 @@ h1 {
 
 .cat-grid-row--compact {
   gap: 4px;
-  padding-bottom: 7px;
+  padding-bottom: 17px;
 }
 
 .cat-grid-row.cat-grid-row--size-small {
@@ -1029,12 +1029,12 @@ h1 {
 
 .cat-grid-row.cat-grid-row--compact.cat-grid-row--size-small {
   gap: 3px;
-  padding-bottom: 5px;
+  padding-bottom: 15px;
 }
 
 .cat-grid-row.cat-grid-row--compact.cat-grid-row--size-large {
   gap: 6px;
-  padding-bottom: 9px;
+  padding-bottom: 19px;
 }
 
 .cat-tile {
@@ -1902,7 +1902,7 @@ h1 {
 
   .cat-grid-row.cat-grid-row--compact.cat-grid-row--size-small {
     gap: 4px;
-    padding-bottom: 6px;
+    padding-bottom: 16px;
   }
 
   .cat-grid-row.cat-grid-row--size-large {
@@ -1912,7 +1912,7 @@ h1 {
 
   .cat-grid-row.cat-grid-row--compact.cat-grid-row--size-large {
     gap: 5px;
-    padding-bottom: 8px;
+    padding-bottom: 18px;
   }
 
   .cat-tile {
@@ -5955,8 +5955,8 @@ h1 {
   }
 }
 
-/* Optional MoonCat name readouts. Unnamed compact tiles retain their original
-   single ID line, while named tiles grow only for the line they render. */
+/* Optional MoonCat name readouts stay below the fixed rescue ID line without
+   contributing to compact tile or virtualized row height. */
 .cat-tile__compact-id {
   display: flex;
   width: 100%;
@@ -5967,12 +5967,15 @@ h1 {
   align-items: center;
   justify-content: flex-start;
   gap: 0;
+  position: relative;
   color: var(--console-ink, var(--ink));
   background: linear-gradient(to bottom, transparent 0 4px, #0c0e14 4px);
   line-height: 1.1;
 }
 
 .cat-tile__compact-number {
+  position: relative;
+  z-index: 1;
   display: block;
   max-width: 100%;
   overflow: hidden;
@@ -5987,6 +5990,9 @@ h1 {
 }
 
 .cat-tile__compact-name {
+  position: absolute;
+  top: 18px;
+  left: 0;
   display: -webkit-box;
   width: 100%;
   min-width: 0;
