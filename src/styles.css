@@ -4674,11 +4674,11 @@ h1 {
 }
 
 .display-menu__panel {
-  padding: 12px;
+  padding: 10px;
 }
 
 .display-menu__header {
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--console-divider);
 }
 
@@ -4713,8 +4713,8 @@ h1 {
 }
 
 .display-menu__body {
-  gap: 9px;
-  margin-top: 11px;
+  gap: 7px;
+  margin-top: 9px;
 }
 
 .display-menu__label,
@@ -4727,6 +4727,90 @@ h1 {
 
 .display-menu__effects {
   border-top-color: var(--console-divider);
+}
+
+.display-menu__effects {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+  padding: 4px 0 0;
+  overflow: hidden;
+  border: 1px solid var(--console-divider-strong);
+  border-radius: var(--console-radius-small);
+  background: var(--console-surface-inset);
+}
+
+.display-menu__effects .rings-toggle,
+.display-menu__effects .rings-toggle.is-active {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  min-height: 30px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 9px;
+  border: 0;
+  border-bottom: 1px solid var(--console-divider);
+  border-radius: 0;
+  color: var(--console-muted);
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.59rem;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.display-menu__effects .rings-toggle:last-child {
+  border-bottom: 0;
+}
+
+.display-menu__effects .rings-toggle:hover {
+  color: var(--console-ink);
+  background: var(--console-surface-hover);
+}
+
+.display-menu__effects .rings-toggle.is-active {
+  color: var(--console-ink);
+  background: var(--console-purple-soft);
+}
+
+.display-menu__effects .rings-toggle__icon {
+  position: relative;
+  order: 2;
+  display: block;
+  width: 28px;
+  height: 15px;
+  flex: 0 0 28px;
+  border: 1px solid var(--console-divider-strong);
+  border-radius: 999px;
+  color: transparent;
+  background: var(--console-surface-raised);
+  font-size: 0;
+  line-height: 1;
+}
+
+.display-menu__effects .rings-toggle__icon::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--console-muted);
+  content: '';
+  transition: left 120ms ease, background-color 120ms ease;
+}
+
+.display-menu__effects .rings-toggle.is-active .rings-toggle__icon {
+  border-color: rgba(153, 154, 255, 0.7);
+  background: var(--console-purple-soft);
+}
+
+.display-menu__effects .rings-toggle.is-active .rings-toggle__icon::after {
+  left: 15px;
+  background: var(--console-purple-bright);
+  box-shadow: 0 0 7px rgba(153, 154, 255, 0.52);
 }
 
 .filter-drawer__backdrop {
@@ -5566,6 +5650,7 @@ h1 {
 .art-mode-icon--face {
   mask-image: url('/icons/face.png');
   -webkit-mask-image: url('/icons/face.png');
+  height: 17px;
 }
 
 .quick-layout-toggle button {
