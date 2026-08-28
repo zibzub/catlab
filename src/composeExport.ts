@@ -1,5 +1,5 @@
 import { assetPath } from './data'
-import { getAlphaBounds } from './composeCatCrop'
+import { getAlphaBounds, getIsolatedSprite } from './composeCatCrop'
 import type { AtlasManifest, CatRecord, GridArtMode } from './types'
 
 interface ComposePlacedTransform {
@@ -166,17 +166,28 @@ export async function renderComposition({
       const offsetY = (bounds.y + bounds.height / 2 - atlas.cellHeight / 2) * catScale
 
       context.scale(placed.flipX ? -1 : 1, placed.flipY ? -1 : 1)
-      context.drawImage(
+      const isolatedSprite = getIsolatedSprite({
         image,
-        sourceX + bounds.x,
-        sourceY + bounds.y,
-        bounds.width,
-        bounds.height,
-        offsetX - width / 2,
-        offsetY - height / 2,
-        width,
-        height,
-      )
+        cacheKey: atlasSheetPath(atlas, sheet),
+        sourceX,
+        sourceY,
+        bounds,
+      })
+      if (isolatedSprite) {
+        context.drawImage(isolatedSprite, offsetX - width / 2, offsetY - height / 2, width, height)
+      } else {
+        context.drawImage(
+          image,
+          sourceX + bounds.x,
+          sourceY + bounds.y,
+          bounds.width,
+          bounds.height,
+          offsetX - width / 2,
+          offsetY - height / 2,
+          width,
+          height,
+        )
+      }
     } else if (placed.kind === 'rect') {
       const width = placed.width * dimensions.width * placed.scale
       const height = placed.height * dimensions.height * placed.scale

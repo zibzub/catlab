@@ -17,6 +17,7 @@ interface AlphaBoundsOptions {
 
 const DEFAULT_ALPHA_PADDING = 0
 const alphaBoundsCache = new Map<string, AlphaBounds>()
+const isolatedSpriteCache = new Map<string, HTMLCanvasElement>()
 
 function fullCellBounds(width: number, height: number): AlphaBounds {
   return { x: 0, y: 0, width, height }
@@ -80,5 +81,50 @@ export function getAlphaBounds({
   } catch {
     alphaBoundsCache.set(key, fallback)
     return fallback
+  }
+}
+
+interface IsolatedSpriteOptions {
+  image: HTMLImageElement
+  cacheKey: string
+  sourceX: number
+  sourceY: number
+  bounds: AlphaBounds
+}
+
+export function getIsolatedSprite({
+  image,
+  cacheKey,
+  sourceX,
+  sourceY,
+  bounds,
+}: IsolatedSpriteOptions): HTMLCanvasElement | null {
+  const key = `${cacheKey}:${sourceX}:${sourceY}:${bounds.x}:${bounds.y}:${bounds.width}:${bounds.height}`
+  const cached = isolatedSpriteCache.get(key)
+  if (cached) return cached
+
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = bounds.width
+    canvas.height = bounds.height
+    const context = canvas.getContext('2d')
+    if (!context) return null
+    context.imageSmoothingEnabled = false
+    context.clearRect(0, 0, bounds.width, bounds.height)
+    context.drawImage(
+      image,
+      sourceX + bounds.x,
+      sourceY + bounds.y,
+      bounds.width,
+      bounds.height,
+      0,
+      0,
+      bounds.width,
+      bounds.height,
+    )
+    isolatedSpriteCache.set(key, canvas)
+    return canvas
+  } catch {
+    return null
   }
 }
