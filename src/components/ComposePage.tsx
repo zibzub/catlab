@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
 import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type OnScaleStart, type Renderer } from 'react-moveable'
 import { requestScreenColor, supportsColorPicker } from '../colorPicker'
+import { sampleCanvasColor } from '../colorLab'
 import { renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
@@ -30,6 +31,7 @@ const COMPOSE_TEXT_FONTS = [
   { label: 'Arimo (Arial-like)', value: 'Arimo, Arial, sans-serif' },
   { label: 'Roboto (Helvetica-like)', value: 'Roboto, Arial, sans-serif' },
 ] as const
+type ComposeColorTarget = 'fill' | 'stroke'
 
 interface ComposeObjectToggleOptions {
   label: string
@@ -88,6 +90,7 @@ function nextLayer(placed: ComposePlacedObject[]) {
 
 export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, background, onBackgroundChange, onBack }: ComposePageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
+  const stageContentRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
   const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
@@ -98,6 +101,10 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const [exportBusy, setExportBusy] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [colorPickerBusy, setColorPickerBusy] = useState(false)
+  const [stageSamplingTarget, setStageSamplingTarget] = useState<ComposeColorTarget | null>(null)
+  const [stageSamplingMessage, setStageSamplingMessage] = useState<string | null>(null)
+  const samplingCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const samplingSequenceRef = useRef(0)
 
   useEffect(() => {
     function handleDocumentPointerDown(event: PointerEvent) {
@@ -106,6 +113,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       if (
         target.closest('[data-compose-id]') ||
         target.closest('.moveable-control-box') ||
+        target.closest('.compose-tool-rail') ||
         target.closest('.compose-controls')
       ) {
         return
@@ -171,6 +179,23 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   }, [editingTextId, selectedId])
 
   useEffect(() => {
+    if (!stageSamplingTarget) return
+
+    function handleSamplingKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      samplingSequenceRef.current += 1
+      samplingCanvasRef.current = null
+      setStageSamplingTarget(null)
+      setStageSamplingMessage(null)
+      setColorPickerBusy(false)
+    }
+
+    document.addEventListener('keydown', handleSamplingKeyDown)
+    return () => document.removeEventListener('keydown', handleSamplingKeyDown)
+  }, [stageSamplingTarget])
+
+  useEffect(() => {
     if (!editingTextId) return
     window.requestAnimationFrame(() => {
       const editor = inlineTextEditorRef.current
@@ -190,7 +215,142 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
 
   const sourceCats = cats
 
+  function cancelStageSampling() {
+    samplingSequenceRef.current += 1
+    samplingCanvasRef.current = null
+    setStageSamplingTarget(null)
+    setStageSamplingMessage(null)
+    setColorPickerBusy(false)
+  }
+
+  async function renderStageSamplingCanvas() {
+    const stageWidth = stageRef.current?.getBoundingClientRect().width ?? 0
+    if (stageWidth <= 0) throw new Error('The composition stage is not ready for sampling.')
+
+    const blob = await renderComposition({
+      placedObjects,
+      cats,
+      manifest,
+      background,
+      stageWidth,
+    })
+    const objectUrl = URL.createObjectURL(blob)
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const loadedImage = new Image()
+        loadedImage.onload = () => resolve(loadedImage)
+        loadedImage.onerror = () => reject(new Error('The rendered composition could not be sampled.'))
+        loadedImage.src = objectUrl
+      })
+      const canvas = document.createElement('canvas')
+      canvas.width = image.naturalWidth || image.width
+      canvas.height = image.naturalHeight || image.height
+      const context = canvas.getContext('2d', { willReadFrequently: true })
+      if (!context || canvas.width <= 0 || canvas.height <= 0) {
+        throw new Error('The composition sampler could not create a readable canvas.')
+      }
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0)
+      return canvas
+    } finally {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }
+
+  async function armStageSampling(target: ComposeColorTarget) {
+    if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
+    if (target === 'stroke' && selected.kind !== 'text') return
+
+    const sequence = samplingSequenceRef.current + 1
+    samplingSequenceRef.current = sequence
+    setStageSamplingTarget(target)
+    setStageSamplingMessage('Preparing the visible stage…')
+    setColorPickerBusy(true)
+    try {
+      const canvas = await renderStageSamplingCanvas()
+      if (samplingSequenceRef.current !== sequence) return
+      samplingCanvasRef.current = canvas
+      setStageSamplingMessage('Click the stage to sample a color. Press Escape to cancel.')
+    } catch (error: unknown) {
+      if (samplingSequenceRef.current !== sequence) return
+      samplingCanvasRef.current = null
+      setStageSamplingTarget(null)
+      setStageSamplingMessage(error instanceof Error ? error.message : 'The composition could not be sampled.')
+    } finally {
+      if (samplingSequenceRef.current === sequence) setColorPickerBusy(false)
+    }
+  }
+
+  function sampleStageAtPoint(clientX: number, clientY: number) {
+    const canvas = samplingCanvasRef.current
+    const stageContent = stageContentRef.current
+    const target = stageSamplingTarget
+    if (!target || !canvas || !stageContent) return
+
+    const bounds = stageContent.getBoundingClientRect()
+    if (bounds.width <= 0 || bounds.height <= 0) return
+
+    const x = clamp(Math.floor((clientX - bounds.left) * (canvas.width / bounds.width)), 0, canvas.width - 1)
+    const y = clamp(Math.floor((clientY - bounds.top) * (canvas.height / bounds.height)), 0, canvas.height - 1)
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    if (!context) return
+
+    const sample = sampleCanvasColor(context, x, y)
+    samplingCanvasRef.current = null
+    setStageSamplingTarget(null)
+    setColorPickerBusy(false)
+    if (sample.alpha === 0) {
+      setStageSamplingMessage('That point is transparent. No color was changed.')
+      return
+    }
+
+    updateSelected(target === 'fill' ? { fill: sample.hex } : { stroke: sample.hex })
+    setStageSamplingMessage(null)
+  }
+
+  function handleStagePointerDownCapture(event: React.PointerEvent<HTMLDivElement>) {
+    if (!stageSamplingTarget) return
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  function handleStagePointerUpCapture(event: React.PointerEvent<HTMLDivElement>) {
+    if (!stageSamplingTarget) return
+    event.preventDefault()
+    event.stopPropagation()
+    if (colorPickerBusy) {
+      setStageSamplingMessage('The visible stage is still preparing…')
+      return
+    }
+    sampleStageAtPoint(event.clientX, event.clientY)
+  }
+
+  async function pickNativeSelectedColor(target: ComposeColorTarget) {
+    if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
+    if (target === 'stroke' && selected.kind !== 'text') return
+
+    cancelStageSampling()
+    setColorPickerBusy(true)
+    try {
+      const result = await requestScreenColor()
+      if (result.status !== 'picked') return
+      updateSelected(target === 'fill' ? { fill: result.color } : { stroke: result.color })
+    } finally {
+      setColorPickerBusy(false)
+    }
+  }
+
+  function handleColorPickClick(target: ComposeColorTarget, event: React.MouseEvent<HTMLButtonElement>) {
+    if (stageSamplingTarget) {
+      cancelStageSampling()
+      return
+    }
+    if (event.shiftKey && colorPickerSupported) void pickNativeSelectedColor(target)
+    else void armStageSampling(target)
+  }
+
   function addCat(cat: CatRecord) {
+    cancelStageSampling()
     const id = `${cat.rescueOrder}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     setPlacedObjects((current) => [...current, {
       id,
@@ -210,6 +370,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   }
 
   function addText() {
+    cancelStageSampling()
     const id = `text-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     setPlacedObjects((current) => [...current, {
       id,
@@ -233,6 +394,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   }
 
   function addRectangle() {
+    cancelStageSampling()
     const id = `rect-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
     setPlacedObjects((current) => {
       const rectangle: ComposePlacedRect = {
@@ -280,20 +442,6 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     if (!selectedId) return
     setPlacedObjects((current) => current.map((item) => (item.id === selectedId ? { ...item, ...update } as ComposePlacedObject : item)))
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
-  }
-
-  async function pickSelectedColor(target: 'fill' | 'stroke') {
-    if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
-    if (target === 'stroke' && selected.kind !== 'text') return
-
-    setColorPickerBusy(true)
-    try {
-      const result = await requestScreenColor()
-      if (result.status !== 'picked') return
-      updateSelected(target === 'fill' ? { fill: result.color } : { stroke: result.color })
-    } finally {
-      setColorPickerBusy(false)
-    }
   }
 
   function finishTextEditing() {
@@ -451,7 +599,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
               className="compose-clear"
               type="button"
               disabled={placedObjects.length === 0}
-              onClick={() => { setPlacedObjects([]); setSelectedId(null) }}
+              onClick={() => { cancelStageSampling(); setPlacedObjects([]); setSelectedId(null) }}
             >
               Clear composition
             </button>
@@ -468,7 +616,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
 
         <div className="compose-canvas-area">
           <nav className="compose-tool-rail" aria-label="Canvas tools">
-            <button className="compose-tool is-active" type="button" aria-label="Select and move" aria-pressed="true" title="Select and move">
+            <button className="compose-tool is-active" type="button" aria-label="Select and move" aria-pressed="true" title="Select and move" onClick={cancelStageSampling}>
               <span className="compose-tool__icon" aria-hidden="true">↖</span>
               <span className="compose-tool__label">Select / Move</span>
             </button>
@@ -481,28 +629,31 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
               <span className="compose-tool__label">Text</span>
             </button>
             <button
-              className="compose-tool"
+              className={`compose-tool${stageSamplingTarget ? ' is-active' : ''}`}
               type="button"
-              disabled={!colorPickerSupported || !selectedDefaultColorTarget || colorPickerBusy}
+              disabled={!selectedDefaultColorTarget || colorPickerBusy}
+              aria-pressed={Boolean(stageSamplingTarget)}
               aria-label={colorPickerSupported
                 ? selectedDefaultColorTarget ? 'Sample color for selected layer fill' : 'Select a rectangle or text layer to sample a color'
-                : 'Eyedropper is unavailable in this browser; use a native color input'}
+                : selectedDefaultColorTarget ? 'Sample color for selected layer fill' : 'Select a rectangle or text layer to sample a color'}
               title={colorPickerSupported
-                ? selectedDefaultColorTarget ? 'Sample selected layer fill' : 'Select a rectangle or text layer first'
-                : 'Eyedropper unavailable; use a native color input'}
-              onClick={() => { if (selectedDefaultColorTarget) void pickSelectedColor(selectedDefaultColorTarget) }}
+                ? selectedDefaultColorTarget ? 'Sample selected layer fill (Shift-click for screen picker)' : 'Select a rectangle or text layer first'
+                : selectedDefaultColorTarget ? 'Sample selected layer fill' : 'Select a rectangle or text layer first'}
+              onClick={(event) => { if (selectedDefaultColorTarget) handleColorPickClick(selectedDefaultColorTarget, event) }}
             >
-              <span className="compose-tool__icon" aria-hidden="true">{colorPickerBusy ? '…' : '⌖'}</span>
-              <span className="compose-tool__label">{colorPickerBusy ? 'Picking…' : 'Eyedropper'}</span>
+              <span className="compose-tool__icon" aria-hidden="true">{colorPickerBusy ? '…' : stageSamplingTarget ? '×' : '⌖'}</span>
+              <span className="compose-tool__label">{colorPickerBusy ? 'Preparing…' : stageSamplingTarget ? 'Cancel sample' : 'Eyedropper'}</span>
             </button>
           </nav>
           <div className="compose-stage-wrap">
             <div
-              className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}`}
+              className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}${stageSamplingTarget ? ' compose-stage--sampling' : ''}`}
               ref={stageRef}
               style={stageStyle}
+              onPointerDownCapture={handleStagePointerDownCapture}
+              onPointerUpCapture={handleStagePointerUpCapture}
             >
-              <div className="compose-stage__content">
+              <div className="compose-stage__content" ref={stageContentRef}>
                 {background ? (
                   <img className="compose-stage__background" src={background.url} alt="" draggable="false" />
                 ) : (
@@ -663,6 +814,9 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                 )
                   })}
               </div>
+              {stageSamplingMessage && (
+                <div className="compose-stage__sampling-status" role="status">{stageSamplingMessage}</div>
+              )}
               <Moveable
                 ref={moveableRef}
                 ables={[ComposeObjectToggleAble]}
@@ -812,10 +966,10 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                       <button
                         className="compose-color-pick"
                         type="button"
-                        disabled={!colorPickerSupported || colorPickerBusy}
+                        disabled={colorPickerBusy}
                         aria-label="Sample text fill color"
-                        title={colorPickerSupported ? 'Sample text fill color' : 'Eyedropper unavailable; use the color input'}
-                        onClick={() => void pickSelectedColor('fill')}
+                        title={colorPickerSupported ? 'Sample text fill color (Shift-click for screen picker)' : 'Sample text fill color'}
+                        onClick={(event) => handleColorPickClick('fill', event)}
                       >
                         ⌖
                       </button>
@@ -828,10 +982,10 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                       <button
                         className="compose-color-pick"
                         type="button"
-                        disabled={!colorPickerSupported || colorPickerBusy}
+                        disabled={colorPickerBusy}
                         aria-label="Sample text outline color"
-                        title={colorPickerSupported ? 'Sample text outline color' : 'Eyedropper unavailable; use the color input'}
-                        onClick={() => void pickSelectedColor('stroke')}
+                        title={colorPickerSupported ? 'Sample text outline color (Shift-click for screen picker)' : 'Sample text outline color'}
+                        onClick={(event) => handleColorPickClick('stroke', event)}
                       >
                         ⌖
                       </button>
@@ -857,10 +1011,10 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                     <button
                       className="compose-color-pick"
                       type="button"
-                      disabled={!colorPickerSupported || colorPickerBusy}
+                      disabled={colorPickerBusy}
                       aria-label="Sample rectangle fill color"
-                      title={colorPickerSupported ? 'Sample rectangle fill color' : 'Eyedropper unavailable; use the color input'}
-                      onClick={() => void pickSelectedColor('fill')}
+                      title={colorPickerSupported ? 'Sample rectangle fill color (Shift-click for screen picker)' : 'Sample rectangle fill color'}
+                      onClick={(event) => handleColorPickClick('fill', event)}
                     >
                       ⌖
                     </button>

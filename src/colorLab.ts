@@ -25,6 +25,10 @@ export interface MoonCatPixelSample {
   alpha: number
 }
 
+export interface CanvasColorSample extends MoonCatPixelSample {
+  hex: string
+}
+
 export interface ColorLabSample extends MoonCatPixelSample {
   hex: string
   hue: number
@@ -173,6 +177,14 @@ export function samplePixel(ctx: CanvasRenderingContext2D, x: number, y: number)
       b: pixel[2] ?? 0,
     },
     alpha: pixel[3] ?? 0,
+  }
+}
+
+export function sampleCanvasColor(ctx: CanvasRenderingContext2D, x: number, y: number): CanvasColorSample {
+  const pixelSample = samplePixel(ctx, x, y)
+  return {
+    ...pixelSample,
+    hex: rgbToHex(pixelSample.rgb),
   }
 }
 

@@ -207,12 +207,12 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
         <div className="colorlab-panel__header-meta">
           {sample && (
             <div className="colorlab-panel__mobile-summary" aria-live="polite" aria-label="Sampled color summary">
-              <span className="colorlab-panel__mobile-swatch" style={{ backgroundColor: sample.hex }} aria-hidden="true" />
               <span className="colorlab-panel__mobile-summary-copy">
                 <strong>{hueLabel ?? 'Color match'}</strong>
                 <span>{detectionLabel(sample)}</span>
-                <span>{matchingCount.toLocaleString()} matching cats</span>
+                <span>{matchingCount.toLocaleString()} cats</span>
               </span>
+              <span className="colorlab-panel__mobile-swatch" style={{ backgroundColor: sample.hex }} aria-hidden="true" />
             </div>
           )}
           <div className="colorlab-panel__signal" aria-live="polite">
@@ -302,6 +302,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
             </div>
           )}
           <p className="colorlab-result__hint">For best results, avoid eyes, accessories, outlines, shadows, and highlights.</p>
+          <p className="colorlab-result__status" role="status">{status}</p>
         </aside>
       </div>
       <span className="sr-only">Minimum sample alpha is {MIN_SAMPLE_ALPHA}.</span>

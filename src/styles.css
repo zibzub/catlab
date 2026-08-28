@@ -2374,6 +2374,28 @@ h1 {
   touch-action: none;
 }
 
+.compose-stage--sampling,
+.compose-stage--sampling * {
+  cursor: crosshair !important;
+}
+
+.compose-stage__sampling-status {
+  position: absolute;
+  z-index: 60;
+  right: 12px;
+  bottom: 12px;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 7px 9px;
+  border: 1px solid rgba(153, 154, 255, 0.6);
+  border-radius: 5px;
+  color: #f1f1ff;
+  background: rgba(20, 20, 42, 0.92);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  font: 700 0.58rem/1.35 var(--console-micro-font, ui-monospace, monospace);
+  pointer-events: none;
+  text-align: right;
+}
+
 .compose-stage__content {
   position: absolute;
   inset: 0;
@@ -6733,7 +6755,7 @@ h1 {
 
 .colorlab-panel__body {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(230px, 0.8fr);
+  grid-template-columns: minmax(0, 2.1fr) minmax(220px, 0.72fr);
   gap: 0;
 }
 
@@ -6919,6 +6941,7 @@ h1 {
 }
 
 .colorlab-sampler__status {
+  display: none;
   min-height: 1.25em;
   margin: 7px 1px 0;
   color: var(--console-faint, var(--faint));
@@ -6970,7 +6993,7 @@ h1 {
 .colorlab-result__swatch-row strong {
   overflow: hidden;
   color: var(--console-ink, var(--ink));
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -6978,7 +7001,7 @@ h1 {
 .colorlab-result__swatch-row span {
   color: var(--console-muted, var(--muted));
   font-family: var(--console-micro-font, ui-monospace, monospace);
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   line-height: 1.35;
 }
 
@@ -7000,7 +7023,7 @@ h1 {
 .colorlab-result__details dt {
   color: var(--console-faint, var(--faint));
   font-family: var(--console-micro-font, ui-monospace, monospace);
-  font-size: 0.55rem;
+  font-size: 0.6rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -7009,7 +7032,7 @@ h1 {
   margin: 0;
   color: var(--console-ink, var(--ink));
   font-family: var(--console-micro-font, ui-monospace, monospace);
-  font-size: 0.6rem;
+  font-size: 0.66rem;
   text-align: right;
 }
 
@@ -7039,8 +7062,18 @@ h1 {
 .colorlab-result__hint {
   margin: 13px 0 0;
   color: var(--console-faint, var(--faint));
-  font-size: 0.6rem;
+  font-size: 0.64rem;
   line-height: 1.45;
+}
+
+.colorlab-result__status {
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--console-divider, var(--line));
+  color: var(--console-faint, var(--faint));
+  font-family: var(--console-micro-font, ui-monospace, monospace);
+  font-size: 0.62rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 900px) {
@@ -7124,6 +7157,7 @@ h1 {
     display: flex;
     min-width: 0;
     align-items: flex-start;
+    justify-content: flex-end;
     gap: 8px;
   }
 
