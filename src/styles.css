@@ -2820,6 +2820,37 @@ h1 {
   gap: 6px;
 }
 
+.compose-color-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.compose-color-pick {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--control-border);
+  border-radius: 5px;
+  color: var(--accent-bright);
+  background: var(--control-surface-deep);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.compose-color-pick:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--control-surface);
+}
+
+.compose-color-pick:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
 .compose-color-field input[type='color'] {
   width: 36px;
   height: 25px;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
 import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type OnScaleStart, type Renderer } from 'react-moveable'
+import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
@@ -96,6 +97,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
   const [exportBusy, setExportBusy] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [colorPickerBusy, setColorPickerBusy] = useState(false)
 
   useEffect(() => {
     function handleDocumentPointerDown(event: PointerEvent) {
@@ -179,6 +181,8 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
 
   const selected = placedObjects.find((item) => item.id === selectedId) ?? null
   const selectedCat = selected?.kind === 'cat' ? cats.find((cat) => cat.rescueOrder === selected.rescueOrder) ?? null : null
+  const colorPickerSupported = supportsColorPicker()
+  const selectedDefaultColorTarget: 'fill' | null = selected?.kind === 'rect' || selected?.kind === 'text' ? 'fill' : null
   const stageRatio = background ? background.width / background.height : EMPTY_STAGE_RATIO
   const stageStyle = {
     '--compose-ratio': stageRatio,
@@ -276,6 +280,20 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     if (!selectedId) return
     setPlacedObjects((current) => current.map((item) => (item.id === selectedId ? { ...item, ...update } as ComposePlacedObject : item)))
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
+  }
+
+  async function pickSelectedColor(target: 'fill' | 'stroke') {
+    if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
+    if (target === 'stroke' && selected.kind !== 'text') return
+
+    setColorPickerBusy(true)
+    try {
+      const result = await requestScreenColor()
+      if (result.status !== 'picked') return
+      updateSelected(target === 'fill' ? { fill: result.color } : { stroke: result.color })
+    } finally {
+      setColorPickerBusy(false)
+    }
   }
 
   function finishTextEditing() {
@@ -462,9 +480,20 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
               <span className="compose-tool__icon" aria-hidden="true">T</span>
               <span className="compose-tool__label">Text</span>
             </button>
-            <button className="compose-tool" type="button" disabled aria-label="Eyedropper tool coming soon" title="Eyedropper tool coming soon">
-              <span className="compose-tool__icon" aria-hidden="true">⌖</span>
-              <span className="compose-tool__label">Eyedropper</span>
+            <button
+              className="compose-tool"
+              type="button"
+              disabled={!colorPickerSupported || !selectedDefaultColorTarget || colorPickerBusy}
+              aria-label={colorPickerSupported
+                ? selectedDefaultColorTarget ? 'Sample color for selected layer fill' : 'Select a rectangle or text layer to sample a color'
+                : 'Eyedropper is unavailable in this browser; use a native color input'}
+              title={colorPickerSupported
+                ? selectedDefaultColorTarget ? 'Sample selected layer fill' : 'Select a rectangle or text layer first'
+                : 'Eyedropper unavailable; use a native color input'}
+              onClick={() => { if (selectedDefaultColorTarget) void pickSelectedColor(selectedDefaultColorTarget) }}
+            >
+              <span className="compose-tool__icon" aria-hidden="true">{colorPickerBusy ? '…' : '⌖'}</span>
+              <span className="compose-tool__label">{colorPickerBusy ? 'Picking…' : 'Eyedropper'}</span>
             </button>
           </nav>
           <div className="compose-stage-wrap">
@@ -775,14 +804,38 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                     </select>
                   </label>
                   <div className="compose-color-options">
-                    <label className="compose-color-field">
-                      <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
-                      <span>Fill</span>
-                    </label>
-                    <label className="compose-color-field">
-                      <input type="color" value={selected.stroke} onChange={(event) => updateSelected({ stroke: event.currentTarget.value })} />
-                      <span>Outline</span>
-                    </label>
+                    <div className="compose-color-control">
+                      <label className="compose-color-field">
+                        <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
+                        <span>Fill</span>
+                      </label>
+                      <button
+                        className="compose-color-pick"
+                        type="button"
+                        disabled={!colorPickerSupported || colorPickerBusy}
+                        aria-label="Sample text fill color"
+                        title={colorPickerSupported ? 'Sample text fill color' : 'Eyedropper unavailable; use the color input'}
+                        onClick={() => void pickSelectedColor('fill')}
+                      >
+                        ⌖
+                      </button>
+                    </div>
+                    <div className="compose-color-control">
+                      <label className="compose-color-field">
+                        <input type="color" value={selected.stroke} onChange={(event) => updateSelected({ stroke: event.currentTarget.value })} />
+                        <span>Outline</span>
+                      </label>
+                      <button
+                        className="compose-color-pick"
+                        type="button"
+                        disabled={!colorPickerSupported || colorPickerBusy}
+                        aria-label="Sample text outline color"
+                        title={colorPickerSupported ? 'Sample text outline color' : 'Eyedropper unavailable; use the color input'}
+                        onClick={() => void pickSelectedColor('stroke')}
+                      >
+                        ⌖
+                      </button>
+                    </div>
                   </div>
                   <label className="compose-range">
                     <span>Outline width <output>{selected.strokeWidth.toFixed(1)} px</output></span>
@@ -796,10 +849,22 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
               )}
               {selected.kind === 'rect' && (
                 <div className="compose-color-options compose-rectangle-options">
-                  <label className="compose-color-field">
-                    <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
-                    <span>Fill</span>
-                  </label>
+                  <div className="compose-color-control">
+                    <label className="compose-color-field">
+                      <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
+                      <span>Fill</span>
+                    </label>
+                    <button
+                      className="compose-color-pick"
+                      type="button"
+                      disabled={!colorPickerSupported || colorPickerBusy}
+                      aria-label="Sample rectangle fill color"
+                      title={colorPickerSupported ? 'Sample rectangle fill color' : 'Eyedropper unavailable; use the color input'}
+                      onClick={() => void pickSelectedColor('fill')}
+                    >
+                      ⌖
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="compose-art-options compose-flip-options" role="group" aria-label="Flip selected object">
