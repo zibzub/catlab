@@ -83,7 +83,7 @@ function AppHeader({
     <header className="app-header">
       <div className="brand-lockup">
         <span className="brand-mark" aria-hidden="true">
-          ◒
+          <img src="/img/logo2.png" alt="" />
         </span>
         <span>
           <strong>CatLab</strong>
