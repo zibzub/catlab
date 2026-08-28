@@ -368,7 +368,6 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       <section className="compose-workspace" aria-labelledby="compose-title">
         <div className="compose-heading">
           <div>
-            <p className="eyebrow">Local composition tool</p>
             <h1 id="compose-title">Compose</h1>
             <p>Build a simple scene from your Palette. Everything stays in this browser.</p>
           </div>
@@ -377,7 +376,6 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
 
         <div className="compose-action-bar" aria-label="Composition actions">
           <div className="compose-action-bar__title">
-            <span className="compose-action-bar__eyebrow">Document</span>
             <strong>Composition</strong>
           </div>
           <div className="compose-action-bar__future" aria-label="Project actions coming soon">
@@ -398,10 +396,11 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
             </button>
           </div>
         </div>
-        <div className="compose-action-status">
-          <p className="compose-export-note">PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.</p>
-          {exportError && <p className="compose-message compose-message--error" role="alert">{exportError}</p>}
-        </div>
+        {exportError && (
+          <div className="compose-action-status">
+            <p className="compose-message compose-message--error" role="alert">{exportError}</p>
+          </div>
+        )}
 
         <div className="compose-canvas-area">
           <nav className="compose-tool-rail" aria-label="Canvas tools">
@@ -592,7 +591,6 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
         <section className="compose-card compose-sources" aria-labelledby="compose-sources-title">
           <div className="compose-card__header">
             <div>
-              <p className="eyebrow">Palette source</p>
               <h2 id="compose-sources-title">Selected cats</h2>
             </div>
             <span className="compose-count">{sourceCats.length}</span>
@@ -637,7 +635,6 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
         <section className="compose-card compose-background" aria-labelledby="compose-background-title">
           <div className="compose-card__header">
             <div>
-              <p className="eyebrow">Local only</p>
               <h2 id="compose-background-title">Background</h2>
             </div>
             {background && <span className="compose-file-name" title={background.name}>{background.name}</span>}
@@ -648,12 +645,12 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
           </label>
           {background && <button className="compose-text-button" type="button" onClick={() => onBackgroundChange(null)}>Remove background</button>}
           {backgroundError && <p className="compose-message compose-message--error" role="alert">{backgroundError}</p>}
+          <p className="compose-export-note">PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.</p>
         </section>
 
         <section className="compose-card compose-selected" aria-labelledby="compose-selected-title">
           <div className="compose-card__header">
             <div>
-              <p className="eyebrow">Inspector</p>
               <h2 id="compose-selected-title">Selected layer</h2>
             </div>
             {selected && <span className="compose-layer-number">{selected.z + 1}</span>}
