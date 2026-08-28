@@ -29,7 +29,14 @@ export interface ComposePlacedText extends ComposePlacedTransform {
   fontFamily: string
 }
 
-export type ComposePlacedObject = ComposePlacedCat | ComposePlacedText
+export interface ComposePlacedRect extends ComposePlacedTransform {
+  kind: 'rect'
+  width: number
+  height: number
+  fill: string
+}
+
+export type ComposePlacedObject = ComposePlacedCat | ComposePlacedText | ComposePlacedRect
 
 export interface ComposeBackground {
   url: string
@@ -156,6 +163,12 @@ export async function renderComposition({
         width,
         height,
       )
+    } else if (placed.kind === 'rect') {
+      const width = placed.width * dimensions.width * placed.scale
+      const height = placed.height * dimensions.height * placed.scale
+      context.scale(placed.flipX ? -1 : 1, placed.flipY ? -1 : 1)
+      context.fillStyle = placed.fill
+      context.fillRect(-width / 2, -height / 2, width, height)
     } else {
       context.scale(
         (placed.flipX ? -1 : 1) * placed.scale * outputScale,

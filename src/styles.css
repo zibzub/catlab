@@ -2476,6 +2476,24 @@ h1 {
   outline-offset: 0;
 }
 
+.compose-rectangle {
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+  border: 0;
+  padding: 0;
+  cursor: move;
+  transform-origin: center;
+  touch-action: none;
+  user-select: none;
+}
+
+.compose-rectangle:focus,
+.compose-rectangle:focus-visible {
+  outline: 0;
+  outline-offset: 0;
+}
+
 .compose-text {
   position: absolute;
   display: block;

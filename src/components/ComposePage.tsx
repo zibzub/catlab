@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
-import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type Renderer } from 'react-moveable'
-import { renderComposition, type ComposeBackground, type ComposePlacedObject } from '../composeExport'
+import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type OnScaleStart, type Renderer } from 'react-moveable'
+import { renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -90,6 +90,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const backgroundInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
   const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
+  const rectangleScaleStartRef = useRef<{ id: string; width: number; height: number; scale: number } | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingTextId, setEditingTextId] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
@@ -227,6 +228,29 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     setSelectedId(id)
   }
 
+  function addRectangle() {
+    const id = `rect-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    setPlacedObjects((current) => {
+      const rectangle: ComposePlacedRect = {
+        id,
+        kind: 'rect',
+        width: 0.28,
+        height: 0.2,
+        fill: '#e5e5ee',
+        x: 0.5,
+        y: 0.5,
+        scale: 1,
+        rotation: 0,
+        opacity: 1,
+        flipX: false,
+        flipY: false,
+        z: nextLayer(current),
+      }
+      return [...current, rectangle]
+    })
+    setSelectedId(id)
+  }
+
   function duplicateSelected() {
     if (!selectedId) return
     const id = `${selectedId}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -296,12 +320,34 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     }))
   }
 
+  function handleMoveableScaleStart(event: OnScaleStart) {
+    const id = moveableTargetId(event.target)
+    const item = id ? placedObjects.find((candidate) => candidate.id === id) : null
+    if (!id || item?.kind !== 'rect') {
+      rectangleScaleStartRef.current = null
+      return
+    }
+    rectangleScaleStartRef.current = { id, width: item.width, height: item.height, scale: item.scale }
+  }
+
   function handleMoveableScale(event: OnScale) {
     const id = moveableTargetId(event.target)
     if (!id) return
-    setPlacedObjects((current) => current.map((item) => item.id === id
-      ? { ...item, scale: clamp(Math.abs(event.scale[0]), 0.4, 12) }
-      : item))
+    setPlacedObjects((current) => current.map((item) => {
+      if (item.id !== id) return item
+      if (item.kind === 'rect') {
+        const start = rectangleScaleStartRef.current?.id === id
+          ? rectangleScaleStartRef.current
+          : { width: item.width, height: item.height, scale: item.scale }
+        return {
+          ...item,
+          width: clamp(start.width * start.scale * Math.abs(event.scale[0]), 0.04, 1.5),
+          height: clamp(start.height * start.scale * Math.abs(event.scale[1]), 0.04, 1.5),
+          scale: 1,
+        }
+      }
+      return { ...item, scale: clamp(Math.abs(event.scale[0]), 0.4, 12) }
+    }))
   }
 
   function handleMoveableRotate(event: OnRotate) {
@@ -408,7 +454,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
               <span className="compose-tool__icon" aria-hidden="true">↖</span>
               <span className="compose-tool__label">Select / Move</span>
             </button>
-            <button className="compose-tool" type="button" disabled aria-label="Rectangle tool coming soon" title="Rectangle tool coming soon">
+            <button className="compose-tool" type="button" onClick={addRectangle} aria-label="Add rectangle" title="Add rectangle">
               <span className="compose-tool__icon" aria-hidden="true">□</span>
               <span className="compose-tool__label">Rectangle</span>
             </button>
@@ -477,6 +523,38 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                       style={spriteStyle}
                       onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
                       onClick={() => setSelectedId(item.id)}
+                    />
+                  )
+                }
+
+                if (item.kind === 'rect') {
+                  const rectangleStyle = {
+                    left: `${item.x * 100}%`,
+                    top: `${item.y * 100}%`,
+                    width: `${item.width * 100}%`,
+                    height: `${item.height * 100}%`,
+                    zIndex: item.z + 1,
+                    opacity: item.opacity,
+                    backgroundColor: item.fill,
+                    transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
+                  } as CSSProperties
+                  return (
+                    <div
+                      className="compose-rectangle"
+                      key={item.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Rectangle layer"
+                      data-compose-id={item.id}
+                      style={rectangleStyle}
+                      onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
+                      onClick={() => setSelectedId(item.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          setSelectedId(item.id)
+                        }
+                      }}
                     />
                   )
                 }
@@ -570,7 +648,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                 }}
                 draggable
                 scalable
-                keepRatio
+                keepRatio={selected?.kind !== 'rect'}
                 rotatable
                 origin={false}
                 renderDirections={['nw', 'ne', 'sw', 'se']}
@@ -579,6 +657,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                 throttleScale={0}
                 throttleRotate={0}
                 onDrag={handleMoveableDrag}
+                onScaleStart={handleMoveableScaleStart}
                 onScale={handleMoveableScale}
                 onRotate={handleMoveableRotate}
               />
@@ -665,6 +744,11 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                     <strong>MoonCat {selectedCat.rescueOrder}</strong>
                     <span>{selectedCat.catId}</span>
                   </>
+                ) : selected.kind === 'rect' ? (
+                  <>
+                    <strong>Rectangle layer</strong>
+                    <span>Editable rectangle object</span>
+                  </>
                 ) : (
                   <>
                     <strong>Text layer</strong>
@@ -707,6 +791,14 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                   <label className="compose-range">
                     <span>Font size <output>{selected.fontSize} px</output></span>
                     <input type="range" min="12" max="240" step="1" value={selected.fontSize} onChange={(event) => updateSelected({ fontSize: Number(event.currentTarget.value) })} />
+                  </label>
+                </div>
+              )}
+              {selected.kind === 'rect' && (
+                <div className="compose-color-options compose-rectangle-options">
+                  <label className="compose-color-field">
+                    <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
+                    <span>Fill</span>
                   </label>
                 </div>
               )}
