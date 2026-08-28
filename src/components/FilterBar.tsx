@@ -22,6 +22,7 @@ interface FilterBarProps {
   showRings: boolean
   showStars: boolean
   showVignette: boolean
+  colorLabOpen: boolean
   onQueryChange: (query: string) => void
   onApplyFilters: (filters: FilterState) => void
   onClearFilters: () => void
@@ -33,6 +34,7 @@ interface FilterBarProps {
   onRingsChange: (show: boolean) => void
   onStarsChange: (show: boolean) => void
   onVignetteChange: (show: boolean) => void
+  onColorLabToggle: () => void
 }
 
 export function FilterBar({
@@ -47,6 +49,7 @@ export function FilterBar({
   showRings,
   showStars,
   showVignette,
+  colorLabOpen,
   onQueryChange,
   onApplyFilters,
   onClearFilters,
@@ -58,6 +61,7 @@ export function FilterBar({
   onRingsChange,
   onStarsChange,
   onVignetteChange,
+  onColorLabToggle,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [chipLimit, setChipLimit] = useState(4)
@@ -203,6 +207,16 @@ export function FilterBar({
             {selectedFilterCount > 0 && (
               <span className="collection-toolbar__count">{selectedFilterCount}</span>
             )}
+          </button>
+          <button
+            className={`collection-toolbar__button${colorLabOpen ? ' is-active' : ''}`}
+            type="button"
+            aria-expanded={colorLabOpen}
+            aria-controls="colorlab-panel"
+            onClick={onColorLabToggle}
+          >
+            <span className="collection-toolbar__button-icon" aria-hidden="true">⌖</span>
+            <span>ColorLab</span>
           </button>
           <div className="art-mode-toggle" role="group" aria-label="Art mode">
             <button

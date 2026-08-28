@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CatDetailsDialog } from './components/CatDetailsDialog'
 import { CatGrid } from './components/CatGrid'
 import { CatList } from './components/CatList'
+import { ColorLabPanel } from './components/ColorLabPanel'
 import { ComposePage } from './components/ComposePage'
 import { FilterBar } from './components/FilterBar'
 import {
@@ -12,6 +13,7 @@ import {
   type RemovableFilterKey,
 } from './components/collectionFilters'
 import { Palette } from './components/Palette'
+import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import { loadGeneratedData } from './data'
 import {
   loadMoonCatClassifications,
@@ -153,6 +155,8 @@ export default function App() {
   const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
   const [composePlacedObjects, setComposePlacedObjects] = useState<ComposePlacedObject[]>([])
   const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
+  const [colorLabOpen, setColorLabOpen] = useState(false)
+  const [colorLabSample, setColorLabSample] = useState<ColorLabSample | null>(null)
 
   useEffect(() => {
     try {
@@ -206,9 +210,23 @@ export default function App() {
     () => buildFilterIndex(cats ?? [], names, classifications),
     [cats, classifications, names],
   )
+  const colorLabMatch = useMemo(
+    () => colorLabSample ? getMoonCatColorMatch(colorLabSample) : null,
+    [colorLabSample],
+  )
+  const colorLabMatchingOrders = useMemo(() => {
+    if (!colorLabMatch) return null
+    return new Set(
+      findMoonCatsByExactHue(cats ?? [], colorLabMatch.hueInt, colorLabMatch.pale)
+        .map((cat) => cat.rescueOrder),
+    )
+  }, [cats, colorLabMatch])
   const filteredCats = useMemo(
-    () => (cats ?? []).filter((cat) => matchesFilters(cat, filters, filterIndex)),
-    [cats, filterIndex, filters],
+    () => (cats ?? []).filter((cat) => (
+      matchesFilters(cat, filters, filterIndex)
+      && (colorLabMatchingOrders === null || colorLabMatchingOrders.has(cat.rescueOrder))
+    )),
+    [cats, colorLabMatchingOrders, filterIndex, filters],
   )
   const selectedCats = useMemo(
     () => (cats ?? []).filter((cat) => selectedOrders.has(cat.rescueOrder)),
@@ -339,6 +357,7 @@ export default function App() {
               showRings={showRings}
               showStars={showStars}
               showVignette={showVignette}
+              colorLabOpen={colorLabOpen}
               onQueryChange={updateQuery}
               onApplyFilters={applyFilters}
               onClearFilters={clearFilters}
@@ -350,8 +369,15 @@ export default function App() {
               onRingsChange={setShowRings}
               onStarsChange={setShowStars}
               onVignetteChange={setShowVignette}
+              onColorLabToggle={() => setColorLabOpen((current) => !current)}
             />
           </div>
+          <ColorLabPanel
+            open={colorLabOpen}
+            sample={colorLabSample}
+            matchingCount={colorLabMatchingOrders ? filteredCats.length : 0}
+            onSampleChange={setColorLabSample}
+          />
           {viewMode === 'list' ? (
             <CatList
               cats={filteredCats}
