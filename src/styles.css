@@ -22,6 +22,46 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Press Start 2P";
+  src: url('/fonts/PressStart2P.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Setback TT (BRK)";
+  src: url('/fonts/setbackt.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Anton";
+  src: url('/fonts/Anton-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Arimo";
+  src: url('/fonts/Arimo[wght].ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url('/fonts/Roboto[wdth,wght].ttf') format('truetype');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
   color: #f7f7fb;
   background: #090a0e;

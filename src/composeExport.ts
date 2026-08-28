@@ -99,6 +99,14 @@ export async function renderComposition({
   background,
   stageWidth,
 }: ComposeExportOptions) {
+  await document.fonts.ready
+  const textFonts = [...new Set(
+    placedObjects
+      .filter((placed): placed is Extract<ComposePlacedObject, { kind: 'text' }> => placed.kind === 'text')
+      .map((placed) => placed.fontFamily),
+  )]
+  await Promise.all(textFonts.map((fontFamily) => document.fonts.load(`16px ${fontFamily}`)))
+
   const dimensions = background ?? EMPTY_COMPOSITION
   const canvas = document.createElement('canvas')
   canvas.width = dimensions.width

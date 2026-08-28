@@ -21,6 +21,13 @@ const COMPOSE_TEXT_FONTS = [
   { label: 'System sans', value: COMPOSE_TEXT_FONT },
   { label: 'System serif', value: 'ui-serif, Georgia, Cambria, "Times New Roman", serif' },
   { label: 'Monospace', value: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' },
+  { label: 'Pixel Operator', value: '"Pixel Operator", monospace' },
+  { label: 'Pixel Operator Bold', value: '"Pixel Operator Bold", monospace' },
+  { label: 'Press Start 2P', value: '"Press Start 2P", monospace' },
+  { label: 'Setback', value: '"Setback TT (BRK)", monospace' },
+  { label: 'Anton (Impact-like)', value: 'Anton, sans-serif' },
+  { label: 'Arimo (Arial-like)', value: 'Arimo, Arial, sans-serif' },
+  { label: 'Roboto (Helvetica-like)', value: 'Roboto, Arial, sans-serif' },
 ] as const
 
 interface ComposeObjectToggleOptions {
