@@ -943,10 +943,10 @@ h1 {
 }
 
 .cat-grid-fader::-webkit-slider-thumb {
-  width: 12px;
+  width: 14px;
   height: 18px;
   margin-top: -1px;
-  transform: translateX(-4px);
+  transform: translateX(-5px);
   border: 1px solid rgba(178, 197, 219, 0.28);
   border-radius: 3px;
   background:
@@ -973,9 +973,9 @@ h1 {
 }
 
 .cat-grid-fader::-moz-range-thumb {
-  width: 12px;
+  width: 14px;
   height: 18px;
-  transform: translateX(-1px);
+  transform: translateX(-2px);
   border: 1px solid rgba(178, 197, 219, 0.28);
   border-radius: 3px;
   background: linear-gradient(145deg, #2c3848, #171f2b);
@@ -995,6 +995,38 @@ h1 {
 .cat-grid-fader:disabled {
   cursor: default;
   opacity: 0.35;
+}
+
+.cat-grid-fader {
+  cursor: pointer;
+}
+
+.cat-grid-fader::-webkit-slider-thumb {
+  border-color: rgba(153, 154, 255, 0.72);
+  background:
+    linear-gradient(to bottom,
+      transparent 0 4px,
+      rgba(240, 239, 255, 0.38) 4px 5px,
+      transparent 5px 8px,
+      rgba(240, 239, 255, 0.38) 8px 9px,
+      transparent 9px 12px,
+      rgba(240, 239, 255, 0.38) 12px 13px,
+      transparent 13px 100%),
+    var(--console-purple, #6666f6);
+}
+
+.cat-grid-fader::-moz-range-thumb {
+  border-color: rgba(153, 154, 255, 0.72);
+  background:
+    linear-gradient(to bottom,
+      transparent 0 4px,
+      rgba(240, 239, 255, 0.38) 4px 5px,
+      transparent 5px 8px,
+      rgba(240, 239, 255, 0.38) 8px 9px,
+      transparent 9px 12px,
+      rgba(240, 239, 255, 0.38) 12px 13px,
+      transparent 13px 100%),
+    var(--console-purple, #6666f6);
 }
 
 .cat-grid-canvas {
