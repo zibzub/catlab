@@ -20,10 +20,19 @@ type FilterSectionKey = 'classification' | 'rescue' | 'coat' | 'traits' | 'namin
 
 const RESCUE_CLASSIFICATION_KEYS = new Set(['day1', 'day2', 'week1', 'earlyRescues', 'sub100'])
 const TRAIT_CLASSIFICATION_KEYS = new Set(['genesis'])
+const RESCUE_CLASSIFICATION_ORDER: Record<string, number> = {
+  sub100: 0,
+  day1: 1,
+  day2: 2,
+  week1: 3,
+  earlyRescues: 4,
+}
 const CHARACTER_CLASSIFICATION_OPTIONS = CLASSIFICATION_FILTER_OPTIONS.filter(
   (option) => !RESCUE_CLASSIFICATION_KEYS.has(option.value) && !TRAIT_CLASSIFICATION_KEYS.has(option.value),
 )
-const RESCUE_CLASSIFICATION_OPTIONS = CLASSIFICATION_FILTER_OPTIONS.filter((option) => RESCUE_CLASSIFICATION_KEYS.has(option.value))
+const RESCUE_CLASSIFICATION_OPTIONS = CLASSIFICATION_FILTER_OPTIONS
+  .filter((option) => RESCUE_CLASSIFICATION_KEYS.has(option.value))
+  .sort((a, b) => RESCUE_CLASSIFICATION_ORDER[a.value] - RESCUE_CLASSIFICATION_ORDER[b.value])
 const TRAIT_CLASSIFICATION_OPTIONS = CLASSIFICATION_FILTER_OPTIONS.filter((option) => TRAIT_CLASSIFICATION_KEYS.has(option.value))
 
 function toggleValue<T>(values: T[], value: T) {
@@ -128,9 +137,9 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
   const [draft, setDraft] = useState<FilterState>(() => cloneFilterState(activeFilters))
   const [hueSearch, setHueSearch] = useState('')
   const [openSections, setOpenSections] = useState<Record<FilterSectionKey, boolean>>({
-    classification: true,
-    rescue: true,
-    coat: true,
+    classification: false,
+    rescue: false,
+    coat: false,
     traits: false,
     naming: false,
   })
@@ -205,9 +214,7 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
       >
         <div className="filter-drawer__header">
           <div>
-            <p className="eyebrow">Collection filters</p>
             <h2 id="filter-drawer-title">Filter MoonCats</h2>
-            <p className="filter-drawer__hint">OR within a filter · AND across filters</p>
           </div>
           <button ref={closeRef} className="filter-drawer__close" type="button" onClick={onClose}>
             <span aria-hidden="true">×</span>
@@ -216,80 +223,6 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
         </div>
 
         <div className="filter-drawer__sections">
-          <FilterAccordionSection
-            id="classification"
-            title="Character Cats"
-            selectedCount={characterCatsCount}
-            open={openSections.classification}
-            onToggle={() => setSectionOpen('classification')}
-          >
-            <div className="filter-drawer__option-list">
-              {CHARACTER_CLASSIFICATION_OPTIONS.map((option) => {
-                const count = index.counts.classifications[option.value] ?? 0
-                return (
-                  <FilterOption
-                    key={option.value}
-                    label={option.label}
-                    count={count}
-                    checked={draft.classifications.includes(option.value)}
-                    disabled={count === 0}
-                    onChange={() => setDraft((current) => ({
-                      ...current,
-                      classifications: toggleValue(current.classifications, option.value),
-                    }))}
-                  />
-                )
-              })}
-            </div>
-          </FilterAccordionSection>
-
-          <FilterAccordionSection
-            id="rescue"
-            title="Rescue"
-            selectedCount={rescueCount}
-            open={openSections.rescue}
-            onToggle={() => setSectionOpen('rescue')}
-          >
-            <div className="filter-drawer__field">
-              <span className="filter-drawer__field-label">Rescue Groups</span>
-              <div className="filter-drawer__option-list">
-                {RESCUE_CLASSIFICATION_OPTIONS.map((option) => {
-                  const count = index.counts.classifications[option.value] ?? 0
-                  return (
-                    <FilterOption
-                      key={option.value}
-                      label={option.label}
-                      count={count}
-                      checked={draft.classifications.includes(option.value)}
-                      disabled={count === 0}
-                      onChange={() => setDraft((current) => ({
-                        ...current,
-                        classifications: toggleValue(current.classifications, option.value),
-                      }))}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-            <div className="filter-drawer__field">
-              <span className="filter-drawer__field-label">Rescue Year</span>
-              <div className="filter-drawer__option-list">
-                {index.options.rescueYears.map((year) => (
-                  <FilterOption
-                    key={year}
-                    label={String(year)}
-                    count={index.counts.rescueYears[String(year)] ?? 0}
-                    checked={draft.rescueYears.includes(year)}
-                    onChange={() => setDraft((current) => ({
-                      ...current,
-                      rescueYears: toggleValue(current.rescueYears, year),
-                    }))}
-                  />
-                ))}
-              </div>
-            </div>
-          </FilterAccordionSection>
-
           <FilterAccordionSection
             id="coat"
             title="Coat"
@@ -300,7 +233,7 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
             <div className="filter-drawer__field">
               <div className="filter-drawer__field-header">
                 <span className="filter-drawer__field-label">Hue Name</span>
-                <span className="filter-drawer__field-meta">{filteredHues.length} shown</span>
+                {hueSearch.trim() && <span className="filter-drawer__field-meta">{filteredHues.length} shown</span>}
               </div>
               <label className="filter-drawer__inline-search">
                 <span className="sr-only">Search hue names</span>
@@ -424,6 +357,33 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
           </FilterAccordionSection>
 
           <FilterAccordionSection
+            id="classification"
+            title="Character Cats"
+            selectedCount={characterCatsCount}
+            open={openSections.classification}
+            onToggle={() => setSectionOpen('classification')}
+          >
+            <div className="filter-drawer__option-list">
+              {CHARACTER_CLASSIFICATION_OPTIONS.map((option) => {
+                const count = index.counts.classifications[option.value] ?? 0
+                return (
+                  <FilterOption
+                    key={option.value}
+                    label={option.label}
+                    count={count}
+                    checked={draft.classifications.includes(option.value)}
+                    disabled={count === 0}
+                    onChange={() => setDraft((current) => ({
+                      ...current,
+                      classifications: toggleValue(current.classifications, option.value),
+                    }))}
+                  />
+                )
+              })}
+            </div>
+          </FilterAccordionSection>
+
+          <FilterAccordionSection
             id="traits"
             title="Traits"
             selectedCount={traitsCount}
@@ -478,7 +438,7 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
 
           <FilterAccordionSection
             id="naming"
-            title="Naming"
+            title="Name"
             selectedCount={namingCount}
             open={openSections.naming}
             onToggle={() => setSectionOpen('naming')}
@@ -508,6 +468,53 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
                 checked={draft.naming === 'unnamed'}
                 onChange={() => setDraft((current) => ({ ...current, naming: 'unnamed' }))}
               />
+            </div>
+          </FilterAccordionSection>
+
+          <FilterAccordionSection
+            id="rescue"
+            title="Rescue"
+            selectedCount={rescueCount}
+            open={openSections.rescue}
+            onToggle={() => setSectionOpen('rescue')}
+          >
+            <div className="filter-drawer__field">
+              <span className="filter-drawer__field-label">Rescue Groups</span>
+              <div className="filter-drawer__option-list">
+                {RESCUE_CLASSIFICATION_OPTIONS.map((option) => {
+                  const count = index.counts.classifications[option.value] ?? 0
+                  return (
+                    <FilterOption
+                      key={option.value}
+                      label={option.label}
+                      count={count}
+                      checked={draft.classifications.includes(option.value)}
+                      disabled={count === 0}
+                      onChange={() => setDraft((current) => ({
+                        ...current,
+                        classifications: toggleValue(current.classifications, option.value),
+                      }))}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+            <div className="filter-drawer__field">
+              <span className="filter-drawer__field-label">Rescue Year</span>
+              <div className="filter-drawer__option-list">
+                {index.options.rescueYears.map((year) => (
+                  <FilterOption
+                    key={year}
+                    label={String(year)}
+                    count={index.counts.rescueYears[String(year)] ?? 0}
+                    checked={draft.rescueYears.includes(year)}
+                    onChange={() => setDraft((current) => ({
+                      ...current,
+                      rescueYears: toggleValue(current.rescueYears, year),
+                    }))}
+                  />
+                ))}
+              </div>
             </div>
           </FilterAccordionSection>
         </div>
