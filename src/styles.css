@@ -1878,9 +1878,9 @@ h1 {
     --cat-art-height: 112px;
     --cat-platform-width: 96px;
     --cat-platform-height: 21px;
-    --cat-compact-art-height: 108px;
-    --cat-compact-platform-width: 96px;
-    --cat-compact-platform-height: 21px;
+    --cat-compact-art-height: 102px;
+    --cat-compact-platform-width: 88px;
+    --cat-compact-platform-height: 19px;
     min-height: 196px;
     border-radius: 11px;
   }
