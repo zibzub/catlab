@@ -252,10 +252,6 @@ export function getMoonCatColorMatch(sample: ColorLabSample): MoonCatColorMatch 
   return { kind, hueInt, pale }
 }
 
-export function matchesMoonCatColor(cat: CatRecord, match: MoonCatColorMatch): boolean {
-  return cat.hueInt === match.hueInt && (match.pale === null || cat.pale === match.pale)
-}
-
 export function findMoonCatsByExactHue(
   moonCats: CatRecord[],
   sampledHue: number,
