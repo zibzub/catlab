@@ -90,8 +90,8 @@ function nextLayer(placed: ComposePlacedObject[]) {
   return placed.reduce((highest, item) => Math.max(highest, item.z), -1) + 1
 }
 
-function sanitizeComposeFilename(value: string) {
-  let filename = value.trim().replace(/(?:\.catlab)+$/i, '')
+function normalizeComposeFilename(value: string, extension: 'catlab' | 'png') {
+  let filename = value.trim().replace(new RegExp(`(?:\\.${extension})+$`, 'i'), '')
   filename = filename.replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '-').trim()
   filename = filename.replace(/[. ]+$/g, '')
 
@@ -108,6 +108,8 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const openInputRef = useRef<HTMLInputElement>(null)
   const saveDialogRef = useRef<HTMLDialogElement>(null)
   const saveFilenameInputRef = useRef<HTMLInputElement>(null)
+  const exportDialogRef = useRef<HTMLDialogElement>(null)
+  const exportFilenameInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
   const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
   const rectangleScaleStartRef = useRef<{ id: string; width: number; height: number; scale: number } | null>(null)
@@ -122,8 +124,10 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const [documentBusy, setDocumentBusy] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
-  const [saveFilename, setSaveFilename] = useState(DEFAULT_COMPOSE_FILENAME)
+  const [compositionName, setCompositionName] = useState(DEFAULT_COMPOSE_FILENAME)
   const [saveFilenameDraft, setSaveFilenameDraft] = useState(DEFAULT_COMPOSE_FILENAME)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [exportFilenameDraft, setExportFilenameDraft] = useState(DEFAULT_COMPOSE_FILENAME)
   const samplingCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const samplingSequenceRef = useRef(0)
 
@@ -136,7 +140,9 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
         target.closest('.moveable-control-box') ||
         target.closest('.compose-tool-rail') ||
         target.closest('.compose-controls') ||
-        target.closest('.compose-action-bar__document')
+        target.closest('.compose-action-bar__document') ||
+        target.closest('.compose-action-bar__name') ||
+        target.closest('.compose-save-dialog')
       ) {
         return
       }
@@ -243,6 +249,24 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       saveFilenameInputRef.current?.select()
     })
   }, [saveDialogOpen])
+
+  useEffect(() => {
+    const dialog = exportDialogRef.current
+    if (!dialog) return
+    if (!exportDialogOpen) {
+      if (dialog.open) dialog.close()
+      return
+    }
+
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal()
+      else dialog.setAttribute('open', '')
+    }
+    window.requestAnimationFrame(() => {
+      exportFilenameInputRef.current?.focus({ preventScroll: true })
+      exportFilenameInputRef.current?.select()
+    })
+  }, [exportDialogOpen])
 
   const selected = placedObjects.find((item) => item.id === selectedId) ?? null
   const selectedCat = selected?.kind === 'cat' ? cats.find((cat) => cat.rescueOrder === selected.rescueOrder) ?? null : null
@@ -511,7 +535,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   function openSaveDialog() {
     if (documentBusy) return
     setDocumentError(null)
-    setSaveFilenameDraft(saveFilename)
+    setSaveFilenameDraft(normalizeComposeFilename(compositionName, 'catlab'))
     setSaveDialogOpen(true)
   }
 
@@ -524,9 +548,25 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     closeSaveDialog()
   }
 
+  function openExportDialog() {
+    if (exportBusy) return
+    setExportError(null)
+    setExportFilenameDraft(normalizeComposeFilename(compositionName, 'png'))
+    setExportDialogOpen(true)
+  }
+
+  function closeExportDialog() {
+    if (!exportBusy) setExportDialogOpen(false)
+  }
+
+  function handleExportDialogCancel(event: React.SyntheticEvent<HTMLDialogElement>) {
+    event.preventDefault()
+    closeExportDialog()
+  }
+
   async function handleSaveDocument() {
     if (documentBusy) return
-    const filename = sanitizeComposeFilename(saveFilenameDraft)
+    const filename = normalizeComposeFilename(saveFilenameDraft, 'catlab')
     setDocumentBusy(true)
     setDocumentError(null)
     try {
@@ -538,7 +578,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       link.download = `${filename}.catlab`
       link.click()
       window.setTimeout(() => URL.revokeObjectURL(url), 0)
-      setSaveFilename(filename)
+      setCompositionName(filename)
       setSaveDialogOpen(false)
     } catch (error: unknown) {
       setDocumentError(error instanceof Error ? error.message : 'Could not save the composition.')
@@ -564,7 +604,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       onBackgroundChange(loaded.background)
       setBackgroundError(null)
       setExportError(null)
-      setSaveFilename(sanitizeComposeFilename(file.name))
+      setCompositionName(normalizeComposeFilename(file.name, 'catlab'))
     } catch (error: unknown) {
       setDocumentError(error instanceof Error ? error.message : 'Could not open the composition.')
     } finally {
@@ -656,6 +696,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   async function handleExport() {
     const stageWidth = stageRef.current?.getBoundingClientRect().width ?? 0
     if (stageWidth <= 0 || exportBusy) return
+    const filename = normalizeComposeFilename(exportFilenameDraft, 'png')
     setExportBusy(true)
     setExportError(null)
     try {
@@ -669,9 +710,10 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = 'catlab-composition.png'
+      link.download = `${filename}.png`
       link.click()
       window.setTimeout(() => URL.revokeObjectURL(url), 0)
+      setExportDialogOpen(false)
     } catch (error: unknown) {
       setExportError(error instanceof Error ? error.message : 'Could not export the composition.')
     } finally {
@@ -691,9 +733,17 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
         </div>
 
         <div className="compose-action-bar" aria-label="Composition actions">
-          <div className="compose-action-bar__title">
-            <strong>Composition</strong>
-          </div>
+          <label className="compose-action-bar__name">
+            <span className="sr-only">Composition name</span>
+            <input
+              type="text"
+              value={compositionName}
+              onChange={(event) => setCompositionName(event.currentTarget.value)}
+              aria-label="Composition name"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
           <div className="compose-action-bar__document" aria-label="Document actions">
             <button type="button" disabled={documentBusy} onClick={() => openInputRef.current?.click()}>Open</button>
             <button type="button" disabled={documentBusy} onClick={openSaveDialog}>Save</button>
@@ -714,8 +764,8 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
             >
               Clear composition
             </button>
-            <button className="compose-export" type="button" disabled={exportBusy} onClick={handleExport}>
-              {exportBusy ? 'Preparing…' : 'Export PNG'}
+            <button className="compose-export" type="button" disabled={exportBusy} onClick={openExportDialog}>
+              Export PNG
             </button>
           </div>
         </div>
@@ -770,6 +820,56 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
               <button type="button" onClick={closeSaveDialog} disabled={documentBusy}>Cancel</button>
               <button className="compose-save-dialog__save" type="submit" disabled={documentBusy}>
                 {documentBusy ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog
+          ref={exportDialogRef}
+          className="compose-save-dialog compose-export-dialog"
+          aria-labelledby="compose-export-dialog-title"
+          onCancel={handleExportDialogCancel}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeExportDialog()
+          }}
+        >
+          <form
+            className="compose-save-dialog__form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void handleExport()
+            }}
+          >
+            <div className="compose-save-dialog__header">
+              <div>
+                <p className="eyebrow">PNG image</p>
+                <h2 id="compose-export-dialog-title">Export PNG</h2>
+              </div>
+              <button className="compose-save-dialog__close" type="button" onClick={closeExportDialog} disabled={exportBusy}>
+                <span aria-hidden="true">×</span>
+                <span className="sr-only">Cancel export</span>
+              </button>
+            </div>
+            <label className="compose-save-dialog__label" htmlFor="compose-export-filename">Filename</label>
+            <div className="compose-save-dialog__filename">
+              <input
+                ref={exportFilenameInputRef}
+                id="compose-export-filename"
+                type="text"
+                value={exportFilenameDraft}
+                onChange={(event) => setExportFilenameDraft(event.currentTarget.value)}
+                autoComplete="off"
+                spellCheck={false}
+                disabled={exportBusy}
+              />
+              <span aria-hidden="true">.png</span>
+            </div>
+            {exportError && <p className="compose-save-dialog__error" role="alert">{exportError}</p>}
+            <div className="compose-save-dialog__actions">
+              <button type="button" onClick={closeExportDialog} disabled={exportBusy}>Cancel</button>
+              <button className="compose-save-dialog__save" type="submit" disabled={exportBusy}>
+                {exportBusy ? 'Exporting…' : 'Export'}
               </button>
             </div>
           </form>

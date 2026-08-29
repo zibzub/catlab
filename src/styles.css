@@ -2206,20 +2206,38 @@ h1 {
   box-shadow: inset 0 1px 0 var(--control-highlight), 0 2px 0 var(--control-shadow);
 }
 
-.compose-action-bar__title {
+.compose-action-bar__name {
   display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0 4px;
+  min-width: 150px;
+  flex: 1 1 220px;
+  max-width: 360px;
 }
 
-.compose-action-bar__title strong {
-  overflow: hidden;
+.compose-action-bar__name input {
+  width: 100%;
+  height: 29px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   color: var(--ink);
-  font-size: 0.66rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .compose-action-bar__name input:hover {
+    border-color: var(--control-border);
+    background: var(--control-surface);
+  }
+}
+
+.compose-action-bar__name input:focus {
+  border-color: var(--accent-bright);
+  background: var(--control-surface);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .compose-action-bar__document,
@@ -3259,6 +3277,11 @@ h1 {
     flex-wrap: wrap;
     gap: 5px;
     margin-bottom: 5px;
+  }
+
+  .compose-action-bar__name {
+    flex: 1 1 190px;
+    max-width: none;
   }
 
   .compose-action-bar__document {
@@ -5661,15 +5684,6 @@ h1 {
   color: var(--console-purple-bright);
 }
 
-.compose-action-bar__title {
-  font-family: var(--console-micro-font);
-}
-
-.compose-action-bar__title strong {
-  color: var(--console-ink);
-  font-size: 0.66rem;
-}
-
 .compose-action-bar__document button,
 .compose-action-bar__actions button {
   border-color: var(--console-divider-strong);
@@ -5698,6 +5712,28 @@ h1 {
 
 .compose-action-bar__actions .compose-export:hover:not(:disabled) {
   background: #8182ff;
+}
+
+.compose-action-bar__name input {
+  border-color: transparent;
+  border-radius: var(--console-radius-small);
+  color: var(--console-ink);
+  background: transparent;
+  font-family: var(--console-micro-font);
+  font-size: 0.7rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .compose-action-bar__name input:hover {
+    border-color: var(--console-divider-strong);
+    background: var(--console-surface-raised);
+  }
+}
+
+.compose-action-bar__name input:focus {
+  border-color: var(--console-purple-bright);
+  background: var(--console-surface-raised);
+  box-shadow: 0 0 0 2px var(--console-purple-soft);
 }
 
 .compose-save-dialog {
