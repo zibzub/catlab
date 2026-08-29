@@ -2410,6 +2410,13 @@ h1 {
   line-height: 1.35;
 }
 
+.compose-open-dialog__message {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 .compose-save-dialog__actions {
   display: flex;
   justify-content: flex-end;
@@ -5756,6 +5763,10 @@ h1 {
 .compose-save-dialog__header .eyebrow,
 .compose-save-dialog__label {
   color: var(--console-purple-bright);
+}
+
+.compose-open-dialog__message {
+  color: var(--console-muted);
 }
 
 .compose-save-dialog__close,

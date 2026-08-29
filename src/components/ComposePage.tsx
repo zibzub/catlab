@@ -3,7 +3,7 @@ import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type O
 import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { sampleCanvasColor } from '../colorLab'
 import { loadComposeBackground, renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
-import { parseComposeDocument, serializeComposeDocument } from '../composeDocument'
+import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -16,6 +16,11 @@ interface ComposePageProps {
   background: ComposeBackground | null
   onBackgroundChange: (background: ComposeBackground | null) => void
   onBack: () => void
+}
+
+interface PendingOpenDocument {
+  document: LoadedComposeDocument
+  compositionName: string
 }
 
 const ART_SCALE: Record<GridArtMode, number> = { bodies: 3, faces: 4 }
@@ -107,6 +112,8 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   const stageContentRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
   const openInputRef = useRef<HTMLInputElement>(null)
+  const openConfirmDialogRef = useRef<HTMLDialogElement>(null)
+  const openConfirmCancelRef = useRef<HTMLButtonElement>(null)
   const saveDialogRef = useRef<HTMLDialogElement>(null)
   const saveFilenameInputRef = useRef<HTMLInputElement>(null)
   const exportDialogRef = useRef<HTMLDialogElement>(null)
@@ -124,6 +131,8 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   const [stageSamplingMessage, setStageSamplingMessage] = useState<string | null>(null)
   const [documentBusy, setDocumentBusy] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
+  const [openConfirmDialogOpen, setOpenConfirmDialogOpen] = useState(false)
+  const [pendingOpenDocument, setPendingOpenDocument] = useState<PendingOpenDocument | null>(null)
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [compositionName, setCompositionName] = useState(DEFAULT_COMPOSE_FILENAME)
   const [saveFilenameDraft, setSaveFilenameDraft] = useState(DEFAULT_COMPOSE_FILENAME)
@@ -232,6 +241,21 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
       editor?.setSelectionRange(editor.value.length, editor.value.length)
     })
   }, [editingTextId])
+
+  useEffect(() => {
+    const dialog = openConfirmDialogRef.current
+    if (!dialog) return
+    if (!openConfirmDialogOpen) {
+      if (dialog.open) dialog.close()
+      return
+    }
+
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal()
+      else dialog.setAttribute('open', '')
+    }
+    window.requestAnimationFrame(() => openConfirmCancelRef.current?.focus({ preventScroll: true }))
+  }, [openConfirmDialogOpen])
 
   useEffect(() => {
     const dialog = saveDialogRef.current
@@ -551,6 +575,36 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
     closeSaveDialog()
   }
 
+  function closeOpenConfirmDialog() {
+    if (documentBusy) return
+    setOpenConfirmDialogOpen(false)
+    setPendingOpenDocument(null)
+  }
+
+  function handleOpenConfirmCancel(event: React.SyntheticEvent<HTMLDialogElement>) {
+    event.preventDefault()
+    closeOpenConfirmDialog()
+  }
+
+  function commitOpenedDocument(candidate: PendingOpenDocument) {
+    cancelStageSampling()
+    setEditingTextId(null)
+    setSelectedId(null)
+    setPlacedObjects(candidate.document.placedObjects)
+    onBackgroundChange(candidate.document.background)
+    setBackgroundError(null)
+    setExportError(null)
+    setCompositionName(candidate.compositionName)
+    setOpenConfirmDialogOpen(false)
+    setPendingOpenDocument(null)
+  }
+
+  function confirmOpenDocument() {
+    if (documentBusy || !pendingOpenDocument) return
+    setDocumentError(null)
+    commitOpenedDocument(pendingOpenDocument)
+  }
+
   function openExportDialog() {
     if (exportBusy) return
     setExportError(null)
@@ -601,14 +655,16 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
       const parsed = JSON.parse(await file.text()) as unknown
       const loaded = parseComposeDocument(parsed)
       if (loaded.background) await loadComposeBackground(loaded.background.url)
-      cancelStageSampling()
-      setEditingTextId(null)
-      setSelectedId(null)
-      setPlacedObjects(loaded.placedObjects)
-      onBackgroundChange(loaded.background)
-      setBackgroundError(null)
-      setExportError(null)
-      setCompositionName(normalizeComposeFilename(file.name, 'catlab'))
+      const candidate = {
+        document: loaded,
+        compositionName: normalizeComposeFilename(file.name, 'catlab'),
+      }
+      if (placedObjects.length > 0 || background) {
+        setPendingOpenDocument(candidate)
+        setOpenConfirmDialogOpen(true)
+      } else {
+        commitOpenedDocument(candidate)
+      }
     } catch (error: unknown) {
       setDocumentError(error instanceof Error ? error.message : 'Could not open the composition.')
     } finally {
@@ -825,6 +881,40 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               <button className="compose-save-dialog__save" type="submit" disabled={documentBusy}>
                 {documentBusy ? 'Saving…' : 'Save'}
               </button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog
+          ref={openConfirmDialogRef}
+          className="compose-save-dialog compose-open-dialog"
+          aria-labelledby="compose-open-dialog-title"
+          onCancel={handleOpenConfirmCancel}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeOpenConfirmDialog()
+          }}
+        >
+          <form
+            className="compose-save-dialog__form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              confirmOpenDocument()
+            }}
+          >
+            <div className="compose-save-dialog__header">
+              <div>
+                <p className="eyebrow">CatLab document</p>
+                <h2 id="compose-open-dialog-title">Open composition?</h2>
+              </div>
+              <button className="compose-save-dialog__close" type="button" onClick={closeOpenConfirmDialog} disabled={documentBusy}>
+                <span aria-hidden="true">×</span>
+                <span className="sr-only">Cancel open</span>
+              </button>
+            </div>
+            <p className="compose-open-dialog__message">Opening this file will replace the current composition.</p>
+            <div className="compose-save-dialog__actions">
+              <button ref={openConfirmCancelRef} type="button" onClick={closeOpenConfirmDialog} disabled={documentBusy}>Cancel</button>
+              <button className="compose-save-dialog__save" type="submit" disabled={documentBusy || !pendingOpenDocument}>Open</button>
             </div>
           </form>
         </dialog>
