@@ -34,9 +34,9 @@ Collection views identify cats by rescue ID, with names shown where available.
 ## ColorLab
 
 Open ColorLab from the Collection toolbar, then choose one of its example
-images or upload an image of your own. Click or tap a visible coat color to
-sample it. CatLab narrows Collection to MoonCats matching that coat hue. Use
-Clear color match to return to the normal Collection results.
+images or upload an image of your own. Click or tap a visible image color or 
+MoonCat coat color to sample it. CatLab narrows Collection to MoonCats matching 
+that hue. Use Clear color match to return to the normal Collection results.
 
 ## Palette
 

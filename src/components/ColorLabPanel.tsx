@@ -84,7 +84,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
       if (!canvas) throw new Error('The ColorLab canvas is unavailable.')
       drawColorLabImage(canvas, image, MAX_COLORLAB_CANVAS_SIZE)
       setImageReady(true)
-      setStatus('Click or tap the image to sample a coat color.')
+      setStatus('Click or tap the image to sample a color.')
     } catch {
       if (sequence !== loadSequenceRef.current) return
       setStatus('That image could not be loaded. Choose another image.')
@@ -298,10 +298,10 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
           ) : (
             <div className="colorlab-result__empty">
               <span className="colorlab-result__empty-mark" aria-hidden="true">⌖</span>
-              <p>Sample a visible coat color to filter the cats below.</p>
+              <p>Sample a color to filter the cats below.</p>
             </div>
           )}
-          <p className="colorlab-result__hint">For best results, avoid eyes, accessories, outlines, shadows, and highlights.</p>
+          <p className="colorlab-result__hint">If trying to identify a specific MoonCat in the image, avoid eyes, accessories, outlines, shadows, and highlights.</p>
           <p className="colorlab-result__status" role="status">{status}</p>
         </aside>
       </div>
