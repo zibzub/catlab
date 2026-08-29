@@ -318,7 +318,8 @@ export default function App() {
           onCollection={() => setAppView('collection')}
         />
         <ComposePage
-          cats={selectedCats}
+          sourceCats={selectedCats}
+          catalogCats={cats}
           manifest={manifest}
           placedObjects={composePlacedObjects}
           setPlacedObjects={setComposePlacedObjects}

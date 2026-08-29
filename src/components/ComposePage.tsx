@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
 import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type OnScaleStart, type Renderer } from 'react-moveable'
 import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { sampleCanvasColor } from '../colorLab'
@@ -8,7 +8,8 @@ import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
 interface ComposePageProps {
-  cats: CatRecord[]
+  sourceCats: CatRecord[]
+  catalogCats: CatRecord[]
   manifest: AtlasManifest
   placedObjects: ComposePlacedObject[]
   setPlacedObjects: Dispatch<SetStateAction<ComposePlacedObject[]>>
@@ -101,7 +102,7 @@ function normalizeComposeFilename(value: string, extension: 'catlab' | 'png') {
   return filename
 }
 
-export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, background, onBackgroundChange, onBack }: ComposePageProps) {
+export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, setPlacedObjects, background, onBackgroundChange, onBack }: ComposePageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const stageContentRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
@@ -269,15 +270,17 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   }, [exportDialogOpen])
 
   const selected = placedObjects.find((item) => item.id === selectedId) ?? null
-  const selectedCat = selected?.kind === 'cat' ? cats.find((cat) => cat.rescueOrder === selected.rescueOrder) ?? null : null
+  const catalogCatsByOrder = useMemo(
+    () => new Map(catalogCats.map((cat) => [cat.rescueOrder, cat])),
+    [catalogCats],
+  )
+  const selectedCat = selected?.kind === 'cat' ? catalogCatsByOrder.get(selected.rescueOrder) ?? null : null
   const colorPickerSupported = supportsColorPicker()
   const selectedDefaultColorTarget: 'fill' | null = selected?.kind === 'rect' || selected?.kind === 'text' ? 'fill' : null
   const stageRatio = background ? background.width / background.height : EMPTY_STAGE_RATIO
   const stageStyle = {
     '--compose-ratio': stageRatio,
   } as CSSProperties
-
-  const sourceCats = cats
 
   function cancelStageSampling() {
     samplingSequenceRef.current += 1
@@ -293,7 +296,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
 
     const blob = await renderComposition({
       placedObjects,
-      cats,
+      catalogCats,
       manifest,
       background,
       stageWidth,
@@ -702,7 +705,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     try {
       const blob = await renderComposition({
         placedObjects,
-        cats,
+        catalogCats,
         manifest,
         background,
         stageWidth,
@@ -934,7 +937,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
                   .sort((a, b) => a.z - b.z)
                   .map((item) => {
                 if (item.kind === 'cat') {
-                  const cat = cats.find((candidate) => candidate.rescueOrder === item.rescueOrder)
+                  const cat = catalogCatsByOrder.get(item.rescueOrder)
                   if (!cat) return null
                   const atlas = item.artMode === 'faces' ? manifest.faceAtlas : manifest.atlas
                   const cell = cat.rescueOrder % atlas.catsPerAtlas

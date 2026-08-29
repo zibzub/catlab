@@ -48,7 +48,7 @@ export interface ComposeBackground {
 
 export interface ComposeExportOptions {
   placedObjects: ComposePlacedObject[]
-  cats: CatRecord[]
+  catalogCats: CatRecord[]
   manifest: AtlasManifest
   background: ComposeBackground | null
   stageWidth: number
@@ -102,7 +102,7 @@ function imageBlob(canvas: HTMLCanvasElement) {
 
 export async function renderComposition({
   placedObjects,
-  cats,
+  catalogCats,
   manifest,
   background,
   stageWidth,
@@ -129,7 +129,7 @@ export async function renderComposition({
 
   context.imageSmoothingEnabled = false
   const outputScale = dimensions.width / Math.max(1, stageWidth)
-  const catsByOrder = new Map(cats.map((cat) => [cat.rescueOrder, cat]))
+  const catsByOrder = new Map(catalogCats.map((cat) => [cat.rescueOrder, cat]))
   const ordered = [...placedObjects].sort((a, b) => a.z - b.z)
 
   for (const placed of ordered) {
