@@ -2222,18 +2222,18 @@ h1 {
   white-space: nowrap;
 }
 
-.compose-action-bar__future,
+.compose-action-bar__document,
 .compose-action-bar__actions {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.compose-action-bar__future {
+.compose-action-bar__document {
   margin-left: auto;
 }
 
-.compose-action-bar__future button,
+.compose-action-bar__document button,
 .compose-action-bar__actions button {
   height: 29px;
   padding: 0 8px;
@@ -2245,10 +2245,19 @@ h1 {
   font-weight: 800;
 }
 
-.compose-action-bar__future button {
-  border-style: dashed;
-  cursor: not-allowed;
-  opacity: 0.42;
+.compose-action-bar__document button {
+  border-style: solid;
+  cursor: pointer;
+}
+
+.compose-action-bar__document button:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--control-surface-deep);
+}
+
+.compose-action-bar__document button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .compose-action-bar__actions .compose-clear,
@@ -2702,7 +2711,16 @@ h1 {
 }
 
 .compose-document-input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .compose-file-name {
@@ -3106,7 +3124,7 @@ h1 {
     margin-bottom: 5px;
   }
 
-  .compose-action-bar__future {
+  .compose-action-bar__document {
     margin-left: auto;
   }
 
@@ -5515,7 +5533,7 @@ h1 {
   font-size: 0.66rem;
 }
 
-.compose-action-bar__future button,
+.compose-action-bar__document button,
 .compose-action-bar__actions button {
   border-color: var(--console-divider-strong);
   border-radius: var(--console-radius-small);
@@ -5525,7 +5543,7 @@ h1 {
   font-size: 0.58rem;
 }
 
-.compose-action-bar__future button {
+.compose-action-bar__document button {
   background: var(--console-surface-inset);
 }
 

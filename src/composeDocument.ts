@@ -237,7 +237,7 @@ function restoreObject(value: ComposeDocumentObject, index: number): ComposePlac
 }
 
 export function parseComposeDocument(value: unknown): LoadedComposeDocument {
-  if (!isRecord(value)) throw new Error('The composition file must contain a JSON object.')
+  if (!isRecord(value)) throw new Error('The CatLab composition file must contain an object.')
   if (value.format !== COMPOSE_DOCUMENT_FORMAT) throw new Error('This is not a CatLab composition file.')
   if (value.version !== COMPOSE_DOCUMENT_VERSION) {
     throw new Error(`Unsupported CatLab composition version: ${String(value.version)}.`)

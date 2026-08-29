@@ -118,7 +118,8 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
         target.closest('[data-compose-id]') ||
         target.closest('.moveable-control-box') ||
         target.closest('.compose-tool-rail') ||
-        target.closest('.compose-controls')
+        target.closest('.compose-controls') ||
+        target.closest('.compose-action-bar__document')
       ) {
         return
       }
@@ -482,7 +483,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = 'catlab-composition.json'
+      link.download = 'catlab-composition.catlab'
       link.click()
       window.setTimeout(() => URL.revokeObjectURL(url), 0)
     } catch (error: unknown) {
@@ -638,14 +639,14 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
           <div className="compose-action-bar__title">
             <strong>Composition</strong>
           </div>
-          <div className="compose-action-bar__future" aria-label="Project actions coming soon">
+          <div className="compose-action-bar__document" aria-label="Document actions">
             <button type="button" disabled={documentBusy} onClick={() => openInputRef.current?.click()}>Open</button>
             <button type="button" disabled={documentBusy} onClick={() => void handleSaveDocument()}>Save</button>
             <input
               ref={openInputRef}
               className="compose-document-input"
               type="file"
-              accept="application/json,.json"
+              accept=".catlab"
               onChange={handleOpenDocument}
             />
           </div>
