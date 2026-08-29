@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch
 import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type OnScaleStart, type Renderer } from 'react-moveable'
 import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { sampleCanvasColor } from '../colorLab'
-import { renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
+import { loadComposeBackground, renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
 import { parseComposeDocument, serializeComposeDocument } from '../composeDocument'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
@@ -600,6 +600,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
     try {
       const parsed = JSON.parse(await file.text()) as unknown
       const loaded = parseComposeDocument(parsed)
+      if (loaded.background) await loadComposeBackground(loaded.background.url)
       cancelStageSampling()
       setEditingTextId(null)
       setSelectedId(null)

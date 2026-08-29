@@ -82,11 +82,34 @@ function loadImage(url: string) {
   return promise
 }
 
-function loadBackground(url: string) {
+export function loadComposeBackground(url: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image()
-    image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error('Could not read the local background image.'))
+    image.decoding = 'async'
+    const cleanup = () => {
+      image.onload = null
+      image.onerror = null
+    }
+    image.onload = () => {
+      if (typeof image.decode !== 'function') {
+        cleanup()
+        resolve(image)
+        return
+      }
+      image.decode()
+        .then(() => {
+          cleanup()
+          resolve(image)
+        })
+        .catch(() => {
+          cleanup()
+          reject(new Error('Could not read the local background image.'))
+        })
+    }
+    image.onerror = () => {
+      cleanup()
+      reject(new Error('Could not read the local background image.'))
+    }
     image.src = url
   })
 }
@@ -123,7 +146,7 @@ export async function renderComposition({
   if (!context) throw new Error('Your browser could not create an export canvas.')
 
   if (background) {
-    const backgroundImage = await loadBackground(background.url)
+    const backgroundImage = await loadComposeBackground(background.url)
     context.drawImage(backgroundImage, 0, 0, dimensions.width, dimensions.height)
   }
 

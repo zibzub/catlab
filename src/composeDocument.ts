@@ -323,10 +323,12 @@ export async function serializeComposeDocument(
   placedObjects: ComposePlacedObject[],
   background: ComposeBackground | null,
 ): Promise<ComposeDocumentV1> {
-  return {
+  const document: ComposeDocumentV1 = {
     format: COMPOSE_DOCUMENT_FORMAT,
     version: COMPOSE_DOCUMENT_VERSION,
     background: background ? await serializeBackground(background) : null,
     objects: placedObjects.map(serializeObject),
   }
+  parseComposeDocument(document)
+  return document
 }

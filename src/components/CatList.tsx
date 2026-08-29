@@ -165,7 +165,7 @@ export function CatList({
     const observer = new ResizeObserver(updateWidth)
     observer.observe(scrollElement)
     return () => observer.disconnect()
-  }, [])
+  }, [cats.length])
 
   useEffect(() => {
     scrollElementRef.current?.scrollTo({ top: 0, left: 0 })
