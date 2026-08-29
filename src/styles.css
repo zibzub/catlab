@@ -2701,6 +2701,10 @@ h1 {
   font-size: 0.58rem;
 }
 
+.compose-document-input {
+  display: none;
+}
+
 .compose-file-name {
   max-width: 135px;
   overflow: hidden;

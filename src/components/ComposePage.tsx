@@ -3,6 +3,7 @@ import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type O
 import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { sampleCanvasColor } from '../colorLab'
 import { renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
+import { parseComposeDocument, serializeComposeDocument } from '../composeDocument'
 import { assetPath } from '../data'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -92,6 +93,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const stageRef = useRef<HTMLDivElement>(null)
   const stageContentRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
+  const openInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
   const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
   const rectangleScaleStartRef = useRef<{ id: string; width: number; height: number; scale: number } | null>(null)
@@ -103,6 +105,8 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const [colorPickerBusy, setColorPickerBusy] = useState(false)
   const [stageSamplingTarget, setStageSamplingTarget] = useState<ComposeColorTarget | null>(null)
   const [stageSamplingMessage, setStageSamplingMessage] = useState<string | null>(null)
+  const [documentBusy, setDocumentBusy] = useState(false)
+  const [documentError, setDocumentError] = useState<string | null>(null)
   const samplingCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const samplingSequenceRef = useRef(0)
 
@@ -468,6 +472,50 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     event.currentTarget.value = ''
   }
 
+  async function handleSaveDocument() {
+    if (documentBusy) return
+    setDocumentBusy(true)
+    setDocumentError(null)
+    try {
+      const composeDocument = await serializeComposeDocument(placedObjects, background)
+      const blob = new Blob([JSON.stringify(composeDocument, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'catlab-composition.json'
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 0)
+    } catch (error: unknown) {
+      setDocumentError(error instanceof Error ? error.message : 'Could not save the composition.')
+    } finally {
+      setDocumentBusy(false)
+    }
+  }
+
+  async function handleOpenDocument(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+    event.currentTarget.value = ''
+    if (!file || documentBusy) return
+
+    setDocumentBusy(true)
+    setDocumentError(null)
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown
+      const loaded = parseComposeDocument(parsed)
+      cancelStageSampling()
+      setEditingTextId(null)
+      setSelectedId(null)
+      setPlacedObjects(loaded.placedObjects)
+      onBackgroundChange(loaded.background)
+      setBackgroundError(null)
+      setExportError(null)
+    } catch (error: unknown) {
+      setDocumentError(error instanceof Error ? error.message : 'Could not open the composition.')
+    } finally {
+      setDocumentBusy(false)
+    }
+  }
+
   function moveableTargetId(target: Element) {
     return target.getAttribute('data-compose-id')
   }
@@ -591,8 +639,15 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
             <strong>Composition</strong>
           </div>
           <div className="compose-action-bar__future" aria-label="Project actions coming soon">
-            <button type="button" disabled title="Open projects are coming soon">Open</button>
-            <button type="button" disabled title="Save projects are coming soon">Save</button>
+            <button type="button" disabled={documentBusy} onClick={() => openInputRef.current?.click()}>Open</button>
+            <button type="button" disabled={documentBusy} onClick={() => void handleSaveDocument()}>Save</button>
+            <input
+              ref={openInputRef}
+              className="compose-document-input"
+              type="file"
+              accept="application/json,.json"
+              onChange={handleOpenDocument}
+            />
           </div>
           <div className="compose-action-bar__actions">
             <button
@@ -608,9 +663,9 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
             </button>
           </div>
         </div>
-        {exportError && (
+        {(exportError || documentError) && (
           <div className="compose-action-status">
-            <p className="compose-message compose-message--error" role="alert">{exportError}</p>
+            <p className="compose-message compose-message--error" role="alert">{documentError ?? exportError}</p>
           </div>
         )}
 
