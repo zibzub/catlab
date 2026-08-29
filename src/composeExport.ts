@@ -55,6 +55,7 @@ export interface ComposeExportOptions {
 }
 
 const EMPTY_COMPOSITION = { width: 1200, height: 900 }
+const MAX_COMPOSE_EXPORT_PIXELS = 64_000_000 // Keep normal high-resolution exports below 64 megapixels.
 const COMPOSE_ART_SCALE: Record<GridArtMode, number> = {
   bodies: 3,
   faces: 4,
@@ -79,6 +80,9 @@ function loadImage(url: string) {
     image.src = url
   })
   atlasImages.set(url, promise)
+  void promise.catch(() => {
+    if (atlasImages.get(url) === promise) atlasImages.delete(url)
+  })
   return promise
 }
 
@@ -130,6 +134,14 @@ export async function renderComposition({
   background,
   stageWidth,
 }: ComposeExportOptions) {
+  const dimensions = background ?? EMPTY_COMPOSITION
+  const pixelArea = dimensions.height > 0 && dimensions.width > MAX_COMPOSE_EXPORT_PIXELS / dimensions.height
+    ? Infinity
+    : dimensions.width * dimensions.height
+  if (!Number.isFinite(pixelArea) || pixelArea > MAX_COMPOSE_EXPORT_PIXELS) {
+    throw new Error('The composition is too large to export as PNG.')
+  }
+
   await document.fonts.ready
   const textFonts = [...new Set(
     placedObjects
@@ -138,7 +150,6 @@ export async function renderComposition({
   )]
   await Promise.all(textFonts.map((fontFamily) => document.fonts.load(`16px ${fontFamily}`)))
 
-  const dimensions = background ?? EMPTY_COMPOSITION
   const canvas = document.createElement('canvas')
   canvas.width = dimensions.width
   canvas.height = dimensions.height

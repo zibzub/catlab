@@ -41,6 +41,9 @@ function loadAtlasImage(url: string) {
     image.src = url
   })
   atlasImages.set(url, imagePromise)
+  void imagePromise.catch(() => {
+    if (atlasImages.get(url) === imagePromise) atlasImages.delete(url)
+  })
   return imagePromise
 }
 

@@ -140,6 +140,16 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   const [exportFilenameDraft, setExportFilenameDraft] = useState(DEFAULT_COMPOSE_FILENAME)
   const samplingCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const samplingSequenceRef = useRef(0)
+  const backgroundSelectionSequenceRef = useRef(0)
+  const pendingBackgroundRef = useRef<{ sequence: number; url: string } | null>(null)
+
+  useEffect(() => () => {
+    backgroundSelectionSequenceRef.current += 1
+    if (pendingBackgroundRef.current) {
+      URL.revokeObjectURL(pendingBackgroundRef.current.url)
+      pendingBackgroundRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     function handleDocumentPointerDown(event: PointerEvent) {
@@ -544,15 +554,26 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   function handleBackground(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0]
     if (!file) return
+    const sequence = backgroundSelectionSequenceRef.current + 1
+    backgroundSelectionSequenceRef.current = sequence
+    if (pendingBackgroundRef.current) URL.revokeObjectURL(pendingBackgroundRef.current.url)
     const url = URL.createObjectURL(file)
+    pendingBackgroundRef.current = { sequence, url }
     const image = new Image()
     image.onload = () => {
+      if (pendingBackgroundRef.current?.sequence !== sequence) {
+        URL.revokeObjectURL(url)
+        return
+      }
+      pendingBackgroundRef.current = null
       onBackgroundChange({ url, width: image.naturalWidth, height: image.naturalHeight, name: file.name })
       setBackgroundError(null)
       setExportError(null)
     }
     image.onerror = () => {
       URL.revokeObjectURL(url)
+      if (pendingBackgroundRef.current?.sequence !== sequence) return
+      pendingBackgroundRef.current = null
       setBackgroundError('That image could not be read. Choose another local image.')
     }
     image.src = url
@@ -822,7 +843,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               disabled={placedObjects.length === 0}
               onClick={() => { cancelStageSampling(); setPlacedObjects([]); setSelectedId(null) }}
             >
-              Clear composition
+              Clear layers
             </button>
             <button className="compose-export" type="button" disabled={exportBusy} onClick={openExportDialog}>
               Export PNG
