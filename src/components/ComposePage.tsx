@@ -20,6 +20,7 @@ interface ComposePageProps {
 const ART_SCALE: Record<GridArtMode, number> = { bodies: 3, faces: 4 }
 const EMPTY_STAGE_RATIO = 4 / 3
 const COMPOSE_TEXT_FONT = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+const DEFAULT_COMPOSE_FILENAME = 'catlab-composition'
 const COMPOSE_TEXT_FONTS = [
   { label: 'System sans', value: COMPOSE_TEXT_FONT },
   { label: 'System serif', value: 'ui-serif, Georgia, Cambria, "Times New Roman", serif' },
@@ -89,11 +90,24 @@ function nextLayer(placed: ComposePlacedObject[]) {
   return placed.reduce((highest, item) => Math.max(highest, item.z), -1) + 1
 }
 
+function sanitizeComposeFilename(value: string) {
+  let filename = value.trim().replace(/(?:\.catlab)+$/i, '')
+  filename = filename.replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '-').trim()
+  filename = filename.replace(/[. ]+$/g, '')
+
+  if (!filename || filename === '.' || filename === '..' || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i.test(filename)) {
+    return DEFAULT_COMPOSE_FILENAME
+  }
+  return filename
+}
+
 export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, background, onBackgroundChange, onBack }: ComposePageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const stageContentRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
   const openInputRef = useRef<HTMLInputElement>(null)
+  const saveDialogRef = useRef<HTMLDialogElement>(null)
+  const saveFilenameInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
   const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
   const rectangleScaleStartRef = useRef<{ id: string; width: number; height: number; scale: number } | null>(null)
@@ -107,6 +121,9 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
   const [stageSamplingMessage, setStageSamplingMessage] = useState<string | null>(null)
   const [documentBusy, setDocumentBusy] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [saveFilename, setSaveFilename] = useState(DEFAULT_COMPOSE_FILENAME)
+  const [saveFilenameDraft, setSaveFilenameDraft] = useState(DEFAULT_COMPOSE_FILENAME)
   const samplingCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const samplingSequenceRef = useRef(0)
 
@@ -208,6 +225,24 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       editor?.setSelectionRange(editor.value.length, editor.value.length)
     })
   }, [editingTextId])
+
+  useEffect(() => {
+    const dialog = saveDialogRef.current
+    if (!dialog) return
+    if (!saveDialogOpen) {
+      if (dialog.open) dialog.close()
+      return
+    }
+
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal()
+      else dialog.setAttribute('open', '')
+    }
+    window.requestAnimationFrame(() => {
+      saveFilenameInputRef.current?.focus({ preventScroll: true })
+      saveFilenameInputRef.current?.select()
+    })
+  }, [saveDialogOpen])
 
   const selected = placedObjects.find((item) => item.id === selectedId) ?? null
   const selectedCat = selected?.kind === 'cat' ? cats.find((cat) => cat.rescueOrder === selected.rescueOrder) ?? null : null
@@ -473,8 +508,25 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
     event.currentTarget.value = ''
   }
 
+  function openSaveDialog() {
+    if (documentBusy) return
+    setDocumentError(null)
+    setSaveFilenameDraft(saveFilename)
+    setSaveDialogOpen(true)
+  }
+
+  function closeSaveDialog() {
+    if (!documentBusy) setSaveDialogOpen(false)
+  }
+
+  function handleSaveDialogCancel(event: React.SyntheticEvent<HTMLDialogElement>) {
+    event.preventDefault()
+    closeSaveDialog()
+  }
+
   async function handleSaveDocument() {
     if (documentBusy) return
+    const filename = sanitizeComposeFilename(saveFilenameDraft)
     setDocumentBusy(true)
     setDocumentError(null)
     try {
@@ -483,9 +535,11 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = 'catlab-composition.catlab'
+      link.download = `${filename}.catlab`
       link.click()
       window.setTimeout(() => URL.revokeObjectURL(url), 0)
+      setSaveFilename(filename)
+      setSaveDialogOpen(false)
     } catch (error: unknown) {
       setDocumentError(error instanceof Error ? error.message : 'Could not save the composition.')
     } finally {
@@ -510,6 +564,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
       onBackgroundChange(loaded.background)
       setBackgroundError(null)
       setExportError(null)
+      setSaveFilename(sanitizeComposeFilename(file.name))
     } catch (error: unknown) {
       setDocumentError(error instanceof Error ? error.message : 'Could not open the composition.')
     } finally {
@@ -641,7 +696,7 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
           </div>
           <div className="compose-action-bar__document" aria-label="Document actions">
             <button type="button" disabled={documentBusy} onClick={() => openInputRef.current?.click()}>Open</button>
-            <button type="button" disabled={documentBusy} onClick={() => void handleSaveDocument()}>Save</button>
+            <button type="button" disabled={documentBusy} onClick={openSaveDialog}>Save</button>
             <input
               ref={openInputRef}
               className="compose-document-input"
@@ -669,6 +724,56 @@ export function ComposePage({ cats, manifest, placedObjects, setPlacedObjects, b
             <p className="compose-message compose-message--error" role="alert">{documentError ?? exportError}</p>
           </div>
         )}
+
+        <dialog
+          ref={saveDialogRef}
+          className="compose-save-dialog"
+          aria-labelledby="compose-save-dialog-title"
+          onCancel={handleSaveDialogCancel}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeSaveDialog()
+          }}
+        >
+          <form
+            className="compose-save-dialog__form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void handleSaveDocument()
+            }}
+          >
+            <div className="compose-save-dialog__header">
+              <div>
+                <p className="eyebrow">CatLab document</p>
+                <h2 id="compose-save-dialog-title">Save composition</h2>
+              </div>
+              <button className="compose-save-dialog__close" type="button" onClick={closeSaveDialog} disabled={documentBusy}>
+                <span aria-hidden="true">×</span>
+                <span className="sr-only">Cancel save</span>
+              </button>
+            </div>
+            <label className="compose-save-dialog__label" htmlFor="compose-save-filename">Filename</label>
+            <div className="compose-save-dialog__filename">
+              <input
+                ref={saveFilenameInputRef}
+                id="compose-save-filename"
+                type="text"
+                value={saveFilenameDraft}
+                onChange={(event) => setSaveFilenameDraft(event.currentTarget.value)}
+                autoComplete="off"
+                spellCheck={false}
+                disabled={documentBusy}
+              />
+              <span aria-hidden="true">.catlab</span>
+            </div>
+            {documentError && <p className="compose-save-dialog__error" role="alert">{documentError}</p>}
+            <div className="compose-save-dialog__actions">
+              <button type="button" onClick={closeSaveDialog} disabled={documentBusy}>Cancel</button>
+              <button className="compose-save-dialog__save" type="submit" disabled={documentBusy}>
+                {documentBusy ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </dialog>
 
         <div className="compose-canvas-area">
           <nav className="compose-tool-rail" aria-label="Canvas tools">
