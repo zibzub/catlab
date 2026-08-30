@@ -47,7 +47,7 @@ export const MoonCatSprite = memo(function MoonCatSprite({
             : 6
           : variant === 'compact'
             ? 4
-            : 5
+            : 4
   const spriteBoxStyle = {
     width: atlas.cellWidth * scale,
     height: atlas.cellHeight * scale,
