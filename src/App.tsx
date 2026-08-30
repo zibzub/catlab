@@ -97,28 +97,30 @@ function AppHeader({
         <span className="header-divider" />
         <span>{catalogCount.toLocaleString()} native cats</span>
       </div>
-      {view === 'compose' ? (
-        <button className="header-tool" type="button" onClick={onCollection}>Collection</button>
-      ) : (
-        <button className="header-tool" type="button" onClick={onCompose}>Compose</button>
-      )}
-      {view === 'compose' ? (
-        <div className="header-selection header-selection--static">
-          <span>Palette</span>
-          <strong>{selectedCount}</strong>
-        </div>
-      ) : (
-        <button
-          className="header-selection"
-          type="button"
-          aria-expanded={paletteOpen}
-          aria-controls="palette-drawer-content"
-          onClick={onPaletteOpen}
-        >
-          <span>Palette</span>
-          <strong>{selectedCount}</strong>
-        </button>
-      )}
+      <div className="app-header__global-actions">
+        {view === 'compose' ? (
+          <button className="header-tool" type="button" onClick={onCollection}>Collection</button>
+        ) : (
+          <button className="header-tool" type="button" onClick={onCompose}>Compose</button>
+        )}
+        {view === 'compose' ? (
+          <div className="header-selection header-selection--static">
+            <span>Palette</span>
+            <strong>{selectedCount}</strong>
+          </div>
+        ) : (
+          <button
+            className="header-selection"
+            type="button"
+            aria-expanded={paletteOpen}
+            aria-controls="palette-drawer-content"
+            onClick={onPaletteOpen}
+          >
+            <span>Palette</span>
+            <strong>{selectedCount}</strong>
+          </button>
+        )}
+      </div>
     </header>
   )
 }

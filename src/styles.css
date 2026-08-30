@@ -250,6 +250,19 @@ select:focus-visible {
   font-size: 0.78rem;
 }
 
+.app-header__global-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.app-header__global-actions .header-selection {
+  margin-left: 0;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 326px;
@@ -4317,7 +4330,7 @@ h1 {
 @media (max-width: 620px) {
   .collection-toolbar__row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
     column-gap: 6px;
     row-gap: 8px;
   }
@@ -4329,10 +4342,11 @@ h1 {
   }
 
   .collection-toolbar__row > .search-control {
-    grid-column: 1;
+    grid-column: 1 / 3;
     grid-row: 2;
     min-width: 0;
     width: 100%;
+    max-width: none;
   }
 
   .collection-toolbar__secondary {
@@ -4378,14 +4392,17 @@ h1 {
   }
 
   .collection-toolbar__actions {
-    display: flex;
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: stretch;
-    gap: 8px;
-    margin-left: 0;
+    display: contents;
+  }
+
+  .collection-toolbar__action-row--primary {
+    grid-column: 2 / -1;
+    grid-row: 1;
+  }
+
+  .collection-toolbar__action-row--secondary {
+    grid-column: 3;
+    grid-row: 2;
   }
 
   .collection-toolbar__action-row {
@@ -4565,6 +4582,15 @@ h1 {
   padding-right: 11px;
   padding-left: 11px;
   color: var(--console-purple-bright);
+}
+
+@media (min-width: 621px) {
+  .app-header__global-actions .header-tool {
+    min-height: 40px;
+    height: 40px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
 }
 
 .header-tool:hover,
@@ -6607,14 +6633,26 @@ h1 {
 }
 
 .colorlab-panel__header h2 {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
   margin-bottom: 5px;
   color: var(--console-ink, var(--ink));
   font-size: 1.42rem;
   letter-spacing: -0.045em;
-  background: linear-gradient(100deg, var(--console-purple-bright, var(--accent-bright)), #d1a9ff 52%, #91d7cf);
+  background: linear-gradient(
+    100deg,
+    #f08a94 0%,
+    #efad66 16%,
+    #e6d878 31%,
+    #9bc878 45%,
+    #6fcfc5 60%,
+    #7fa8e2 74%,
+    #9d8edf 87%,
+    #d78abd 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
-  color: var(--console-purple-bright, var(--accent-bright));
 }
 
 @supports ((background-clip: text) or (-webkit-background-clip: text)) {

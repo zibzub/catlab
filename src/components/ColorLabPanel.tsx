@@ -183,7 +183,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
 
   function clearSample() {
     onSampleChange(null)
-    setStatus(imageReady ? 'Click or tap the image to sample a coat color.' : 'Load an image before sampling a color.')
+    setStatus(imageReady ? 'Click or tap the image to sample a color.' : 'Load an image before sampling a color.')
   }
 
   const match = sample ? getMoonCatColorMatch(sample) : null
@@ -200,7 +200,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
         <div className="colorlab-panel__header-copy">
           <h2 id="colorlab-panel-title">ColorLab</h2>
           <p>
-            Sample a color to narrow the collection
+            Sample colors from an image
             <span className="colorlab-panel__mobile-status" role="status">{status}</span>
           </p>
         </div>
@@ -208,16 +208,16 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
           {sample && (
             <div className="colorlab-panel__mobile-summary" aria-live="polite" aria-label="Sampled color summary">
               <span className="colorlab-panel__mobile-summary-copy">
-                <strong>{hueLabel ?? 'Color match'}</strong>
+                <strong>{hueLabel ?? 'Sampled color'}</strong>
                 <span>{detectionLabel(sample)}</span>
-                <span>{matchingCount.toLocaleString()} cats</span>
+                <span>{matchingCount.toLocaleString()} matches</span>
               </span>
               <span className="colorlab-panel__mobile-swatch" style={{ backgroundColor: sample.hex }} aria-hidden="true" />
             </div>
           )}
           <div className="colorlab-panel__signal" aria-live="polite">
             <span className="colorlab-panel__signal-dot" aria-hidden="true" />
-            <span>{match ? `Hue ${match.hueInt}` : 'Sampler ready'}</span>
+            <span>{match ? `Sampled hue ${match.hueInt}` : 'Sampler ready'}</span>
           </div>
         </div>
       </div>
@@ -255,7 +255,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} />
                 <span>Upload image</span>
               </label>
-              {sample && <button className="colorlab-sampler__clear" type="button" onClick={clearSample}>Clear color match</button>}
+              {sample && <button className="colorlab-sampler__clear" type="button" onClick={clearSample}>Clear sample</button>}
             </div>
 
             <div className="colorlab-sampler__visual">
@@ -285,7 +285,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
                 <div className="colorlab-result__swatch" style={{ backgroundColor: sample.hex }} aria-label={`Sampled color ${sample.hex}`} />
                 <div>
                   <strong>{detectionLabel(sample)}</strong>
-                  <span>{match ? `${matchingCount.toLocaleString()} cats in current view` : 'No confident hue match'}</span>
+                  <span>{match ? `${matchingCount.toLocaleString()} Collection matches` : 'No Collection matches for this sample'}</span>
                 </div>
               </div>
               <dl className="colorlab-result__details">
@@ -298,7 +298,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
           ) : (
             <div className="colorlab-result__empty">
               <span className="colorlab-result__empty-mark" aria-hidden="true">⌖</span>
-              <p>Sample a color to filter the cats below.</p>
+              <p>Sample a color to see its Collection matches.</p>
             </div>
           )}
           <p className="colorlab-result__hint">If trying to identify a specific MoonCat in the image, avoid eyes, accessories, outlines, shadows, and highlights.</p>
