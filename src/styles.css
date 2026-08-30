@@ -586,13 +586,9 @@ h1 {
 
 .cat-grid-frame {
   --cat-grid-viewport-radius: 20px;
-  --cat-grid-frame-angle: 5deg;
   --cat-grid-frame-offset: 4px;
   --cat-grid-frame-highlight: rgba(231, 244, 255, 0.2);
   --cat-grid-frame-shadow: rgba(0, 0, 0, 0.36);
-  --cat-grid-frame-top-right-transition: 40deg;
-  --cat-grid-frame-bottom-left-transition: 220deg;
-  --cat-grid-frame-transition-width: 7deg;
   position: relative;
   display: flex;
   min-width: 0;
@@ -601,25 +597,60 @@ h1 {
   gap: 2px;
 }
 
-.cat-grid-viewport {
+.cat-grid-viewport-bezel {
   position: relative;
   display: flex;
   min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
   margin: var(--cat-grid-frame-offset);
+  border-radius: var(--cat-grid-viewport-radius);
+  isolation: isolate;
+}
+
+.cat-grid-viewport-bezel::before {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  inset: calc(-1 * var(--cat-grid-frame-offset));
   padding: 2px;
   border-radius: calc(var(--cat-grid-viewport-radius) + var(--cat-grid-frame-offset));
-  background: conic-gradient(
-    from var(--cat-grid-frame-angle) at center,
-    var(--cat-grid-frame-highlight) 0deg var(--cat-grid-frame-top-right-transition),
-    var(--cat-grid-frame-shadow)
-      calc(var(--cat-grid-frame-top-right-transition) + var(--cat-grid-frame-transition-width))
-      var(--cat-grid-frame-bottom-left-transition),
-    var(--cat-grid-frame-highlight)
-      calc(var(--cat-grid-frame-bottom-left-transition) + var(--cat-grid-frame-transition-width))
-      360deg
+  background: linear-gradient(
+    to bottom right,
+    var(--cat-grid-frame-highlight) 0 calc(50% - 4px),
+    var(--cat-grid-frame-shadow) calc(50% + 4px) 100%
   );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  content: '';
+  pointer-events: none;
+}
+
+.cat-grid-viewport-bezel::after {
+  position: absolute;
+  z-index: 0;
+  inset: calc(-1 * var(--cat-grid-frame-offset));
+  border-radius: calc(var(--cat-grid-viewport-radius) + var(--cat-grid-frame-offset));
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.3);
+  content: '';
+  pointer-events: none;
+}
+
+.cat-grid-viewport {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 2px;
+  border-radius: calc(var(--cat-grid-viewport-radius) + var(--cat-grid-frame-offset));
+  background: #0c0e14;
   overflow: hidden;
   isolation: isolate;
 }
@@ -1630,10 +1661,6 @@ h1 {
     margin-right: -8px;
     margin-left: -8px;
     margin-bottom: 4px;
-  }
-
-  .cat-grid-frame {
-    --cat-grid-frame-angle: -8deg;
   }
 
   .cat-grid-fader {

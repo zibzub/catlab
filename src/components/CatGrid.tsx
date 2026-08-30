@@ -179,55 +179,57 @@ export function CatGrid({
   return (
     <div className="cat-grid-shell">
       <div className="cat-grid-frame">
-        <div
-          className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}${
-            showStars ? ' cat-grid-viewport--stars' : ''
-          }${showVignette ? '' : ' cat-grid-viewport--vignette-hidden'} cat-grid-viewport--${artMode}`}
-        >
-          {showStars && (
-            <div className="cat-grid-stars" aria-hidden="true">
-              <div className="cat-grid-stars__layer cat-grid-stars__layer--small" ref={smallStarsRef} />
-              <div className="cat-grid-stars__layer cat-grid-stars__layer--large" ref={largeStarsRef} />
-            </div>
-          )}
-          <div className="cat-grid-scroll" ref={scrollElementRef}>
-            <div
-              className="cat-grid-canvas"
-              ref={canvasRef}
-              style={{ height: rowVirtualizer.getTotalSize() }}
-            >
-              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const rowStart = virtualRow.index * columnCount
-                const rowCats = cats.slice(rowStart, rowStart + columnCount)
-                return (
-                  <div
-                    className={`cat-grid-row cat-grid-row--${viewMode} cat-grid-row--${artMode} cat-grid-row--size-${gridSize}`}
-                    data-index={virtualRow.index}
-                    key={virtualRow.key}
-                    ref={rowVirtualizer.measureElement}
-                    style={{
-                      gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-                      top: virtualRow.start,
-                    }}
-                  >
-                    {rowCats.map((cat) => (
-                      <CatTile
-                        key={cat.rescueOrder}
-                        cat={cat}
-                        manifest={manifest}
-                        names={names}
-                        viewMode={viewMode}
-                        artMode={artMode}
-                        gridSize={gridSize}
-                        selected={selectedOrders.has(cat.rescueOrder)}
-                        interactionMode={interactionMode}
-                        onToggle={onToggle}
-                        onInspect={onInspect}
-                      />
-                    ))}
-                  </div>
-                );
-              })}
+        <div className="cat-grid-viewport-bezel">
+          <div
+            className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}${
+              showStars ? ' cat-grid-viewport--stars' : ''
+            }${showVignette ? '' : ' cat-grid-viewport--vignette-hidden'} cat-grid-viewport--${artMode}`}
+          >
+            {showStars && (
+              <div className="cat-grid-stars" aria-hidden="true">
+                <div className="cat-grid-stars__layer cat-grid-stars__layer--small" ref={smallStarsRef} />
+                <div className="cat-grid-stars__layer cat-grid-stars__layer--large" ref={largeStarsRef} />
+              </div>
+            )}
+            <div className="cat-grid-scroll" ref={scrollElementRef}>
+              <div
+                className="cat-grid-canvas"
+                ref={canvasRef}
+                style={{ height: rowVirtualizer.getTotalSize() }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const rowStart = virtualRow.index * columnCount
+                  const rowCats = cats.slice(rowStart, rowStart + columnCount)
+                  return (
+                    <div
+                      className={`cat-grid-row cat-grid-row--${viewMode} cat-grid-row--${artMode} cat-grid-row--size-${gridSize}`}
+                      data-index={virtualRow.index}
+                      key={virtualRow.key}
+                      ref={rowVirtualizer.measureElement}
+                      style={{
+                        gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                        top: virtualRow.start,
+                      }}
+                    >
+                      {rowCats.map((cat) => (
+                        <CatTile
+                          key={cat.rescueOrder}
+                          cat={cat}
+                          manifest={manifest}
+                          names={names}
+                          viewMode={viewMode}
+                          artMode={artMode}
+                          gridSize={gridSize}
+                          selected={selectedOrders.has(cat.rescueOrder)}
+                          interactionMode={interactionMode}
+                          onToggle={onToggle}
+                          onInspect={onInspect}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
