@@ -5907,6 +5907,10 @@ h1 {
     font-size: 0.63rem;
   }
 
+  .collection-toolbar__count {
+    display: none;
+  }
+
   .collection-toolbar__button-icon,
   .collection-toolbar__actions .display-menu .collection-toolbar__button-chevron {
     display: inline;
