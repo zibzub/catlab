@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { activeFilterCount, getActiveFilterChips, type FilterIndex, type RemovableFilterKey } from './collectionFilters'
 import { DisplayMenu } from './DisplayMenu'
 import { FilterDrawer } from './FilterDrawer'
+import type { WalletLookupResult } from '../walletLookup'
 import type {
   CollectionInteractionMode,
   FilterState,
@@ -24,9 +25,14 @@ interface FilterBarProps {
   showVignette: boolean
   colorLabOpen: boolean
   colorLabActive: boolean
+  walletFilter: WalletLookupResult | null
+  walletLookupLoading: boolean
+  walletLookupError: string | null
   onQueryChange: (query: string) => void
   onApplyFilters: (filters: FilterState) => void
   onClearFilters: () => void
+  onWalletLookup: (input: string) => void
+  onClearWallet: () => void
   onRemoveFilter: (key: RemovableFilterKey, value: string | number) => void
   onInteractionModeChange: (mode: CollectionInteractionMode) => void
   onViewModeChange: (mode: GridViewMode) => void
@@ -52,9 +58,14 @@ export function FilterBar({
   showVignette,
   colorLabOpen,
   colorLabActive,
+  walletFilter,
+  walletLookupLoading,
+  walletLookupError,
   onQueryChange,
   onApplyFilters,
   onClearFilters,
+  onWalletLookup,
+  onClearWallet,
   onRemoveFilter,
   onInteractionModeChange,
   onViewModeChange,
@@ -70,7 +81,7 @@ export function FilterBar({
   const filtersTriggerRef = useRef<HTMLButtonElement>(null)
   const selectedFilterCount = activeFilterCount(filters)
   const chips = getActiveFilterChips(filters)
-  const hasActiveFilters = chips.length > 0 || colorLabActive
+  const hasActiveFilters = chips.length > 0 || colorLabActive || walletFilter !== null
   const visibleChips = chips.slice(0, chipLimit)
   const hiddenChipCount = Math.max(0, chips.length - visibleChips.length)
 
@@ -161,6 +172,17 @@ export function FilterBar({
           {hasActiveFilters && (
             <div className="active-filter-row" aria-label="Active filters">
               <div className="active-filter-row__chips">
+                {walletFilter && (
+                  <button
+                    className="active-filter-chip active-filter-chip--wallet"
+                    type="button"
+                    onClick={onClearWallet}
+                    aria-label={`Remove wallet filter ${walletFilter.label}`}
+                  >
+                    <span>Wallet {walletFilter.label}</span>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
                 {visibleChips.map((chip) => (
                   <button
                     key={`${chip.key}-${String(chip.value)}`}
@@ -310,7 +332,12 @@ export function FilterBar({
         open={filtersOpen}
         activeFilters={filters}
         index={filterIndex}
+        walletFilter={walletFilter}
+        walletLookupLoading={walletLookupLoading}
+        walletLookupError={walletLookupError}
         onApply={onApplyFilters}
+        onWalletLookup={onWalletLookup}
+        onClearWallet={onClearWallet}
         onClose={closeFilters}
       />
     </div>

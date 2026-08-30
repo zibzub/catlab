@@ -32,6 +32,7 @@ interface CatListProps {
   interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
   onInspect: (cat: CatRecord, trigger: HTMLButtonElement) => void
+  emptyStateMessage?: string
 }
 
 interface SortHeaderProps {
@@ -135,6 +136,7 @@ export function CatList({
   interactionMode,
   onToggle,
   onInspect,
+  emptyStateMessage,
 }: CatListProps) {
   const [sort, setSort] = useState<{ key: CatListSortKey; direction: SortDirection }>({
     key: 'rescueOrder',
@@ -207,8 +209,8 @@ export function CatList({
     return (
       <div className="grid-empty" role="status">
         <span className="grid-empty__mark">∅</span>
-        <strong>No cats match these filters.</strong>
-        <span>Try clearing a trait or searching for another rescue order.</span>
+        <strong>{emptyStateMessage ?? 'No cats match these filters.'}</strong>
+        <span>{emptyStateMessage ? 'Try another wallet or clear the wallet filter.' : 'Try clearing a trait or searching for another rescue order.'}</span>
       </div>
     )
   }

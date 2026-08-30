@@ -25,6 +25,7 @@ interface CatGridProps {
   interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
   onInspect: (cat: CatRecord, trigger: HTMLButtonElement) => void
+  emptyStateMessage?: string
 }
 
 function columnsForWidth(width: number, viewMode: GridViewMode, artMode: GridArtMode, gridSize: GridSize) {
@@ -82,6 +83,7 @@ export function CatGrid({
   interactionMode,
   onToggle,
   onInspect,
+  emptyStateMessage,
 }: CatGridProps) {
   const scrollElementRef = useRef<HTMLDivElement>(null)
   const smallStarsRef = useRef<HTMLDivElement>(null)
@@ -170,8 +172,8 @@ export function CatGrid({
     return (
       <div className="grid-empty" role="status">
         <span className="grid-empty__mark">∅</span>
-        <strong>No cats match these filters.</strong>
-        <span>Try clearing a trait or searching for another rescue order.</span>
+        <strong>{emptyStateMessage ?? 'No cats match these filters.'}</strong>
+        <span>{emptyStateMessage ? 'Try another wallet or clear the wallet filter.' : 'Try clearing a trait or searching for another rescue order.'}</span>
       </div>
     )
   }

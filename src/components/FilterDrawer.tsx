@@ -7,12 +7,18 @@ import {
   type FilterIndex,
 } from './collectionFilters'
 import type { FilterState } from '../types'
+import type { WalletLookupResult } from '../walletLookup'
 
 interface FilterDrawerProps {
   open: boolean
   activeFilters: FilterState
   index: FilterIndex
+  walletFilter: WalletLookupResult | null
+  walletLookupLoading: boolean
+  walletLookupError: string | null
   onApply: (filters: FilterState) => void
+  onWalletLookup: (input: string) => void
+  onClearWallet: () => void
   onClose: () => void
 }
 
@@ -133,9 +139,21 @@ function FilterAccordionSection({
   )
 }
 
-export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: FilterDrawerProps) {
+export function FilterDrawer({
+  open,
+  activeFilters,
+  index,
+  walletFilter,
+  walletLookupLoading,
+  walletLookupError,
+  onApply,
+  onWalletLookup,
+  onClearWallet,
+  onClose,
+}: FilterDrawerProps) {
   const [draft, setDraft] = useState<FilterState>(() => cloneFilterState(activeFilters))
   const [hueSearch, setHueSearch] = useState('')
+  const [walletInput, setWalletInput] = useState('')
   const [openSections, setOpenSections] = useState<Record<FilterSectionKey, boolean>>({
     classification: false,
     rescue: false,
@@ -150,10 +168,11 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
     if (open && !wasOpenRef.current) {
       setDraft(cloneFilterState(activeFilters))
       setHueSearch('')
+      setWalletInput(walletFilter?.input ?? '')
       window.requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }))
     }
     wasOpenRef.current = open
-  }, [activeFilters, open])
+  }, [activeFilters, open, walletFilter])
 
   useEffect(() => {
     if (!open) return
@@ -223,6 +242,43 @@ export function FilterDrawer({ open, activeFilters, index, onApply, onClose }: F
         </div>
 
         <div className="filter-drawer__sections">
+          <section className="filter-drawer__section filter-drawer__wallet">
+            <div className="filter-drawer__wallet-header">
+              <span className="filter-drawer__field-label">Wallet</span>
+              {walletFilter && <span className="filter-drawer__field-meta">{walletFilter.ids.size.toLocaleString()} cats</span>}
+            </div>
+            <form
+              className="filter-drawer__wallet-form"
+              onSubmit={(event) => {
+                event.preventDefault()
+                onWalletLookup(walletInput)
+              }}
+            >
+              <label>
+                <span className="sr-only">Ethereum address or ENS name</span>
+                <input
+                  type="text"
+                  value={walletInput}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="Address or ENS name"
+                  onChange={(event) => setWalletInput(event.target.value)}
+                />
+              </label>
+              <button className="filter-drawer__wallet-submit" type="submit" disabled={walletLookupLoading}>
+                {walletLookupLoading ? 'Looking up…' : 'Lookup'}
+              </button>
+            </form>
+            {walletLookupError && <p className="filter-drawer__wallet-error" role="alert">{walletLookupError}</p>}
+            {walletFilter && !walletLookupError && (
+              <p className="filter-drawer__wallet-status" role="status">
+                Showing {walletFilter.ids.size.toLocaleString()} cats for {walletFilter.label}.
+                <button type="button" onClick={onClearWallet}>Clear wallet</button>
+              </p>
+            )}
+            <p className="filter-drawer__wallet-hint">Read-only lookup for this session.</p>
+          </section>
+
           <FilterAccordionSection
             id="coat"
             title="Coat"

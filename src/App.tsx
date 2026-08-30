@@ -15,6 +15,7 @@ import {
 import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import { loadGeneratedData } from './data'
+import { lookupWalletCats, type WalletLookupResult } from './walletLookup'
 import {
   loadMoonCatClassifications,
   loadMoonCatNames,
@@ -159,6 +160,10 @@ export default function App() {
   const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
   const [colorLabOpen, setColorLabOpen] = useState(false)
   const [colorLabSample, setColorLabSample] = useState<ColorLabSample | null>(null)
+  const [walletFilter, setWalletFilter] = useState<WalletLookupResult | null>(null)
+  const [walletLookupLoading, setWalletLookupLoading] = useState(false)
+  const [walletLookupError, setWalletLookupError] = useState<string | null>(null)
+  const walletLookupSequenceRef = useRef(0)
 
   useEffect(() => {
     try {
@@ -227,8 +232,9 @@ export default function App() {
     () => (cats ?? []).filter((cat) => (
       matchesFilters(cat, filters, filterIndex)
       && (colorLabMatchingOrders === null || colorLabMatchingOrders.has(cat.rescueOrder))
+      && (walletFilter === null || walletFilter.ids.has(cat.rescueOrder))
     )),
-    [cats, colorLabMatchingOrders, filterIndex, filters],
+    [cats, colorLabMatchingOrders, filterIndex, filters, walletFilter],
   )
   const selectedCats = useMemo(
     () => (cats ?? []).filter((cat) => selectedOrders.has(cat.rescueOrder)),
@@ -243,10 +249,36 @@ export default function App() {
     setFilters((current) => ({ ...nextFilters, query: current.query }))
   }, [])
 
+  const clearWalletFilter = useCallback(() => {
+    walletLookupSequenceRef.current += 1
+    setWalletFilter(null)
+    setWalletLookupLoading(false)
+    setWalletLookupError(null)
+  }, [])
+
+  const lookupWallet = useCallback(async (input: string) => {
+    const sequence = walletLookupSequenceRef.current + 1
+    walletLookupSequenceRef.current = sequence
+    setWalletLookupLoading(true)
+    setWalletLookupError(null)
+
+    try {
+      const result = await lookupWalletCats(input)
+      if (walletLookupSequenceRef.current !== sequence) return
+      setWalletFilter(result)
+    } catch (lookupError: unknown) {
+      if (walletLookupSequenceRef.current !== sequence) return
+      setWalletLookupError(lookupError instanceof Error ? lookupError.message : 'Wallet lookup failed.')
+    } finally {
+      if (walletLookupSequenceRef.current === sequence) setWalletLookupLoading(false)
+    }
+  }, [])
+
   const clearFilters = useCallback(() => {
     setFilters((current) => ({ ...createEmptyFilterState(), query: current.query }))
     setColorLabSample(null)
-  }, [])
+    clearWalletFilter()
+  }, [clearWalletFilter])
 
   const removeFilter = useCallback((key: RemovableFilterKey, value: string | number) => {
     setFilters((current) => removeFilterValue(current, key, value))
@@ -363,9 +395,14 @@ export default function App() {
               showVignette={showVignette}
               colorLabOpen={colorLabOpen}
               colorLabActive={colorLabMatchingOrders !== null}
+              walletFilter={walletFilter}
+              walletLookupLoading={walletLookupLoading}
+              walletLookupError={walletLookupError}
               onQueryChange={updateQuery}
               onApplyFilters={applyFilters}
               onClearFilters={clearFilters}
+              onWalletLookup={lookupWallet}
+              onClearWallet={clearWalletFilter}
               onRemoveFilter={removeFilter}
               onInteractionModeChange={setInteractionMode}
               onViewModeChange={setViewMode}
@@ -394,6 +431,7 @@ export default function App() {
               interactionMode={interactionMode}
               onToggle={toggleSelection}
               onInspect={inspectCat}
+              emptyStateMessage={walletFilter ? 'No MoonCats found for this wallet.' : undefined}
             />
           ) : (
             <CatGrid
@@ -411,6 +449,7 @@ export default function App() {
               interactionMode={interactionMode}
               onToggle={toggleSelection}
               onInspect={inspectCat}
+              emptyStateMessage={walletFilter ? 'No MoonCats found for this wallet.' : undefined}
             />
           )}
         </section>
