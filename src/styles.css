@@ -1338,6 +1338,14 @@ h1 {
   white-space: nowrap;
 }
 
+.palette-export__art-option {
+  display: grid;
+  width: 29px;
+  flex: 0 0 29px;
+  padding: 0;
+  place-items: center;
+}
+
 .palette-export__options button:hover {
   color: var(--ink);
   background: rgba(231, 244, 255, 0.07);

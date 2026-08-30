@@ -109,11 +109,16 @@ export function Palette({
                       <button
                         key={art}
                         type="button"
-                        className={exportArt === art ? 'is-active' : ''}
+                        className={`palette-export__art-option${exportArt === art ? ' is-active' : ''}`}
+                        aria-label={art === 'bodies' ? 'Full body art' : 'Face art'}
+                        title={art === 'bodies' ? 'Full body art' : 'Face art'}
                         aria-pressed={exportArt === art}
                         onClick={() => setExportArt(art)}
                       >
-                        {art === 'bodies' ? 'Full' : 'Face'}
+                        <span
+                          className={`art-mode-icon art-mode-icon--${art === 'bodies' ? 'full' : 'face'}`}
+                          aria-hidden="true"
+                        />
                       </button>
                     ))}
                   </div>
