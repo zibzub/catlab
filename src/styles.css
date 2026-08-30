@@ -265,7 +265,7 @@ select:focus-visible {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 326px;
+  grid-template-columns: minmax(0, 1fr) 270px;
   flex: 1 1 auto;
   min-height: 0;
   gap: 0;
@@ -5150,7 +5150,6 @@ h1 {
   border-bottom: 1px solid var(--console-divider);
 }
 
-.palette-panel__header .eyebrow,
 .palette-export__header .eyebrow {
   color: var(--console-purple-bright);
   font-family: var(--console-micro-font);
@@ -5286,6 +5285,18 @@ h1 {
 
 .palette-empty strong {
   color: var(--console-muted);
+}
+
+@media (min-width: 901px) {
+  .palette-panel__intro {
+    margin-top: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+  }
+
+  .palette-empty {
+    min-height: 125px;
+  }
 }
 
 .palette-list {

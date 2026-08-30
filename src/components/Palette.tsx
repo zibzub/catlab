@@ -67,7 +67,6 @@ export function Palette({
         <div className="palette-panel__content" id="palette-drawer-content">
           <div className="palette-panel__header">
             <div>
-              <p className="eyebrow">App-level selection</p>
               <h2 id="palette-title">Palette</h2>
             </div>
             <span className="palette-count" aria-live="polite">
@@ -83,7 +82,7 @@ export function Palette({
             </button>
           </div>
           <div className="palette-panel__intro">
-            <p>Click any bare MoonCat to keep it here for the next CatLab tool.</p>
+            <p>Click any MoonCat to keep it here for Compose.</p>
             <div className="palette-panel__actions">
               <button type="button" className="palette-compose" onClick={onCompose}>
                 Compose
@@ -163,8 +162,8 @@ export function Palette({
               ) : (
                 <p className="palette-export__message">
                   {cats.length === 1
-                    ? 'One transparent image will download.'
-                    : `${cats.length} transparent images will download as one ZIP.`}
+                    ? 'One image will download.'
+                    : `${cats.length} images will download as one ZIP.`}
                 </p>
               )}
               <button
