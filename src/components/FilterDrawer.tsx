@@ -7,19 +7,26 @@ import {
   type FilterIndex,
 } from './collectionFilters'
 import type { FilterState } from '../types'
-import { getInjectedWalletProvider, type WalletLookupResult } from '../walletLookup'
+import {
+  getInjectedWalletProvider,
+  loadWalletLookupHistory,
+  shortenWalletAddress,
+  walletHistoryDisplayLabel,
+  type WalletFilter,
+} from '../walletLookup'
 
 interface FilterDrawerProps {
   open: boolean
   activeFilters: FilterState
   index: FilterIndex
-  walletFilter: WalletLookupResult | null
+  walletFilter: WalletFilter | null
   walletLookupLoading: boolean
   walletLookupError: string | null
   onApply: (filters: FilterState) => void
   onWalletLookup: (input: string) => void
   onUseConnectedWallet: () => void
   onClearWallet: () => void
+  onDisconnectWallet: () => void
   onClose: () => void
 }
 
@@ -151,11 +158,14 @@ export function FilterDrawer({
   onWalletLookup,
   onUseConnectedWallet,
   onClearWallet,
+  onDisconnectWallet,
   onClose,
 }: FilterDrawerProps) {
   const [draft, setDraft] = useState<FilterState>(() => cloneFilterState(activeFilters))
   const [hueSearch, setHueSearch] = useState('')
   const [walletInput, setWalletInput] = useState('')
+  const [walletHistory, setWalletHistory] = useState(loadWalletLookupHistory)
+  const [walletHistoryOpen, setWalletHistoryOpen] = useState(false)
   const [openSections, setOpenSections] = useState<Record<FilterSectionKey, boolean>>({
     classification: false,
     rescue: false,
@@ -187,6 +197,10 @@ export function FilterDrawer({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose, open])
 
+  useEffect(() => {
+    if (walletFilter) setWalletHistory(loadWalletLookupHistory())
+  }, [walletFilter])
+
   if (!open) return null
 
   const draftCount = activeFilterCount(draft)
@@ -205,6 +219,7 @@ export function FilterDrawer({
     + draft.classifications.filter((value) => TRAIT_CLASSIFICATION_KEYS.has(value)).length
   const namingCount = draft.naming === 'all' ? 0 : 1
   const injectedWalletAvailable = getInjectedWalletProvider() !== null
+  const connectedWalletActive = walletFilter?.source === 'connected'
 
   const setSectionOpen = (section: FilterSectionKey) => {
     setOpenSections((current) => ({ ...current, [section]: !current[section] }))
@@ -250,44 +265,85 @@ export function FilterDrawer({
               <span className="filter-drawer__field-label">Wallet</span>
               {walletFilter && <span className="filter-drawer__field-meta">{walletFilter.ids.size.toLocaleString()} cats</span>}
             </div>
-            <form
-              className="filter-drawer__wallet-form"
-              onSubmit={(event) => {
-                event.preventDefault()
-                onWalletLookup(walletInput)
+            <div
+              className="filter-drawer__wallet-entry"
+              onFocus={() => {
+                const recent = loadWalletLookupHistory()
+                setWalletHistory(recent)
+                setWalletHistoryOpen(recent.length > 0)
+              }}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setWalletHistoryOpen(false)
               }}
             >
-              <label>
-                <span className="sr-only">Ethereum address or ENS name</span>
-                <input
-                  type="text"
-                  value={walletInput}
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder="Address or ENS name"
-                  onChange={(event) => setWalletInput(event.target.value)}
-                />
-              </label>
-              <button className="filter-drawer__wallet-submit" type="submit" disabled={walletLookupLoading}>
-                {walletLookupLoading ? 'Looking up…' : 'Lookup'}
-              </button>
-            </form>
-            <button
-              className="filter-drawer__wallet-connect"
-              type="button"
-              disabled={!injectedWalletAvailable || walletLookupLoading}
-              title={injectedWalletAvailable ? 'Use the selected account from your browser wallet' : 'No browser wallet detected'}
-              onClick={onUseConnectedWallet}
-            >
-              Use connected wallet
-            </button>
-            {!injectedWalletAvailable && <p className="filter-drawer__wallet-provider-note">No browser wallet detected.</p>}
+              <form
+                className="filter-drawer__wallet-form"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  setWalletHistoryOpen(false)
+                  onWalletLookup(walletInput)
+                }}
+              >
+                <label>
+                  <span className="sr-only">Ethereum address or ENS name</span>
+                  <input
+                    type="text"
+                    value={walletInput}
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="Address or ENS name"
+                    onChange={(event) => setWalletInput(event.target.value)}
+                  />
+                </label>
+                <button className="filter-drawer__wallet-submit" type="submit" disabled={walletLookupLoading}>
+                  {walletLookupLoading ? 'Looking up…' : 'Lookup'}
+                </button>
+                <button
+                  className={`filter-drawer__wallet-connect${connectedWalletActive ? ' filter-drawer__wallet-disconnect' : ''}`}
+                  type="button"
+                  disabled={!connectedWalletActive && (!injectedWalletAvailable || walletLookupLoading)}
+                  title={connectedWalletActive
+                    ? 'Clear the connected wallet filter'
+                    : injectedWalletAvailable
+                      ? 'Use the selected account from your browser wallet'
+                      : 'No browser wallet detected'}
+                  onClick={connectedWalletActive ? onDisconnectWallet : onUseConnectedWallet}
+                >
+                  {!connectedWalletActive && <span className="wallet-icon" aria-hidden="true" />}
+                  <span>{connectedWalletActive ? 'Disconnect' : 'Connect'}</span>
+                </button>
+              </form>
+              {walletHistoryOpen && walletHistory.length > 0 && (
+                <div className="filter-drawer__wallet-history" role="listbox" aria-label="Recent wallet lookups">
+                  {walletHistory.map((entry) => (
+                    <button
+                      key={entry.address || entry.input}
+                      className="filter-drawer__wallet-history-item"
+                      type="button"
+                      role="option"
+                      aria-label={`Look up wallet ${walletHistoryDisplayLabel(entry)}`}
+                      onClick={() => {
+                        setWalletInput(entry.input)
+                        setWalletHistoryOpen(false)
+                        onWalletLookup(entry.input)
+                      }}
+                    >
+                      <span>{walletHistoryDisplayLabel(entry)}</span>
+                      {entry.resolvedName && entry.address && <small>{shortenWalletAddress(entry.address)}</small>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {!injectedWalletAvailable && !connectedWalletActive && (
+              <p className="filter-drawer__wallet-provider-note">No browser wallet detected</p>
+            )}
             {walletLookupError && <p className="filter-drawer__wallet-error" role="alert">{walletLookupError}</p>}
             {walletFilter && !walletLookupError && (
-              <p className="filter-drawer__wallet-status" role="status">
-                Showing {walletFilter.ids.size.toLocaleString()} cats for {walletFilter.label}.
+              <div className="filter-drawer__wallet-status" role="status">
+                <span>{walletFilter.ids.size === 0 ? 'No MoonCats found.' : `${walletFilter.ids.size.toLocaleString()} MoonCats found.`}</span>
                 <button type="button" onClick={onClearWallet}>Clear wallet</button>
-              </p>
+              </div>
             )}
             <p className="filter-drawer__wallet-hint">Read-only lookup for this session.</p>
           </section>

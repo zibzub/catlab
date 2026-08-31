@@ -1,14 +1,29 @@
 const CATMOON_WALLET_ENDPOINT = 'https://catmoon.zibzub.art/api/wallet-cats'
 const MAX_RESCUE_ORDER = 25439
 const MAX_INPUT_LENGTH = 80
+const WALLET_LOOKUP_HISTORY_KEY = 'catlab.walletLookupHistory'
+const WALLET_LOOKUP_HISTORY_LIMIT = 8
 const ETHEREUM_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/
 const LOOKUP_INPUT_PATTERN = /^[a-z0-9._-]+$/i
 
 export interface WalletLookupResult {
   input: string
   address: string
+  resolvedName: string
   label: string
   ids: Set<number>
+}
+
+export type WalletLookupSource = 'manual' | 'connected'
+
+export interface WalletFilter extends WalletLookupResult {
+  source: WalletLookupSource
+}
+
+export interface WalletLookupHistoryEntry {
+  input: string
+  address: string
+  resolvedName: string
 }
 
 export interface Eip1193Provider {
@@ -31,6 +46,85 @@ export function normalizeWalletRescueOrders(ids: unknown) {
     && id >= 0
     && id <= MAX_RESCUE_ORDER
   )))).sort((first, second) => first - second)
+}
+
+export function shortenWalletAddress(address: string) {
+  return ETHEREUM_ADDRESS_PATTERN.test(address)
+    ? `${address.slice(0, 6)}…${address.slice(-4)}`
+    : address
+}
+
+export function walletHistoryDisplayLabel(entry: WalletLookupHistoryEntry) {
+  if (entry.resolvedName) return entry.resolvedName
+  if (entry.address) return shortenWalletAddress(entry.address)
+  return entry.input
+}
+
+function normalizeHistoryEntry(record: unknown): WalletLookupHistoryEntry | null {
+  if (!record || typeof record !== 'object') return null
+
+  const input = 'input' in record && typeof record.input === 'string' ? record.input.trim() : ''
+  const addressValue = 'address' in record && typeof record.address === 'string' ? record.address.trim() : ''
+  const address = ETHEREUM_ADDRESS_PATTERN.test(addressValue) ? addressValue.toLowerCase() : ''
+  const resolvedName = 'resolvedName' in record && typeof record.resolvedName === 'string'
+    ? record.resolvedName.trim().toLowerCase()
+    : ''
+  if (!input && !address && !resolvedName) return null
+
+  return {
+    input: input || resolvedName || address,
+    address,
+    resolvedName,
+  }
+}
+
+function walletHistoryKey(entry: WalletLookupHistoryEntry) {
+  return entry.address || entry.resolvedName || entry.input.toLowerCase()
+}
+
+export function normalizeWalletLookupHistory(value: unknown) {
+  if (!Array.isArray(value)) return []
+
+  const seen = new Set<string>()
+  const history: WalletLookupHistoryEntry[] = []
+  for (const record of value) {
+    const entry = normalizeHistoryEntry(record)
+    if (!entry) continue
+    const key = walletHistoryKey(entry)
+    if (seen.has(key)) continue
+    seen.add(key)
+    history.push(entry)
+    if (history.length === WALLET_LOOKUP_HISTORY_LIMIT) break
+  }
+  return history
+}
+
+export function loadWalletLookupHistory() {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const stored = window.localStorage.getItem(WALLET_LOOKUP_HISTORY_KEY)
+    return normalizeWalletLookupHistory(stored ? JSON.parse(stored) : [])
+  } catch {
+    return []
+  }
+}
+
+export function rememberWalletLookup(result: WalletLookupResult) {
+  if (typeof window === 'undefined') return
+
+  const entry: WalletLookupHistoryEntry = {
+    input: result.input,
+    address: ETHEREUM_ADDRESS_PATTERN.test(result.address) ? result.address.toLowerCase() : '',
+    resolvedName: result.resolvedName.toLowerCase(),
+  }
+  const history = normalizeWalletLookupHistory([entry, ...loadWalletLookupHistory()])
+
+  try {
+    window.localStorage.setItem(WALLET_LOOKUP_HISTORY_KEY, JSON.stringify(history))
+  } catch {
+    // History is optional; keep lookups usable when storage is unavailable.
+  }
 }
 
 export function getInjectedWalletProvider() {
@@ -131,6 +225,7 @@ export async function lookupWalletCats(input: string): Promise<WalletLookupResul
   return {
     input: normalizedInput,
     address,
+    resolvedName,
     label: displayLabel(normalizedInput, address, resolvedName),
     ids: new Set(ids),
   }

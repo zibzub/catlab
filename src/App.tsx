@@ -17,8 +17,9 @@ import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } fro
 import { loadGeneratedData } from './data'
 import {
   lookupWalletCats,
+  rememberWalletLookup,
   requestConnectedWalletAddress,
-  type WalletLookupResult,
+  type WalletFilter,
 } from './walletLookup'
 import {
   loadMoonCatClassifications,
@@ -164,7 +165,7 @@ export default function App() {
   const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
   const [colorLabOpen, setColorLabOpen] = useState(false)
   const [colorLabSample, setColorLabSample] = useState<ColorLabSample | null>(null)
-  const [walletFilter, setWalletFilter] = useState<WalletLookupResult | null>(null)
+  const [walletFilter, setWalletFilter] = useState<WalletFilter | null>(null)
   const [walletLookupLoading, setWalletLookupLoading] = useState(false)
   const [walletLookupError, setWalletLookupError] = useState<string | null>(null)
   const walletLookupSequenceRef = useRef(0)
@@ -268,11 +269,17 @@ export default function App() {
     return sequence
   }, [])
 
-  const performWalletLookup = useCallback(async (input: string, sequence: number) => {
+  const performWalletLookup = useCallback(async (
+    input: string,
+    sequence: number,
+    source: WalletFilter['source'],
+  ) => {
     try {
       const result = await lookupWalletCats(input)
       if (walletLookupSequenceRef.current !== sequence) return
-      setWalletFilter(result)
+      rememberWalletLookup(result)
+      setWalletFilter({ ...result, source })
+      return result
     } catch (lookupError: unknown) {
       if (walletLookupSequenceRef.current !== sequence) return
       setWalletLookupError(lookupError instanceof Error ? lookupError.message : 'Wallet lookup failed.')
@@ -283,7 +290,7 @@ export default function App() {
 
   const lookupWallet = useCallback((input: string) => {
     const sequence = beginWalletLookup()
-    return performWalletLookup(input, sequence)
+    return performWalletLookup(input, sequence, 'manual')
   }, [beginWalletLookup, performWalletLookup])
 
   const lookupConnectedWallet = useCallback(async () => {
@@ -292,13 +299,18 @@ export default function App() {
     try {
       const address = await requestConnectedWalletAddress()
       if (walletLookupSequenceRef.current !== sequence) return
-      await performWalletLookup(address, sequence)
+      await performWalletLookup(address, sequence, 'connected')
     } catch (lookupError: unknown) {
       if (walletLookupSequenceRef.current !== sequence) return
       setWalletLookupError(lookupError instanceof Error ? lookupError.message : 'Wallet lookup failed.')
       setWalletLookupLoading(false)
     }
   }, [beginWalletLookup, performWalletLookup])
+
+  const disconnectWallet = useCallback(() => {
+    if (walletFilter?.source !== 'connected') return
+    clearWalletFilter()
+  }, [clearWalletFilter, walletFilter?.source])
 
   const clearFilters = useCallback(() => {
     setFilters((current) => ({ ...createEmptyFilterState(), query: current.query }))
@@ -430,6 +442,7 @@ export default function App() {
               onWalletLookup={lookupWallet}
               onUseConnectedWallet={lookupConnectedWallet}
               onClearWallet={clearWalletFilter}
+              onDisconnectWallet={disconnectWallet}
               onRemoveFilter={removeFilter}
               onInteractionModeChange={setInteractionMode}
               onViewModeChange={setViewMode}

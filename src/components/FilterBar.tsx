@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { activeFilterCount, getActiveFilterChips, type FilterIndex, type RemovableFilterKey } from './collectionFilters'
 import { DisplayMenu } from './DisplayMenu'
 import { FilterDrawer } from './FilterDrawer'
-import type { WalletLookupResult } from '../walletLookup'
+import type { WalletFilter } from '../walletLookup'
 import type {
   CollectionInteractionMode,
   FilterState,
@@ -25,7 +25,7 @@ interface FilterBarProps {
   showVignette: boolean
   colorLabOpen: boolean
   colorLabActive: boolean
-  walletFilter: WalletLookupResult | null
+  walletFilter: WalletFilter | null
   walletLookupLoading: boolean
   walletLookupError: string | null
   onQueryChange: (query: string) => void
@@ -34,6 +34,7 @@ interface FilterBarProps {
   onWalletLookup: (input: string) => void
   onUseConnectedWallet: () => void
   onClearWallet: () => void
+  onDisconnectWallet: () => void
   onRemoveFilter: (key: RemovableFilterKey, value: string | number) => void
   onInteractionModeChange: (mode: CollectionInteractionMode) => void
   onViewModeChange: (mode: GridViewMode) => void
@@ -68,6 +69,7 @@ export function FilterBar({
   onWalletLookup,
   onUseConnectedWallet,
   onClearWallet,
+  onDisconnectWallet,
   onRemoveFilter,
   onInteractionModeChange,
   onViewModeChange,
@@ -341,6 +343,7 @@ export function FilterBar({
         onWalletLookup={onWalletLookup}
         onUseConnectedWallet={onUseConnectedWallet}
         onClearWallet={onClearWallet}
+        onDisconnectWallet={onDisconnectWallet}
         onClose={closeFilters}
       />
     </div>
