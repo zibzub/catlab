@@ -32,6 +32,7 @@ interface FilterBarProps {
   onApplyFilters: (filters: FilterState) => void
   onClearFilters: () => void
   onWalletLookup: (input: string) => void
+  onUseConnectedWallet: () => void
   onClearWallet: () => void
   onRemoveFilter: (key: RemovableFilterKey, value: string | number) => void
   onInteractionModeChange: (mode: CollectionInteractionMode) => void
@@ -65,6 +66,7 @@ export function FilterBar({
   onApplyFilters,
   onClearFilters,
   onWalletLookup,
+  onUseConnectedWallet,
   onClearWallet,
   onRemoveFilter,
   onInteractionModeChange,
@@ -337,6 +339,7 @@ export function FilterBar({
         walletLookupError={walletLookupError}
         onApply={onApplyFilters}
         onWalletLookup={onWalletLookup}
+        onUseConnectedWallet={onUseConnectedWallet}
         onClearWallet={onClearWallet}
         onClose={closeFilters}
       />

@@ -15,7 +15,11 @@ import {
 import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import { loadGeneratedData } from './data'
-import { lookupWalletCats, type WalletLookupResult } from './walletLookup'
+import {
+  lookupWalletCats,
+  requestConnectedWalletAddress,
+  type WalletLookupResult,
+} from './walletLookup'
 import {
   loadMoonCatClassifications,
   loadMoonCatNames,
@@ -256,12 +260,15 @@ export default function App() {
     setWalletLookupError(null)
   }, [])
 
-  const lookupWallet = useCallback(async (input: string) => {
+  const beginWalletLookup = useCallback(() => {
     const sequence = walletLookupSequenceRef.current + 1
     walletLookupSequenceRef.current = sequence
     setWalletLookupLoading(true)
     setWalletLookupError(null)
+    return sequence
+  }, [])
 
+  const performWalletLookup = useCallback(async (input: string, sequence: number) => {
     try {
       const result = await lookupWalletCats(input)
       if (walletLookupSequenceRef.current !== sequence) return
@@ -273,6 +280,25 @@ export default function App() {
       if (walletLookupSequenceRef.current === sequence) setWalletLookupLoading(false)
     }
   }, [])
+
+  const lookupWallet = useCallback((input: string) => {
+    const sequence = beginWalletLookup()
+    return performWalletLookup(input, sequence)
+  }, [beginWalletLookup, performWalletLookup])
+
+  const lookupConnectedWallet = useCallback(async () => {
+    const sequence = beginWalletLookup()
+
+    try {
+      const address = await requestConnectedWalletAddress()
+      if (walletLookupSequenceRef.current !== sequence) return
+      await performWalletLookup(address, sequence)
+    } catch (lookupError: unknown) {
+      if (walletLookupSequenceRef.current !== sequence) return
+      setWalletLookupError(lookupError instanceof Error ? lookupError.message : 'Wallet lookup failed.')
+      setWalletLookupLoading(false)
+    }
+  }, [beginWalletLookup, performWalletLookup])
 
   const clearFilters = useCallback(() => {
     setFilters((current) => ({ ...createEmptyFilterState(), query: current.query }))
@@ -402,6 +428,7 @@ export default function App() {
               onApplyFilters={applyFilters}
               onClearFilters={clearFilters}
               onWalletLookup={lookupWallet}
+              onUseConnectedWallet={lookupConnectedWallet}
               onClearWallet={clearWalletFilter}
               onRemoveFilter={removeFilter}
               onInteractionModeChange={setInteractionMode}

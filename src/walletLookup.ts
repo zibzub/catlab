@@ -11,6 +11,16 @@ export interface WalletLookupResult {
   ids: Set<number>
 }
 
+export interface Eip1193Provider {
+  request(args: { method: string }): Promise<unknown>
+}
+
+declare global {
+  interface Window {
+    ethereum?: Eip1193Provider
+  }
+}
+
 export function normalizeWalletRescueOrders(ids: unknown) {
   if (!Array.isArray(ids)) {
     throw new Error('Wallet lookup returned an invalid ids list.')
@@ -21,6 +31,36 @@ export function normalizeWalletRescueOrders(ids: unknown) {
     && id >= 0
     && id <= MAX_RESCUE_ORDER
   )))).sort((first, second) => first - second)
+}
+
+export function getInjectedWalletProvider() {
+  if (typeof window === 'undefined') return null
+  const provider = window.ethereum
+  return provider && typeof provider.request === 'function' ? provider : null
+}
+
+export async function requestConnectedWalletAddress(
+  provider: Eip1193Provider | null = getInjectedWalletProvider(),
+) {
+  if (!provider) throw new Error('No browser wallet was detected.')
+
+  let accounts: unknown
+  try {
+    accounts = await provider.request({ method: 'eth_requestAccounts' })
+  } catch {
+    throw new Error('Wallet connection was cancelled or rejected.')
+  }
+
+  if (!Array.isArray(accounts) || accounts.length === 0) {
+    throw new Error('The connected wallet returned no account.')
+  }
+
+  const address = accounts[0]
+  if (typeof address !== 'string' || !ETHEREUM_ADDRESS_PATTERN.test(address)) {
+    throw new Error('The connected wallet returned an invalid account.')
+  }
+
+  return address
 }
 
 function validateLookupInput(input: string) {

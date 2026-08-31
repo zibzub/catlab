@@ -7,7 +7,7 @@ import {
   type FilterIndex,
 } from './collectionFilters'
 import type { FilterState } from '../types'
-import type { WalletLookupResult } from '../walletLookup'
+import { getInjectedWalletProvider, type WalletLookupResult } from '../walletLookup'
 
 interface FilterDrawerProps {
   open: boolean
@@ -18,6 +18,7 @@ interface FilterDrawerProps {
   walletLookupError: string | null
   onApply: (filters: FilterState) => void
   onWalletLookup: (input: string) => void
+  onUseConnectedWallet: () => void
   onClearWallet: () => void
   onClose: () => void
 }
@@ -148,6 +149,7 @@ export function FilterDrawer({
   walletLookupError,
   onApply,
   onWalletLookup,
+  onUseConnectedWallet,
   onClearWallet,
   onClose,
 }: FilterDrawerProps) {
@@ -202,6 +204,7 @@ export function FilterDrawer({
   const traitsCount = draft.poses.length + draft.expressions.length + draft.facings.length
     + draft.classifications.filter((value) => TRAIT_CLASSIFICATION_KEYS.has(value)).length
   const namingCount = draft.naming === 'all' ? 0 : 1
+  const injectedWalletAvailable = getInjectedWalletProvider() !== null
 
   const setSectionOpen = (section: FilterSectionKey) => {
     setOpenSections((current) => ({ ...current, [section]: !current[section] }))
@@ -269,6 +272,16 @@ export function FilterDrawer({
                 {walletLookupLoading ? 'Looking up…' : 'Lookup'}
               </button>
             </form>
+            <button
+              className="filter-drawer__wallet-connect"
+              type="button"
+              disabled={!injectedWalletAvailable || walletLookupLoading}
+              title={injectedWalletAvailable ? 'Use the selected account from your browser wallet' : 'No browser wallet detected'}
+              onClick={onUseConnectedWallet}
+            >
+              Use connected wallet
+            </button>
+            {!injectedWalletAvailable && <p className="filter-drawer__wallet-provider-note">No browser wallet detected.</p>}
             {walletLookupError && <p className="filter-drawer__wallet-error" role="alert">{walletLookupError}</p>}
             {walletFilter && !walletLookupError && (
               <p className="filter-drawer__wallet-status" role="status">
