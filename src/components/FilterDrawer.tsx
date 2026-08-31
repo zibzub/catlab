@@ -198,7 +198,16 @@ export function FilterDrawer({
   }, [onClose, open])
 
   useEffect(() => {
-    if (walletFilter) setWalletHistory(loadWalletLookupHistory())
+    if (!walletFilter) {
+      setWalletInput('')
+      setWalletHistoryOpen(false)
+      return
+    }
+
+    setWalletHistory(loadWalletLookupHistory())
+    setWalletInput(walletFilter.source === 'connected'
+      ? walletFilter.resolvedName || walletFilter.label || walletFilter.input
+      : walletFilter.input)
   }, [walletFilter])
 
   if (!open) return null
@@ -284,7 +293,7 @@ export function FilterDrawer({
                   onWalletLookup(walletInput)
                 }}
               >
-                <label>
+                <label className="filter-drawer__wallet-input-wrap">
                   <span className="sr-only">Ethereum address or ENS name</span>
                   <input
                     type="text"
@@ -294,6 +303,21 @@ export function FilterDrawer({
                     placeholder="Address or ENS name"
                     onChange={(event) => setWalletInput(event.target.value)}
                   />
+                  {walletFilter && (
+                    <button
+                      className="filter-drawer__wallet-clear"
+                      type="button"
+                      aria-label="Clear wallet"
+                      title="Clear wallet"
+                      onClick={() => {
+                        setWalletInput('')
+                        setWalletHistoryOpen(false)
+                        onClearWallet()
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
                 </label>
                 <button className="filter-drawer__wallet-submit" type="submit" disabled={walletLookupLoading}>
                   {walletLookupLoading ? 'Looking up…' : 'Lookup'}
@@ -306,7 +330,7 @@ export function FilterDrawer({
                     ? 'Clear the connected wallet filter'
                     : injectedWalletAvailable
                       ? 'Use the selected account from your browser wallet'
-                      : 'No browser wallet detected'}
+                      : undefined}
                   onClick={connectedWalletActive ? onDisconnectWallet : onUseConnectedWallet}
                 >
                   {!connectedWalletActive && <span className="wallet-icon" aria-hidden="true" />}
@@ -335,9 +359,6 @@ export function FilterDrawer({
                 </div>
               )}
             </div>
-            {!injectedWalletAvailable && !connectedWalletActive && (
-              <p className="filter-drawer__wallet-provider-note">No browser wallet detected</p>
-            )}
             {walletLookupError && <p className="filter-drawer__wallet-error" role="alert">{walletLookupError}</p>}
             {walletFilter && !walletLookupError && (
               <div className="filter-drawer__wallet-status" role="status">
@@ -345,7 +366,6 @@ export function FilterDrawer({
                 <button type="button" onClick={onClearWallet}>Clear wallet</button>
               </div>
             )}
-            <p className="filter-drawer__wallet-hint">Read-only lookup for this session.</p>
           </section>
 
           <FilterAccordionSection

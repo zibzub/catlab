@@ -4055,11 +4055,16 @@ h1 {
   flex: 1 1 auto;
 }
 
+.filter-drawer__wallet-input-wrap {
+  position: relative;
+  display: block;
+}
+
 .filter-drawer__wallet-form input {
   width: 100%;
   height: 35px;
   min-width: 0;
-  padding: 0 10px;
+  padding: 0 32px 0 10px;
   border: 1px solid var(--control-border);
   border-radius: 8px;
   outline: 0;
@@ -4071,6 +4076,30 @@ h1 {
 .filter-drawer__wallet-form input:focus {
   border-color: rgba(129, 129, 255, 0.56);
   box-shadow: 0 0 0 2px rgba(129, 129, 255, 0.12);
+}
+
+.filter-drawer__wallet-clear {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  transform: translateY(-50%);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.filter-drawer__wallet-clear:hover,
+.filter-drawer__wallet-clear:focus-visible {
+  color: var(--ink);
+  background: var(--control-surface-hover);
 }
 
 .filter-drawer__wallet-submit {
@@ -4200,8 +4229,7 @@ h1 {
 }
 
 .filter-drawer__wallet-error,
-.filter-drawer__wallet-status,
-.filter-drawer__wallet-hint {
+.filter-drawer__wallet-status {
   margin: 7px 0 0;
   font-size: 0.64rem;
   line-height: 1.4;
@@ -4227,21 +4255,6 @@ h1 {
 
 .filter-drawer__wallet-status button:hover {
   color: var(--ink);
-}
-
-.filter-drawer__wallet-hint {
-  color: var(--faint);
-}
-
-.filter-drawer__wallet-provider-note {
-  display: block;
-  min-width: 0;
-  margin: 5px 0 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--faint);
-  font-size: 0.59rem;
 }
 
 .filter-drawer__section {
@@ -5367,6 +5380,17 @@ h1 {
   box-shadow: 0 0 0 2px var(--console-purple-soft);
 }
 
+.filter-drawer__wallet-clear {
+  border-radius: var(--console-radius-small);
+  color: var(--console-muted);
+}
+
+.filter-drawer__wallet-clear:hover,
+.filter-drawer__wallet-clear:focus-visible {
+  color: var(--console-ink);
+  background: var(--console-surface-hover);
+}
+
 .filter-drawer__wallet-submit {
   min-height: var(--console-control-height);
   border-color: rgba(153, 154, 255, 0.72);
@@ -5437,9 +5461,7 @@ h1 {
   font-family: var(--console-micro-font);
 }
 
-.filter-drawer__wallet-status,
-.filter-drawer__wallet-hint,
-.filter-drawer__wallet-provider-note {
+.filter-drawer__wallet-status {
   color: var(--console-faint);
   font-family: var(--console-micro-font);
 }
