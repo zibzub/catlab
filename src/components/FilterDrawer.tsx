@@ -20,10 +20,12 @@ interface FilterDrawerProps {
   activeFilters: FilterState
   index: FilterIndex
   walletFilter: WalletFilter | null
+  walletInput: string
   walletLookupLoading: boolean
   walletLookupError: string | null
   onApply: (filters: FilterState) => void
   onWalletLookup: (input: string) => void
+  onWalletInputChange: (input: string) => void
   onUseConnectedWallet: () => void
   onClearWallet: () => void
   onDisconnectWallet: () => void
@@ -152,10 +154,12 @@ export function FilterDrawer({
   activeFilters,
   index,
   walletFilter,
+  walletInput,
   walletLookupLoading,
   walletLookupError,
   onApply,
   onWalletLookup,
+  onWalletInputChange,
   onUseConnectedWallet,
   onClearWallet,
   onDisconnectWallet,
@@ -163,7 +167,6 @@ export function FilterDrawer({
 }: FilterDrawerProps) {
   const [draft, setDraft] = useState<FilterState>(() => cloneFilterState(activeFilters))
   const [hueSearch, setHueSearch] = useState('')
-  const [walletInput, setWalletInput] = useState('')
   const [walletHistory, setWalletHistory] = useState(loadWalletLookupHistory)
   const [walletHistoryOpen, setWalletHistoryOpen] = useState(false)
   const [openSections, setOpenSections] = useState<Record<FilterSectionKey, boolean>>({
@@ -180,11 +183,10 @@ export function FilterDrawer({
     if (open && !wasOpenRef.current) {
       setDraft(cloneFilterState(activeFilters))
       setHueSearch('')
-      setWalletInput(walletFilter?.input ?? '')
       window.requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }))
     }
     wasOpenRef.current = open
-  }, [activeFilters, open, walletFilter])
+  }, [activeFilters, open])
 
   useEffect(() => {
     if (!open) return
@@ -199,15 +201,11 @@ export function FilterDrawer({
 
   useEffect(() => {
     if (!walletFilter) {
-      setWalletInput('')
       setWalletHistoryOpen(false)
       return
     }
 
     setWalletHistory(loadWalletLookupHistory())
-    setWalletInput(walletFilter.source === 'connected'
-      ? walletFilter.resolvedName || walletFilter.label || walletFilter.input
-      : walletFilter.input)
   }, [walletFilter])
 
   if (!open) return null
@@ -301,7 +299,7 @@ export function FilterDrawer({
                     autoComplete="off"
                     spellCheck={false}
                     placeholder="Address or ENS name"
-                    onChange={(event) => setWalletInput(event.target.value)}
+                    onChange={(event) => onWalletInputChange(event.target.value)}
                   />
                   {walletFilter && (
                     <button
@@ -310,7 +308,7 @@ export function FilterDrawer({
                       aria-label="Clear wallet"
                       title="Clear wallet"
                       onClick={() => {
-                        setWalletInput('')
+                        onWalletInputChange('')
                         setWalletHistoryOpen(false)
                         onClearWallet()
                       }}
@@ -347,7 +345,7 @@ export function FilterDrawer({
                       role="option"
                       aria-label={`Look up wallet ${walletHistoryDisplayLabel(entry)}`}
                       onClick={() => {
-                        setWalletInput(entry.input)
+                        onWalletInputChange(entry.input)
                         setWalletHistoryOpen(false)
                         onWalletLookup(entry.input)
                       }}

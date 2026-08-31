@@ -26,12 +26,14 @@ interface FilterBarProps {
   colorLabOpen: boolean
   colorLabActive: boolean
   walletFilter: WalletFilter | null
+  walletInput: string
   walletLookupLoading: boolean
   walletLookupError: string | null
   onQueryChange: (query: string) => void
   onApplyFilters: (filters: FilterState) => void
   onClearFilters: () => void
   onWalletLookup: (input: string) => void
+  onWalletInputChange: (input: string) => void
   onUseConnectedWallet: () => void
   onClearWallet: () => void
   onDisconnectWallet: () => void
@@ -61,12 +63,14 @@ export function FilterBar({
   colorLabOpen,
   colorLabActive,
   walletFilter,
+  walletInput,
   walletLookupLoading,
   walletLookupError,
   onQueryChange,
   onApplyFilters,
   onClearFilters,
   onWalletLookup,
+  onWalletInputChange,
   onUseConnectedWallet,
   onClearWallet,
   onDisconnectWallet,
@@ -337,10 +341,12 @@ export function FilterBar({
         activeFilters={filters}
         index={filterIndex}
         walletFilter={walletFilter}
+        walletInput={walletInput}
         walletLookupLoading={walletLookupLoading}
         walletLookupError={walletLookupError}
         onApply={onApplyFilters}
         onWalletLookup={onWalletLookup}
+        onWalletInputChange={onWalletInputChange}
         onUseConnectedWallet={onUseConnectedWallet}
         onClearWallet={onClearWallet}
         onDisconnectWallet={onDisconnectWallet}

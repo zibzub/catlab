@@ -30,6 +30,50 @@ export interface Eip1193Provider {
   request(args: { method: string }): Promise<unknown>
 }
 
+export function getWalletParamFromUrl(href?: string) {
+  const currentHref = href ?? (typeof window === 'undefined' ? '' : window.location.href)
+  if (!currentHref) return ''
+
+  try {
+    return new URL(currentHref).searchParams.get('wallet')?.trim() ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function updateWalletUrl(value: string, href: string) {
+  try {
+    const url = new URL(href)
+    const trimmedValue = value.trim()
+    if (trimmedValue) url.searchParams.set('wallet', trimmedValue)
+    else url.searchParams.delete('wallet')
+    return `${url.pathname}${url.search}${url.hash}`
+  } catch {
+    return ''
+  }
+}
+
+export function setWalletUrl(value: string) {
+  if (typeof window === 'undefined' || !window.history?.replaceState) return
+
+  const nextUrl = updateWalletUrl(value, window.location.href)
+  if (!nextUrl) return
+
+  try {
+    window.history.replaceState(null, '', nextUrl)
+  } catch {
+    // URL sharing is optional; keep the lookup usable when history is unavailable.
+  }
+}
+
+export function walletLookupUrlValue(result: WalletLookupResult, source: WalletLookupSource) {
+  const input = result.input.trim()
+  if (source === 'connected' || ETHEREUM_ADDRESS_PATTERN.test(input)) {
+    return (result.address.trim() || input).toLowerCase()
+  }
+  return input || result.resolvedName.trim() || result.address.trim().toLowerCase()
+}
+
 declare global {
   interface Window {
     ethereum?: Eip1193Provider

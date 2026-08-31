@@ -16,9 +16,12 @@ import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import { loadGeneratedData } from './data'
 import {
+  getWalletParamFromUrl,
   lookupWalletCats,
   rememberWalletLookup,
   requestConnectedWalletAddress,
+  setWalletUrl,
+  walletLookupUrlValue,
   type WalletFilter,
 } from './walletLookup'
 import {
@@ -166,9 +169,11 @@ export default function App() {
   const [colorLabOpen, setColorLabOpen] = useState(false)
   const [colorLabSample, setColorLabSample] = useState<ColorLabSample | null>(null)
   const [walletFilter, setWalletFilter] = useState<WalletFilter | null>(null)
+  const [walletInput, setWalletInput] = useState('')
   const [walletLookupLoading, setWalletLookupLoading] = useState(false)
   const [walletLookupError, setWalletLookupError] = useState<string | null>(null)
   const walletLookupSequenceRef = useRef(0)
+  const initialWalletUrlHandledRef = useRef(false)
 
   useEffect(() => {
     try {
@@ -254,11 +259,13 @@ export default function App() {
     setFilters((current) => ({ ...nextFilters, query: current.query }))
   }, [])
 
-  const clearWalletFilter = useCallback(() => {
+  const clearWalletFilter = useCallback((syncUrl = true) => {
     walletLookupSequenceRef.current += 1
     setWalletFilter(null)
+    setWalletInput('')
     setWalletLookupLoading(false)
     setWalletLookupError(null)
+    if (syncUrl) setWalletUrl('')
   }, [])
 
   const beginWalletLookup = useCallback(() => {
@@ -279,6 +286,10 @@ export default function App() {
       if (walletLookupSequenceRef.current !== sequence) return
       rememberWalletLookup(result)
       setWalletFilter({ ...result, source })
+      setWalletInput(source === 'connected'
+        ? result.resolvedName || result.address.toLowerCase() || result.input
+        : result.input)
+      setWalletUrl(walletLookupUrlValue(result, source))
       return result
     } catch (lookupError: unknown) {
       if (walletLookupSequenceRef.current !== sequence) return
@@ -306,6 +317,33 @@ export default function App() {
       setWalletLookupLoading(false)
     }
   }, [beginWalletLookup, performWalletLookup])
+
+  useEffect(() => {
+    if (cats === null || manifest === null || initialWalletUrlHandledRef.current) return
+    initialWalletUrlHandledRef.current = true
+
+    const initialWalletInput = getWalletParamFromUrl()
+    if (!initialWalletInput) return
+
+    setWalletInput(initialWalletInput)
+    void lookupWallet(initialWalletInput)
+  }, [cats, lookupWallet, manifest])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextWalletInput = getWalletParamFromUrl()
+      if (!nextWalletInput) {
+        clearWalletFilter(false)
+        return
+      }
+
+      setWalletInput(nextWalletInput)
+      void lookupWallet(nextWalletInput)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [clearWalletFilter, lookupWallet])
 
   const disconnectWallet = useCallback(() => {
     if (walletFilter?.source !== 'connected') return
@@ -434,12 +472,14 @@ export default function App() {
               colorLabOpen={colorLabOpen}
               colorLabActive={colorLabMatchingOrders !== null}
               walletFilter={walletFilter}
+              walletInput={walletInput}
               walletLookupLoading={walletLookupLoading}
               walletLookupError={walletLookupError}
               onQueryChange={updateQuery}
               onApplyFilters={applyFilters}
               onClearFilters={clearFilters}
               onWalletLookup={lookupWallet}
+              onWalletInputChange={setWalletInput}
               onUseConnectedWallet={lookupConnectedWallet}
               onClearWallet={clearWalletFilter}
               onDisconnectWallet={disconnectWallet}
