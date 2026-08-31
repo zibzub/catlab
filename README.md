@@ -30,14 +30,27 @@ without leaving the page.
   Vignette where those options apply.
 - In Select mode, clicking a MoonCat toggles it in the Palette. In Inspect
   mode, clicking a MoonCat opens its detail view instead.
+- In Filters, enter an Ethereum address or ENS name (with or without `.eth`) in
+  Wallet to show the MoonCats owned by that wallet. Wallet results intersect
+  with the normal search and filters, as well as ColorLab matching. Recent
+  successful wallets are available when the wallet field is focused. Clear the
+  wallet from the input or active Wallet chip to remove that constraint.
+- Connect can use an injected browser wallet such as Rabby or MetaMask to
+  supply its public address. It uses the same ownership lookup as manual
+  wallet searches and only reads the public address—no signature, transaction,
+  chain-change, or balance requests. Disconnect clears CatLab's active
+  connected-wallet filter without revoking the extension's permissions.
 
 Collection views identify cats by rescue ID, with names shown where available.
+Wallet-filtered views can be shared with the `?wallet=<address-or-ENS>` query
+parameter, for example `https://catlab.pages.dev/?wallet=example.eth` or with
+an Ethereum address. Opening such a link performs the lookup automatically.
 
 ## ColorLab
 
 Open ColorLab from the Collection toolbar, then choose one of its example
-images or upload an image of your own. Click or tap a visible image color or 
-MoonCat coat color to sample it. CatLab narrows Collection to MoonCats matching 
+images or upload an image of your own. Click or tap a visible image color or
+MoonCat coat color to sample it. CatLab narrows Collection to MoonCats matching
 that hue. Use Clear color match to return to the normal Collection results.
 
 ## Palette
@@ -148,11 +161,15 @@ required for these controls.
 ## State, reloads, and local files
 
 Collection display preferences—view mode, compact grid size, AC rings, Stars,
-and Vignette—are saved in this browser's `localStorage`. Palette selections,
-filters, ColorLab samples, and Compose layers/backgrounds are in-memory session
-state. Reloading the page loses that work unless it was saved as a `.catlab`
-file. The composition title is also session/UI state; opening a file restores a
-title from its filename.
+and Vignette—are saved in this browser's `localStorage`. Successful wallet
+lookups are also remembered there as up to 8 recent lookup entries. The active
+wallet filter is represented by the `wallet` query parameter, but its ownership
+result IDs and any connected-wallet provider state are not persisted. Palette
+selections, normal filters, ColorLab samples, and Compose layers/backgrounds
+remain in-memory session state. Reloading the page loses that work unless it
+was saved as a `.catlab` file or represented by a shareable wallet URL. The
+composition title is also session/UI state; opening a file restores a title
+from its filename.
 
 Catalog data, names, classifications, and atlas assets are served from the
 built app's local files. Image uploads and `.catlab` documents are read and
@@ -164,6 +181,8 @@ them to an application server.
 Use a current modern browser with Canvas, file inputs, Blob/object URLs and
 downloads, ResizeObserver, and the HTML `<dialog>` element.
 
+Manual address and ENS lookup does not require a wallet extension. The Connect
+action requires an injected EIP-1193 browser wallet such as Rabby or MetaMask.
 The internal Compose eyedropper works without native browser EyeDropper support.
 Native EyeDropper is optional where available.
 
@@ -209,6 +228,8 @@ For structured QA scenarios, see [TESTING.md](./TESTING.md).
 CatLab's runtime uses the generated MoonCat index, atlas manifest, atlas sheets,
 names, and classification artifacts already present under `public/`. The app
 does not regenerate them during normal runtime or fetch remote image assets.
+Wallet ownership lookup is the intentional remote exception and uses the shared
+[CatMoon wallet endpoint](https://catmoon.zibzub.art/api/wallet-cats).
 
 ## License
 
