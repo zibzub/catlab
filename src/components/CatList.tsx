@@ -191,14 +191,23 @@ export function CatList({
     const scrollElement = scrollElementRef.current
     const anchor = scrollAnchor
     const anchorIndex = anchor ? sortedCats.findIndex((cat) => cat.rescueOrder === anchor.rescueOrder) : -1
+    const hasPendingAnchor = anchor !== null
+      && anchorIndex >= 0
+      && appliedScrollAnchorRef.current !== anchor.token
+    if (hasPendingAnchor) return
+    scrollElement?.scrollTo({ top: 0, left: 0 })
     rowVirtualizer.measure()
-    if (scrollElement && viewportWidth > 0 && anchor && anchorIndex >= 0 && appliedScrollAnchorRef.current !== anchor.token) {
-      appliedScrollAnchorRef.current = anchor.token
-      rowVirtualizer.scrollToIndex(anchorIndex, { align: 'start' })
-    } else {
-      scrollElement?.scrollTo({ top: 0, left: 0 })
-    }
-  }, [cats, isNarrow, namedOrder, rowVirtualizer, scrollAnchor, sort, sortedCats, viewportWidth])
+  }, [cats, namedOrder, rowVirtualizer, scrollAnchor, sort, sortedCats])
+
+  useLayoutEffect(() => {
+    const scrollElement = scrollElementRef.current
+    if (!scrollElement || viewportWidth <= 0 || !scrollAnchor || appliedScrollAnchorRef.current === scrollAnchor.token) return
+    const anchorIndex = sortedCats.findIndex((cat) => cat.rescueOrder === scrollAnchor.rescueOrder)
+    if (anchorIndex < 0) return
+    rowVirtualizer.measure()
+    appliedScrollAnchorRef.current = scrollAnchor.token
+    rowVirtualizer.scrollToIndex(anchorIndex, { align: 'start' })
+  }, [rowVirtualizer, scrollAnchor, sortedCats, viewportWidth])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current

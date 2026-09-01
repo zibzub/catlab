@@ -150,14 +150,23 @@ export function CatGrid({
     const anchorIndex = scrollAnchor
       ? cats.findIndex((cat) => cat.rescueOrder === scrollAnchor.rescueOrder)
       : -1
+    const hasPendingAnchor = scrollAnchor !== null
+      && anchorIndex >= 0
+      && appliedScrollAnchorRef.current !== scrollAnchor.token
+    if (hasPendingAnchor) return
+    scrollElement?.scrollTo({ top: 0 })
     rowVirtualizer.measure()
-    if (scrollElement && width > 0 && scrollAnchor && anchorIndex >= 0 && appliedScrollAnchorRef.current !== scrollAnchor.token) {
-      appliedScrollAnchorRef.current = scrollAnchor.token
-      rowVirtualizer.scrollToIndex(Math.floor(anchorIndex / columnCount), { align: 'start' })
-    } else {
-      scrollElement?.scrollTo({ top: 0 })
-    }
-  }, [artMode, cats, columnCount, gridSize, rowVirtualizer, scrollAnchor, viewMode, width])
+  }, [artMode, cats, rowVirtualizer, scrollAnchor, viewMode])
+
+  useLayoutEffect(() => {
+    const scrollElement = scrollElementRef.current
+    if (!scrollElement || width <= 0 || !scrollAnchor || appliedScrollAnchorRef.current === scrollAnchor.token) return
+    const anchorIndex = cats.findIndex((cat) => cat.rescueOrder === scrollAnchor.rescueOrder)
+    if (anchorIndex < 0) return
+    rowVirtualizer.measure()
+    appliedScrollAnchorRef.current = scrollAnchor.token
+    rowVirtualizer.scrollToIndex(Math.floor(anchorIndex / columnCount), { align: 'start' })
+  }, [cats, columnCount, rowVirtualizer, scrollAnchor, viewMode, width])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
