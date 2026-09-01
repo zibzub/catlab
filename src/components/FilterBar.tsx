@@ -9,6 +9,8 @@ import type {
   GridArtMode,
   GridSize,
   GridViewMode,
+  IdlePattern,
+  IdleSpeed,
   RingStyle,
 } from '../types'
 
@@ -24,6 +26,8 @@ interface FilterBarProps {
   ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
+  idlePattern: IdlePattern
+  idleSpeed: IdleSpeed
   colorLabOpen: boolean
   colorLabActive: boolean
   walletFilter: WalletFilter | null
@@ -46,6 +50,8 @@ interface FilterBarProps {
   onRingStyleChange: (style: RingStyle) => void
   onStarsChange: (show: boolean) => void
   onVignetteChange: (show: boolean) => void
+  onIdlePatternChange: (pattern: IdlePattern) => void
+  onIdleSpeedChange: (speed: IdleSpeed) => void
   onColorLabToggle: () => void
 }
 
@@ -61,6 +67,8 @@ export function FilterBar({
   ringStyle,
   showStars,
   showVignette,
+  idlePattern,
+  idleSpeed,
   colorLabOpen,
   colorLabActive,
   walletFilter,
@@ -83,6 +91,8 @@ export function FilterBar({
   onRingStyleChange,
   onStarsChange,
   onVignetteChange,
+  onIdlePatternChange,
+  onIdleSpeedChange,
   onColorLabToggle,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -329,9 +339,13 @@ export function FilterBar({
             ringStyle={ringStyle}
             showStars={showStars}
             showVignette={showVignette}
+            idlePattern={idlePattern}
+            idleSpeed={idleSpeed}
             onRingStyleChange={onRingStyleChange}
             onStarsChange={onStarsChange}
             onVignetteChange={onVignetteChange}
+            onIdlePatternChange={onIdlePatternChange}
+            onIdleSpeedChange={onIdleSpeedChange}
           />
           </div>
         </div>

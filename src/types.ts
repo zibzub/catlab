@@ -20,6 +20,10 @@ export type GridSize = 'small' | 'medium' | 'large'
 
 export type RingStyle = 'off' | 'ac' | 'outline'
 
+export type IdlePattern = 'off' | 'wave' | 'random' | 'ripple' | 'snake'
+
+export type IdleSpeed = 'slow' | 'medium' | 'fast'
+
 export type CollectionInteractionMode = 'select' | 'inspect'
 
 export interface EncodedIndex {

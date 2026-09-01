@@ -15,6 +15,7 @@ import {
 import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import { loadGeneratedData } from './data'
+import { isIdlePattern, isIdleSpeed } from './idleAnimation'
 import {
   getWalletParamFromUrl,
   lookupWalletCats,
@@ -39,6 +40,8 @@ import type {
   GridArtMode,
   GridSize,
   GridViewMode,
+  IdlePattern,
+  IdleSpeed,
   RingStyle,
 } from './types'
 
@@ -51,6 +54,8 @@ interface CollectionDisplayPreferences {
   showRings?: boolean
   showStars?: boolean
   showVignette?: boolean
+  idlePattern?: IdlePattern
+  idleSpeed?: IdleSpeed
 }
 
 function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
@@ -74,6 +79,8 @@ function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
       ringStyle,
       showStars: typeof parsed.showStars === 'boolean' ? parsed.showStars : undefined,
       showVignette: typeof parsed.showVignette === 'boolean' ? parsed.showVignette : undefined,
+      idlePattern: isIdlePattern(parsed.idlePattern) ? parsed.idlePattern : undefined,
+      idleSpeed: isIdleSpeed(parsed.idleSpeed) ? parsed.idleSpeed : undefined,
     }
   } catch {
     return {}
@@ -166,6 +173,8 @@ export default function App() {
   const [ringStyle, setRingStyle] = useState<RingStyle>(displayPreferences.ringStyle ?? 'outline')
   const [showStars, setShowStars] = useState(displayPreferences.showStars ?? true)
   const [showVignette, setShowVignette] = useState(displayPreferences.showVignette ?? true)
+  const [idlePattern, setIdlePattern] = useState<IdlePattern>(displayPreferences.idlePattern ?? 'off')
+  const [idleSpeed, setIdleSpeed] = useState<IdleSpeed>(displayPreferences.idleSpeed ?? 'medium')
   const [interactionMode, setInteractionMode] = useState<CollectionInteractionMode>('select')
   const [inspectedCat, setInspectedCat] = useState<CatRecord | null>(null)
   const inspectTriggerRef = useRef<HTMLButtonElement | null>(null)
@@ -190,11 +199,13 @@ export default function App() {
         ringStyle,
         showStars,
         showVignette,
+        idlePattern,
+        idleSpeed,
       }))
     } catch {
       // Persistence is optional; keep the app usable when storage is unavailable.
     }
-  }, [gridSize, ringStyle, showStars, showVignette, viewMode])
+  }, [gridSize, idlePattern, idleSpeed, ringStyle, showStars, showVignette, viewMode])
 
   useEffect(() => {
     let active = true
@@ -476,6 +487,8 @@ export default function App() {
               ringStyle={ringStyle}
               showStars={showStars}
               showVignette={showVignette}
+              idlePattern={idlePattern}
+              idleSpeed={idleSpeed}
               colorLabOpen={colorLabOpen}
               colorLabActive={colorLabMatchingOrders !== null}
               walletFilter={walletFilter}
@@ -498,6 +511,8 @@ export default function App() {
               onRingStyleChange={setRingStyle}
               onStarsChange={setShowStars}
               onVignetteChange={setShowVignette}
+              onIdlePatternChange={setIdlePattern}
+              onIdleSpeedChange={setIdleSpeed}
               onColorLabToggle={() => setColorLabOpen((current) => !current)}
             />
           </div>
@@ -532,6 +547,8 @@ export default function App() {
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               showStars={showStars}
               showVignette={showVignette}
+              idlePattern={idlePattern}
+              idleSpeed={idleSpeed}
               selectedOrders={selectedOrders}
               interactionMode={interactionMode}
               onToggle={toggleSelection}

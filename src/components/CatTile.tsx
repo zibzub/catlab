@@ -17,6 +17,7 @@ interface CatTileProps {
   viewMode: GridViewMode
   artMode: GridArtMode
   gridSize: GridSize
+  idleActive: boolean
   selected: boolean
   interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
@@ -30,6 +31,7 @@ export const CatTile = memo(function CatTile({
   viewMode,
   artMode,
   gridSize,
+  idleActive,
   selected,
   interactionMode,
   onToggle,
@@ -42,7 +44,7 @@ export const CatTile = memo(function CatTile({
     : `MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
   return (
     <button
-      className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${selected ? ' cat-tile--selected' : ''}`}
+      className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${idleActive ? ' cat-tile--idle-hop' : ''}${selected ? ' cat-tile--selected' : ''}`}
       type="button"
       aria-label={label}
       aria-pressed={interactionMode === 'select' ? selected : undefined}

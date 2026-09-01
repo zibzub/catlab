@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CatTile } from './CatTile'
+import { useIdleAnimation, type IdleGridCat } from '../idleAnimation'
 import type { MoonCatNames } from '../mooncatDetails'
 import type {
   AtlasManifest,
@@ -9,6 +10,8 @@ import type {
   GridArtMode,
   GridSize,
   GridViewMode,
+  IdlePattern,
+  IdleSpeed,
   RingStyle,
 } from '../types'
 
@@ -20,6 +23,8 @@ interface CatGridProps {
   artMode: GridArtMode
   gridSize: GridSize
   ringStyle: RingStyle
+  idlePattern: IdlePattern
+  idleSpeed: IdleSpeed
   showStars: boolean
   showVignette: boolean
   selectedOrders: Set<number>
@@ -78,6 +83,8 @@ export function CatGrid({
   artMode,
   gridSize,
   ringStyle,
+  idlePattern,
+  idleSpeed,
   showStars,
   showVignette,
   selectedOrders,
@@ -101,6 +108,27 @@ export function CatGrid({
     estimateSize: () => rowEstimateFor(viewMode, artMode, gridSize),
     getItemKey: (index) => `row-${index}`,
     overscan,
+  })
+  const virtualRows = rowVirtualizer.getVirtualItems()
+  const scrollOffset = rowVirtualizer.scrollOffset ?? 0
+  const viewportHeight = scrollElementRef.current?.clientHeight ?? 0
+  const visibleRowIndexes = virtualRows
+    .filter((row) => row.start < scrollOffset + viewportHeight && row.start + row.size > scrollOffset)
+    .map((row) => row.index)
+  const visibleRowsKey = visibleRowIndexes.join(',')
+  const visibleCats = useMemo<IdleGridCat[]>(() => visibleRowIndexes.flatMap((rowIndex) => {
+    const rowStart = rowIndex * columnCount
+    return cats.slice(rowStart, rowStart + columnCount).map((cat, column) => ({
+      rescueOrder: cat.rescueOrder,
+      row: rowIndex,
+      column,
+    }))
+  }), [cats, columnCount, visibleRowsKey])
+  const idleOrders = useIdleAnimation({
+    cats: visibleCats,
+    pattern: idlePattern,
+    speed: idleSpeed,
+    isScrolling: rowVirtualizer.isScrolling,
   })
 
   useEffect(() => {
@@ -200,7 +228,7 @@ export function CatGrid({
                 ref={canvasRef}
                 style={{ height: rowVirtualizer.getTotalSize() }}
               >
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                {virtualRows.map((virtualRow) => {
                   const rowStart = virtualRow.index * columnCount
                   const rowCats = cats.slice(rowStart, rowStart + columnCount)
                   return (
@@ -223,6 +251,7 @@ export function CatGrid({
                           viewMode={viewMode}
                           artMode={artMode}
                           gridSize={gridSize}
+                          idleActive={idleOrders.has(cat.rescueOrder)}
                           selected={selectedOrders.has(cat.rescueOrder)}
                           interactionMode={interactionMode}
                           onToggle={onToggle}

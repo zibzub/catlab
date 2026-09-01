@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GridArtMode, RingStyle } from '../types'
+import type { GridArtMode, IdlePattern, IdleSpeed, RingStyle } from '../types'
 
 interface DisplayMenuProps {
   artMode: GridArtMode
   ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
+  idlePattern: IdlePattern
+  idleSpeed: IdleSpeed
   onRingStyleChange: (value: RingStyle) => void
   onStarsChange: (value: boolean) => void
   onVignetteChange: (value: boolean) => void
+  onIdlePatternChange: (value: IdlePattern) => void
+  onIdleSpeedChange: (value: IdleSpeed) => void
 }
 
 export function DisplayMenu({
@@ -16,9 +20,13 @@ export function DisplayMenu({
   ringStyle,
   showStars,
   showVignette,
+  idlePattern,
+  idleSpeed,
   onRingStyleChange,
   onStarsChange,
   onVignetteChange,
+  onIdlePatternChange,
+  onIdleSpeedChange,
 }: DisplayMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -103,6 +111,34 @@ export function DisplayMenu({
                     {style === 'off' ? 'Off' : style === 'ac' ? 'AC' : 'Outline'}
                   </button>
                 ))}
+              </div>
+              <div className="idle-controls" aria-label="Idle animation">
+                <label className="idle-controls__row">
+                  <span>Idle</span>
+                  <select
+                    aria-label="Idle pattern"
+                    value={idlePattern}
+                    onChange={(event) => onIdlePatternChange(event.target.value as IdlePattern)}
+                  >
+                    <option value="off">Off</option>
+                    <option value="wave">Wave</option>
+                    <option value="random">Random</option>
+                    <option value="ripple">Ripple</option>
+                    <option value="snake">Snake</option>
+                  </select>
+                </label>
+                <label className="idle-controls__row">
+                  <span>Speed</span>
+                  <select
+                    aria-label="Idle speed"
+                    value={idleSpeed}
+                    onChange={(event) => onIdleSpeedChange(event.target.value as IdleSpeed)}
+                  >
+                    <option value="slow">Slow</option>
+                    <option value="medium">Medium</option>
+                    <option value="fast">Fast</option>
+                  </select>
+                </label>
               </div>
               <button
                 type="button"
