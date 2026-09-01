@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GridArtMode } from '../types'
+import type { GridArtMode, RingStyle } from '../types'
 
 interface DisplayMenuProps {
   artMode: GridArtMode
-  showRings: boolean
+  ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
-  onRingsChange: (value: boolean) => void
+  onRingStyleChange: (value: RingStyle) => void
   onStarsChange: (value: boolean) => void
   onVignetteChange: (value: boolean) => void
 }
 
 export function DisplayMenu({
   artMode,
-  showRings,
+  ringStyle,
   showStars,
   showVignette,
-  onRingsChange,
+  onRingStyleChange,
   onStarsChange,
   onVignetteChange,
 }: DisplayMenuProps) {
@@ -87,18 +87,23 @@ export function DisplayMenu({
           </div>
           <div className="display-menu__body">
             <div className="display-menu__effects" aria-label="Grid effects">
-              <button
-                type="button"
-                className={`rings-toggle${showRings && artMode === 'bodies' ? ' is-active' : ''}`}
-                aria-pressed={showRings && artMode === 'bodies'}
-                aria-disabled={artMode === 'faces'}
-                disabled={artMode === 'faces'}
-                title={artMode === 'faces' ? 'AC rings are available for Full only' : undefined}
-                onClick={() => onRingsChange(!showRings)}
-              >
-                <span className="rings-toggle__icon" aria-hidden="true">◉</span>
-                AC rings
-              </button>
+              <div className="rings-style-picker" role="group" aria-label="Ring style">
+                {(['off', 'ac', 'outline'] as const).map((style) => (
+                  <button
+                    key={style}
+                    type="button"
+                    className={`rings-toggle rings-toggle--${style}${ringStyle === style && artMode === 'bodies' ? ' is-active' : ''}`}
+                    aria-pressed={ringStyle === style && artMode === 'bodies'}
+                    aria-disabled={artMode === 'faces'}
+                    disabled={artMode === 'faces'}
+                    title={artMode === 'faces' ? 'Ring styles are available for Full only' : undefined}
+                    onClick={() => onRingStyleChange(style)}
+                  >
+                    <span className="rings-toggle__icon" aria-hidden="true">{style === 'off' ? '×' : style === 'ac' ? '◉' : '◌'}</span>
+                    {style === 'off' ? 'Off' : style === 'ac' ? 'AC' : 'Outline'}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 className={`rings-toggle${showStars ? ' is-active' : ''}`}

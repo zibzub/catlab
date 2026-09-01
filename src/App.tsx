@@ -39,6 +39,7 @@ import type {
   GridArtMode,
   GridSize,
   GridViewMode,
+  RingStyle,
 } from './types'
 
 const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
@@ -46,6 +47,7 @@ const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
 interface CollectionDisplayPreferences {
   viewMode?: GridViewMode
   gridSize?: GridSize
+  ringStyle?: RingStyle
   showRings?: boolean
   showStars?: boolean
   showVignette?: boolean
@@ -57,6 +59,11 @@ function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
     const raw = window.localStorage.getItem(COLLECTION_DISPLAY_PREFS_KEY)
     if (!raw) return {}
     const parsed = JSON.parse(raw) as Record<string, unknown>
+    const ringStyle = parsed.ringStyle === 'off' || parsed.ringStyle === 'ac' || parsed.ringStyle === 'outline'
+      ? parsed.ringStyle
+      : typeof parsed.showRings === 'boolean'
+        ? parsed.showRings ? 'outline' : 'off'
+        : undefined
     return {
       viewMode: parsed.viewMode === 'compact' || parsed.viewMode === 'detailed' || parsed.viewMode === 'list'
         ? parsed.viewMode
@@ -64,7 +71,7 @@ function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
       gridSize: parsed.gridSize === 'small' || parsed.gridSize === 'medium' || parsed.gridSize === 'large'
         ? parsed.gridSize
         : undefined,
-      showRings: typeof parsed.showRings === 'boolean' ? parsed.showRings : undefined,
+      ringStyle,
       showStars: typeof parsed.showStars === 'boolean' ? parsed.showStars : undefined,
       showVignette: typeof parsed.showVignette === 'boolean' ? parsed.showVignette : undefined,
     }
@@ -156,7 +163,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<GridViewMode>(displayPreferences.viewMode ?? 'compact')
   const [artMode, setArtMode] = useState<GridArtMode>('bodies')
   const [gridSize, setGridSize] = useState<GridSize>(displayPreferences.gridSize ?? 'medium')
-  const [showRings, setShowRings] = useState(displayPreferences.showRings ?? true)
+  const [ringStyle, setRingStyle] = useState<RingStyle>(displayPreferences.ringStyle ?? 'outline')
   const [showStars, setShowStars] = useState(displayPreferences.showStars ?? true)
   const [showVignette, setShowVignette] = useState(displayPreferences.showVignette ?? true)
   const [interactionMode, setInteractionMode] = useState<CollectionInteractionMode>('select')
@@ -180,14 +187,14 @@ export default function App() {
       window.localStorage.setItem(COLLECTION_DISPLAY_PREFS_KEY, JSON.stringify({
         viewMode,
         gridSize,
-        showRings,
+        ringStyle,
         showStars,
         showVignette,
       }))
     } catch {
       // Persistence is optional; keep the app usable when storage is unavailable.
     }
-  }, [gridSize, showRings, showStars, showVignette, viewMode])
+  }, [gridSize, ringStyle, showStars, showVignette, viewMode])
 
   useEffect(() => {
     let active = true
@@ -466,7 +473,7 @@ export default function App() {
               viewMode={viewMode}
               artMode={artMode}
               gridSize={gridSize}
-              showRings={showRings}
+              ringStyle={ringStyle}
               showStars={showStars}
               showVignette={showVignette}
               colorLabOpen={colorLabOpen}
@@ -488,7 +495,7 @@ export default function App() {
               onViewModeChange={setViewMode}
               onArtModeChange={setArtMode}
               onGridSizeChange={chooseGridSize}
-              onRingsChange={setShowRings}
+              onRingStyleChange={setRingStyle}
               onStarsChange={setShowStars}
               onVignetteChange={setShowVignette}
               onColorLabToggle={() => setColorLabOpen((current) => !current)}
@@ -506,7 +513,7 @@ export default function App() {
               manifest={manifest}
               names={names}
               artMode={artMode}
-              showRings={showRings && artMode === 'bodies'}
+              ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               selectedOrders={selectedOrders}
               interactionMode={interactionMode}
               onToggle={toggleSelection}
@@ -522,7 +529,7 @@ export default function App() {
               viewMode={viewMode}
               artMode={artMode}
               gridSize={viewMode === 'detailed' ? 'medium' : gridSize}
-              showRings={showRings && artMode === 'bodies'}
+              ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               showStars={showStars}
               showVignette={showVignette}
               selectedOrders={selectedOrders}
@@ -536,7 +543,7 @@ export default function App() {
         <Palette
           cats={selectedCats}
           manifest={manifest}
-          showRings={showRings}
+          ringStyle={ringStyle}
           mobileOpen={mobilePaletteOpen}
           onMobileClose={() => setMobilePaletteOpen(false)}
           onRemove={removeSelection}

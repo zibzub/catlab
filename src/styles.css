@@ -62,6 +62,13 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Luna Medium";
+  src: local("Luna Medium");
+  font-style: normal;
+  font-weight: 500;
+}
+
 :root {
   color: #f7f7fb;
   background: #090a0e;
@@ -898,7 +905,6 @@ h1 {
   text-align: left;
   transition:
     border-color 150ms ease,
-    transform 150ms ease,
     box-shadow 150ms ease;
 }
 
@@ -920,13 +926,6 @@ h1 {
   --cat-compact-platform-width: 112px;
   --cat-compact-platform-height: 24px;
   min-height: 246px;
-}
-
-.cat-tile:hover {
-  border-color: rgba(129, 129, 255, 0.42);
-  background: var(--panel-hover);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
-  transform: translateY(-4px);
 }
 
 .cat-tile--selected {
@@ -994,17 +993,6 @@ h1 {
   min-height: 130px;
 }
 
-.cat-tile--compact:hover {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  transform: translateY(-4px);
-}
-
-.cat-tile--detailed:hover {
-  transform: translateY(-4px);
-}
-
 .cat-tile--compact .cat-art {
   width: 100%;
   flex: 0 0 var(--cat-compact-art-height);
@@ -1068,6 +1056,7 @@ h1 {
   flex: 0 0 auto;
   z-index: 1;
   overflow: hidden;
+  transition: transform 150ms ease;
 }
 
 .cat-art__sprite-cell {
@@ -1229,9 +1218,24 @@ h1 {
   display: none;
 }
 
-.cat-grid-viewport--rings-hidden .cat-art__platform,
-.palette-panel--rings-hidden .cat-art__platform {
+.cat-grid-viewport--rings-off .cat-art__platform,
+.cat-list-shell--rings-off .cat-art__platform,
+.palette-panel--rings-off .cat-art__platform {
   visibility: hidden;
+}
+
+.cat-grid-viewport--rings-outline .cat-art__platform,
+.cat-list-shell--rings-outline .cat-art__platform,
+.palette-panel--rings-outline .cat-art__platform {
+  border: 3px solid #fff;
+  background: #000;
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cat-tile:hover .cat-art__sprite {
+    transform: translateY(-12px);
+  }
 }
 
 .palette-panel__header {
@@ -1837,6 +1841,11 @@ h1 {
 
   .cat-tile {
     transition: none;
+  }
+
+  .cat-art__sprite {
+    transition: none;
+    transform: none !important;
   }
 }
 
@@ -5227,6 +5236,69 @@ h1 {
   box-shadow: 0 0 7px rgba(153, 154, 255, 0.52);
 }
 
+.rings-style-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--console-divider-strong);
+  border-radius: var(--console-radius-small);
+  background: var(--console-surface-inset);
+}
+
+.rings-style-picker .rings-toggle,
+.rings-style-picker .rings-toggle.is-active {
+  display: flex;
+  width: auto;
+  min-width: 0;
+  height: 29px;
+  min-height: 29px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 5px;
+  border: 0;
+  border-right: 1px solid var(--console-divider);
+  border-radius: 0;
+  color: var(--console-muted);
+  background: transparent;
+  box-shadow: none;
+  font-family: "Luna Medium", var(--console-micro-font);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rings-style-picker .rings-toggle:last-child {
+  border-right: 0;
+}
+
+.rings-style-picker .rings-toggle:hover {
+  color: var(--console-ink);
+  background: var(--console-surface-hover);
+}
+
+.rings-style-picker .rings-toggle.is-active {
+  color: var(--console-ink);
+  background: var(--console-purple-soft);
+}
+
+.rings-style-picker .rings-toggle__icon {
+  display: inline;
+  width: auto;
+  height: auto;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 0;
+  color: var(--console-purple-bright);
+  background: transparent;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.rings-style-picker .rings-toggle__icon::after {
+  display: none;
+}
+
 .filter-drawer__backdrop {
   background: rgba(3, 5, 8, 0.68);
 }
@@ -6756,7 +6828,6 @@ h1 {
   gap: 0;
   position: relative;
   color: var(--console-ink, var(--ink));
-  background: linear-gradient(to bottom, transparent 0 4px, #0c0e14 4px);
   line-height: 1.1;
 }
 

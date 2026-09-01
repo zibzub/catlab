@@ -7,6 +7,7 @@ import type {
   CatRecord,
   CollectionInteractionMode,
   GridArtMode,
+  RingStyle,
 } from '../types'
 
 type CatListSortKey =
@@ -27,7 +28,7 @@ interface CatListProps {
   manifest: AtlasManifest
   names: MoonCatNames
   artMode: GridArtMode
-  showRings: boolean
+  ringStyle: RingStyle
   selectedOrders: Set<number>
   interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
@@ -131,7 +132,7 @@ export function CatList({
   manifest,
   names,
   artMode,
-  showRings,
+  ringStyle,
   selectedOrders,
   interactionMode,
   onToggle,
@@ -216,7 +217,7 @@ export function CatList({
   }
 
   return (
-    <div className={`cat-list-shell${showRings ? '' : ' cat-list-shell--rings-hidden'}`}>
+    <div className={`cat-list-shell cat-list-shell--rings-${ringStyle}`}>
       <div className="cat-list-frame">
         <div className="cat-list-viewport">
           <div className="cat-list-scroll" ref={scrollElementRef} role="table" aria-label="MoonCat list">

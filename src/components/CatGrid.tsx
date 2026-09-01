@@ -9,6 +9,7 @@ import type {
   GridArtMode,
   GridSize,
   GridViewMode,
+  RingStyle,
 } from '../types'
 
 interface CatGridProps {
@@ -18,7 +19,7 @@ interface CatGridProps {
   viewMode: GridViewMode
   artMode: GridArtMode
   gridSize: GridSize
-  showRings: boolean
+  ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
   selectedOrders: Set<number>
@@ -76,7 +77,7 @@ export function CatGrid({
   viewMode,
   artMode,
   gridSize,
-  showRings,
+  ringStyle,
   showStars,
   showVignette,
   selectedOrders,
@@ -183,7 +184,7 @@ export function CatGrid({
       <div className="cat-grid-frame">
         <div className="cat-grid-viewport-bezel">
           <div
-            className={`cat-grid-viewport${showRings ? '' : ' cat-grid-viewport--rings-hidden'}${
+            className={`cat-grid-viewport cat-grid-viewport--rings-${ringStyle}${
               showStars ? ' cat-grid-viewport--stars' : ''
             }${showVignette ? '' : ' cat-grid-viewport--vignette-hidden'} cat-grid-viewport--${artMode}`}
           >

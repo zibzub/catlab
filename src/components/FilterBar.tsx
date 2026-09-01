@@ -9,6 +9,7 @@ import type {
   GridArtMode,
   GridSize,
   GridViewMode,
+  RingStyle,
 } from '../types'
 
 interface FilterBarProps {
@@ -20,7 +21,7 @@ interface FilterBarProps {
   viewMode: GridViewMode
   artMode: GridArtMode
   gridSize: GridSize
-  showRings: boolean
+  ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
   colorLabOpen: boolean
@@ -42,7 +43,7 @@ interface FilterBarProps {
   onViewModeChange: (mode: GridViewMode) => void
   onArtModeChange: (mode: GridArtMode) => void
   onGridSizeChange: (size: GridSize) => void
-  onRingsChange: (show: boolean) => void
+  onRingStyleChange: (style: RingStyle) => void
   onStarsChange: (show: boolean) => void
   onVignetteChange: (show: boolean) => void
   onColorLabToggle: () => void
@@ -57,7 +58,7 @@ export function FilterBar({
   viewMode,
   artMode,
   gridSize,
-  showRings,
+  ringStyle,
   showStars,
   showVignette,
   colorLabOpen,
@@ -79,7 +80,7 @@ export function FilterBar({
   onViewModeChange,
   onArtModeChange,
   onGridSizeChange,
-  onRingsChange,
+  onRingStyleChange,
   onStarsChange,
   onVignetteChange,
   onColorLabToggle,
@@ -325,10 +326,10 @@ export function FilterBar({
           </div>
           <DisplayMenu
             artMode={artMode}
-            showRings={showRings}
+            ringStyle={ringStyle}
             showStars={showStars}
             showVignette={showVignette}
-            onRingsChange={onRingsChange}
+            onRingStyleChange={onRingStyleChange}
             onStarsChange={onStarsChange}
             onVignetteChange={onVignetteChange}
           />

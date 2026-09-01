@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { exportSelectedCats, MAX_EXPORT_CATS, type ExportFormat, type ExportSize } from '../export'
 import { MoonCatSprite } from './MoonCatSprite'
-import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
+import type { AtlasManifest, CatRecord, GridArtMode, RingStyle } from '../types'
 
 interface PaletteProps {
   cats: CatRecord[]
   manifest: AtlasManifest
-  showRings: boolean
+  ringStyle: RingStyle
   mobileOpen: boolean
   onMobileClose: () => void
   onRemove: (rescueOrder: number) => void
@@ -17,7 +17,7 @@ interface PaletteProps {
 export function Palette({
   cats,
   manifest,
-  showRings,
+  ringStyle,
   mobileOpen,
   onMobileClose,
   onRemove,
@@ -59,7 +59,7 @@ export function Palette({
         />
       )}
       <aside
-        className={`palette-panel${showRings ? '' : ' palette-panel--rings-hidden'}${
+        className={`palette-panel palette-panel--rings-${ringStyle}${
           mobileOpen ? ' palette-panel--mobile-open' : ''
         }`}
         aria-labelledby="palette-title"
