@@ -1578,6 +1578,11 @@ h1 {
     overflow: auto;
   }
 
+  .cat-grid-scroll,
+  .cat-list-scroll {
+    overscroll-behavior-y: contain;
+  }
+
   .app-shell {
     height: auto;
     min-height: 100%;
@@ -4806,11 +4811,13 @@ h1 {
   }
 
   .display-menu__panel {
-    position: fixed;
+    position: absolute;
     z-index: 32;
-    top: 70px;
-    right: 10px;
-    width: min(230px, calc(100vw - 20px));
+    top: calc(100% + 9px);
+    right: max(10px, env(safe-area-inset-right));
+    left: auto;
+    width: min(290px, calc(100dvw - max(20px, env(safe-area-inset-left) + env(safe-area-inset-right) + 20px)));
+    max-width: calc(100dvw - max(20px, env(safe-area-inset-left) + env(safe-area-inset-right) + 20px));
     max-height: calc(100dvh - 84px);
   }
 
