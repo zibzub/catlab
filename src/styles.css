@@ -62,13 +62,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "Luna Medium";
-  src: local("Luna Medium");
-  font-style: normal;
-  font-weight: 500;
-}
-
 :root {
   color: #f7f7fb;
   background: #090a0e;
@@ -5262,7 +5255,7 @@ h1 {
   color: var(--console-muted);
   background: transparent;
   box-shadow: none;
-  font-family: "Luna Medium", var(--console-micro-font);
+  font-family: var(--console-micro-font);
   font-size: 0.58rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
