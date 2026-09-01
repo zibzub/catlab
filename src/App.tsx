@@ -64,6 +64,7 @@ function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
     const raw = window.localStorage.getItem(COLLECTION_DISPLAY_PREFS_KEY)
     if (!raw) return {}
     const parsed = JSON.parse(raw) as Record<string, unknown>
+    const migratedIdlePattern = parsed.idlePattern === 'snake' ? 'worm' : parsed.idlePattern
     const ringStyle = parsed.ringStyle === 'off' || parsed.ringStyle === 'ac' || parsed.ringStyle === 'outline'
       ? parsed.ringStyle
       : typeof parsed.showRings === 'boolean'
@@ -79,7 +80,7 @@ function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
       ringStyle,
       showStars: typeof parsed.showStars === 'boolean' ? parsed.showStars : undefined,
       showVignette: typeof parsed.showVignette === 'boolean' ? parsed.showVignette : undefined,
-      idlePattern: isIdlePattern(parsed.idlePattern) ? parsed.idlePattern : undefined,
+      idlePattern: isIdlePattern(migratedIdlePattern) ? migratedIdlePattern : undefined,
       idleSpeed: isIdleSpeed(parsed.idleSpeed) ? parsed.idleSpeed : undefined,
     }
   } catch {

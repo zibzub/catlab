@@ -20,7 +20,7 @@ export type GridSize = 'small' | 'medium' | 'large'
 
 export type RingStyle = 'off' | 'ac' | 'outline'
 
-export type IdlePattern = 'off' | 'wave' | 'random' | 'ripple' | 'snake'
+export type IdlePattern = 'off' | 'wave' | 'cascade' | 'random' | 'popcorn' | 'ripple' | 'worm' | 'snake-game'
 
 export type IdleSpeed = 'slow' | 'medium' | 'fast'
 

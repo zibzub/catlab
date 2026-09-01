@@ -122,9 +122,12 @@ export function DisplayMenu({
                   >
                     <option value="off">Off</option>
                     <option value="wave">Wave</option>
+                    <option value="cascade">Cascade</option>
                     <option value="random">Random</option>
+                    <option value="popcorn">Popcorn</option>
                     <option value="ripple">Ripple</option>
-                    <option value="snake">Snake</option>
+                    <option value="worm">Worm</option>
+                    <option value="snake-game">Snake</option>
                   </select>
                 </label>
                 <label className="idle-controls__row">
