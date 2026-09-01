@@ -10,6 +10,7 @@ export interface CatRecord {
   pattern: string
   pose: string
   genesis: boolean
+  nameTimestamp: number | null
 }
 
 export type GridViewMode = 'compact' | 'detailed' | 'list'
@@ -99,5 +100,5 @@ export interface FilterState {
   poses: string[]
   expressions: string[]
   facings: string[]
-  naming: 'all' | 'named' | 'unnamed'
+  naming: 'all' | 'named' | 'unnamed' | 'recentlyNamed'
 }

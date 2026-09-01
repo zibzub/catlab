@@ -20,12 +20,14 @@ import {
   validateEncodedIndex,
 } from './lib/catalog.mjs'
 import { validateClassificationArtifact } from './lib/mooncat-classifications.mjs'
+import { validateMoonCatNamesArtifact } from './lib/mooncat-names.mjs'
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname)
 const DATA_DIR = path.join(ROOT, 'public/data')
 const INDEX_PATH = path.join(DATA_DIR, 'mooncats.json')
 const MANIFEST_PATH = path.join(DATA_DIR, 'atlas-manifest.json')
 const CLASSIFICATIONS_PATH = path.join(DATA_DIR, 'mooncat-classifications.json')
+const NAMES_PATH = path.join(DATA_DIR, 'names-timestamp-live.json')
 const ATLAS_DIR = path.join(DATA_DIR, 'atlases')
 const FACE_ATLAS_DIR = path.join(DATA_DIR, 'face-atlases')
 const require = createRequire(import.meta.url)
@@ -146,6 +148,7 @@ async function main() {
   const index = await readJson(INDEX_PATH)
   validateEncodedIndex(index)
   validateClassificationArtifact(await readJson(CLASSIFICATIONS_PATH))
+  validateMoonCatNamesArtifact(await readJson(NAMES_PATH), { expectedCount: CAT_COUNT })
 
   const manifest = await readJson(MANIFEST_PATH)
   if (manifest.schemaVersion !== MANIFEST_SCHEMA_VERSION) {

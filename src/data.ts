@@ -50,6 +50,7 @@ export function decodeCatalog(index: EncodedIndex): CatRecord[] {
       pattern: dictionaryValue(index, 'pattern', pattern),
       pose: dictionaryValue(index, 'pose', pose),
       genesis: genesis === 1,
+      nameTimestamp: null,
     }
   })
 }

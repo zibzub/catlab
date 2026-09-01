@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { MoonCatSprite } from './MoonCatSprite'
-import type { MoonCatNames } from '../mooncatDetails'
+import { getMoonCatName, type MoonCatNames } from '../mooncatDetails'
 import type {
   AtlasManifest,
   CatRecord,
@@ -27,6 +27,7 @@ interface CatListProps {
   cats: CatRecord[]
   manifest: AtlasManifest
   names: MoonCatNames
+  recentlyNamed: boolean
   artMode: GridArtMode
   ringStyle: RingStyle
   selectedOrders: Set<number>
@@ -51,7 +52,7 @@ function sortValue(cat: CatRecord, key: CatListSortKey, names: MoonCatNames) {
     case 'rescueOrder':
       return cat.rescueOrder
     case 'name':
-      return names[String(cat.rescueOrder)]?.trim() ?? ''
+      return getMoonCatName(names, cat.rescueOrder).trim()
     case 'rescueYear':
       return cat.rescueYear
     case 'hue':
@@ -131,6 +132,7 @@ export function CatList({
   cats,
   manifest,
   names,
+  recentlyNamed,
   artMode,
   ringStyle,
   selectedOrders,
@@ -143,15 +145,18 @@ export function CatList({
     key: 'rescueOrder',
     direction: 'asc',
   })
+  const [sortOverridden, setSortOverridden] = useState(false)
+  const recentlyNamedRef = useRef(recentlyNamed)
   const scrollElementRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const faderRef = useRef<HTMLInputElement>(null)
   const [viewportWidth, setViewportWidth] = useState(0)
   const isNarrow = viewportWidth > 0 && viewportWidth <= 620
-  const sortedCats = useMemo(
-    () => [...cats].sort((first, second) => compareCats(first, second, sort.key, sort.direction, names)),
-    [cats, names, sort],
-  )
+  const sortedCats = useMemo(() => (
+    recentlyNamed && !sortOverridden
+      ? cats
+      : [...cats].sort((first, second) => compareCats(first, second, sort.key, sort.direction, names))
+  ), [cats, names, recentlyNamed, sort, sortOverridden])
   const rowVirtualizer = useVirtualizer({
     count: sortedCats.length,
     getScrollElement: () => scrollElementRef.current,
@@ -159,6 +164,14 @@ export function CatList({
     getItemKey: (index) => sortedCats[index]?.rescueOrder ?? index,
     overscan: 8,
   })
+
+  useEffect(() => {
+    if (recentlyNamed && !recentlyNamedRef.current) {
+      setSort({ key: 'rescueOrder', direction: 'asc' })
+      setSortOverridden(false)
+    }
+    recentlyNamedRef.current = recentlyNamed
+  }, [recentlyNamed])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -173,7 +186,7 @@ export function CatList({
   useEffect(() => {
     scrollElementRef.current?.scrollTo({ top: 0, left: 0 })
     rowVirtualizer.measure()
-  }, [cats, isNarrow, rowVirtualizer, sort])
+  }, [cats, isNarrow, recentlyNamed, rowVirtualizer, sort])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -200,6 +213,7 @@ export function CatList({
   }, [cats, isNarrow, rowVirtualizer, sort])
 
   const handleSort = (key: CatListSortKey) => {
+    setSortOverridden(true)
     setSort((current) => ({
       key,
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc',
@@ -240,7 +254,7 @@ export function CatList({
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const cat = sortedCats[virtualRow.index]
                 if (!cat) return null
-                const name = names[String(cat.rescueOrder)]
+                const name = getMoonCatName(names, cat.rescueOrder)
                 const selected = selectedOrders.has(cat.rescueOrder)
                 const nameSuffix = name ? `, ${name}` : ''
                 const label = interactionMode === 'inspect'

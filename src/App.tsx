@@ -47,6 +47,17 @@ import type {
 
 const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
 
+function sortRecentlyNamed(cats: CatRecord[]) {
+  return [...cats].sort((first, second) => {
+    if (first.nameTimestamp === null && second.nameTimestamp !== null) return 1
+    if (first.nameTimestamp !== null && second.nameTimestamp === null) return -1
+    if (first.nameTimestamp !== null && second.nameTimestamp !== null && first.nameTimestamp !== second.nameTimestamp) {
+      return second.nameTimestamp - first.nameTimestamp
+    }
+    return first.rescueOrder - second.rescueOrder
+  })
+}
+
 interface CollectionDisplayPreferences {
   viewMode?: GridViewMode
   gridSize?: GridSize
@@ -210,10 +221,14 @@ export default function App() {
 
   useEffect(() => {
     let active = true
-    loadGeneratedData()
-      .then(({ cats: loadedCats, manifest: loadedManifest }) => {
+    Promise.all([loadGeneratedData(), loadMoonCatNames()])
+      .then(([{ cats: loadedCats, manifest: loadedManifest }, loadedNames]) => {
         if (!active) return
-        setCats(loadedCats)
+        setNames(loadedNames)
+        setCats(loadedCats.map((cat) => ({
+          ...cat,
+          nameTimestamp: loadedNames[String(cat.rescueOrder)]?.timestamp ?? null,
+        })))
         setManifest(loadedManifest)
       })
       .catch((loadError: unknown) => {
@@ -227,9 +242,6 @@ export default function App() {
 
   useEffect(() => {
     let active = true
-    loadMoonCatNames().then((loadedNames) => {
-      if (active) setNames(loadedNames)
-    })
     loadMoonCatClassifications()
       .then((loadedClassifications) => {
         if (active) setClassifications(loadedClassifications)
@@ -258,11 +270,14 @@ export default function App() {
     )
   }, [cats, colorLabMatch])
   const filteredCats = useMemo(
-    () => (cats ?? []).filter((cat) => (
-      matchesFilters(cat, filters, filterIndex)
-      && (colorLabMatchingOrders === null || colorLabMatchingOrders.has(cat.rescueOrder))
-      && (walletFilter === null || walletFilter.ids.has(cat.rescueOrder))
-    )),
+    () => {
+      const matchingCats = (cats ?? []).filter((cat) => (
+        matchesFilters(cat, filters, filterIndex)
+        && (colorLabMatchingOrders === null || colorLabMatchingOrders.has(cat.rescueOrder))
+        && (walletFilter === null || walletFilter.ids.has(cat.rescueOrder))
+      ))
+      return filters.naming === 'recentlyNamed' ? sortRecentlyNamed(matchingCats) : matchingCats
+    },
     [cats, colorLabMatchingOrders, filterIndex, filters, walletFilter],
   )
   const selectedCats = useMemo(
@@ -528,6 +543,7 @@ export default function App() {
               cats={filteredCats}
               manifest={manifest}
               names={names}
+              recentlyNamed={filters.naming === 'recentlyNamed'}
               artMode={artMode}
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               selectedOrders={selectedOrders}

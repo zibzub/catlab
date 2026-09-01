@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { MoonCatSprite } from './MoonCatSprite'
-import type { MoonCatNames } from '../mooncatDetails'
+import { getMoonCatName, type MoonCatNames } from '../mooncatDetails'
 import type {
   AtlasManifest,
   CatRecord,
@@ -39,7 +39,7 @@ export const CatTile = memo(function CatTile({
   onToggle,
   onInspect,
 }: CatTileProps) {
-  const name = names[String(cat.rescueOrder)]
+  const name = getMoonCatName(names, cat.rescueOrder)
   const nameSuffix = name ? `, ${name}` : ''
   const label = interactionMode === 'inspect'
     ? `Inspect MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`

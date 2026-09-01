@@ -33,12 +33,35 @@ export interface MoonCatClassifications {
   categories: Record<string, MoonCatClassificationCategory>
 }
 
-export type MoonCatNames = Record<string, string>
+export interface MoonCatNameRecord {
+  name: string
+  timestamp: number | null
+}
+
+export type MoonCatNames = Record<string, MoonCatNameRecord>
 
 export type GenesisCoat = 'black' | 'white'
 
 let namesPromise: Promise<MoonCatNames> | null = null
 let classificationsPromise: Promise<MoonCatClassifications> | null = null
+
+export function validateMoonCatNames(value: unknown): MoonCatNames | null {
+  if (!isObject(value)) return null
+  const names: MoonCatNames = {}
+  for (const [id, entry] of Object.entries(value)) {
+    if (!/^\d+$/.test(id)) return null
+    const rescueOrder = Number(id)
+    if (String(rescueOrder) !== id || rescueOrder < 0 || rescueOrder >= 25_440 || !isObject(entry)) return null
+    if (typeof entry.name !== 'string' || entry.name.length === 0) return null
+    if (entry.timestamp !== null && (typeof entry.timestamp !== 'number' || !Number.isFinite(entry.timestamp) || entry.timestamp < 0)) return null
+    names[id] = { name: entry.name, timestamp: entry.timestamp }
+  }
+  return names
+}
+
+export function getMoonCatName(names: MoonCatNames, rescueOrder: number) {
+  return names[String(rescueOrder)]?.name ?? ''
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -87,15 +110,9 @@ export function loadMoonCatNames(fetchImpl: typeof globalThis.fetch = globalThis
     namesPromise = (async () => {
       if (typeof fetchImpl !== 'function') return {}
       try {
-        const response = await fetchImpl(assetPath('data/mooncat-names.json'))
+        const response = await fetchImpl(assetPath('data/names-timestamp-live.json'))
         if (!response.ok) return {}
-        const value: unknown = await response.json()
-        if (!isObject(value)) return {}
-        const names: MoonCatNames = {}
-        for (const [id, name] of Object.entries(value)) {
-          if (typeof name === 'string' && name.length > 0) names[id] = name
-        }
-        return names
+        return validateMoonCatNames(await response.json()) ?? {}
       } catch {
         return {}
       }
@@ -119,7 +136,7 @@ export function loadMoonCatClassifications(fetchImpl: typeof globalThis.fetch = 
 }
 
 export function formatMoonCatTitle(cat: CatRecord, names: MoonCatNames) {
-  const name = names[String(cat.rescueOrder)]
+  const name = getMoonCatName(names, cat.rescueOrder)
   return name ? `MoonCat ${cat.rescueOrder} : ${name}` : `MoonCat ${cat.rescueOrder}`
 }
 

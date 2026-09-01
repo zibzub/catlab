@@ -41,7 +41,9 @@ without leaving the page.
   chain-change, or balance requests. Disconnect clears CatLab's active
   connected-wallet filter without revoking the extension's permissions.
 
-Collection views identify cats by rescue ID, with names shown where available.
+Collection views identify cats by rescue ID, with current names loaded from
+`names-timestamp-live.json`. The Name filter's Recently Named option shows
+named cats newest-to-oldest by naming timestamp.
 Wallet-filtered views can be shared with the `?wallet=<address-or-ENS>` query
 parameter, for example `https://catlab.pages.dev/?wallet=example.eth` or with
 an Ethereum address. Opening such a link performs the lookup automatically.
@@ -171,7 +173,7 @@ was saved as a `.catlab` file or represented by a shareable wallet URL. The
 composition title is also session/UI state; opening a file restores a title
 from its filename.
 
-Catalog data, names, classifications, and atlas assets are served from the
+Catalog data, live names and naming timestamps, classifications, and atlas assets are served from the
 built app's local files. Image uploads and `.catlab` documents are read and
 processed in the browser for these workflows; CatLab does not require sending
 them to an application server.
@@ -217,7 +219,7 @@ sibling repository after generation.
 | `npm run generate -- --traits <path>` | Validate traits and generate the local catalog/index and atlases. |
 | `npm run generate:classifications -- --source <path>` | Generate the compact classification artifact from CatMoon filter data. |
 | `npm run validate:classifications` | Validate the classification artifact. |
-| `npm run validate:generated` | Validate generated catalog, atlas, and classification artifacts. |
+| `npm run validate:generated` | Validate generated catalog, atlas, classification, and live name artifacts. |
 | `npm run check` | Run the TypeScript check. |
 | `npm run build` | Build the static app with Vite. |
 
@@ -226,8 +228,10 @@ For structured QA scenarios, see [TESTING.md](./TESTING.md).
 ## Data and implementation notes
 
 CatLab's runtime uses the generated MoonCat index, atlas manifest, atlas sheets,
-names, and classification artifacts already present under `public/`. The app
-does not regenerate them during normal runtime or fetch remote image assets.
+`names-timestamp-live.json`, and classification artifacts already present under
+`public/`. Naming timestamps power the Recently Named Collection filter/order.
+The app does not regenerate them during normal runtime or fetch remote image
+assets.
 Wallet ownership lookup is the intentional remote exception and uses the shared
 [CatMoon wallet endpoint](https://catmoon.zibzub.art/api/wallet-cats).
 

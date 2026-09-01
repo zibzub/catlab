@@ -1,5 +1,6 @@
 import {
   CHARACTER_CLASSIFICATION_KEYS,
+  getMoonCatName,
   type MoonCatClassifications,
   type MoonCatNames,
 } from '../mooncatDetails'
@@ -155,7 +156,7 @@ export function buildFilterIndex(
     increment(counts.facings, cat.facing)
     if (cat.pale) counts.pale.pale += 1
     else counts.pale.normal += 1
-    const catName = names[String(cat.rescueOrder)]
+    const catName = getMoonCatName(names, cat.rescueOrder)
     if (catName) {
       namedOrders.add(cat.rescueOrder)
       namesByOrder.set(cat.rescueOrder, catName.toLowerCase())
@@ -219,7 +220,7 @@ export function matchesFilters(cat: CatRecord, filters: FilterState, index: Filt
   if (!matchesAny(filters.poses, cat.pose)) return false
   if (!matchesAny(filters.expressions, cat.expression)) return false
   if (!matchesAny(filters.facings, cat.facing)) return false
-  if (filters.naming === 'named' && !index.namedOrders.has(cat.rescueOrder)) return false
+  if ((filters.naming === 'named' || filters.naming === 'recentlyNamed') && !index.namedOrders.has(cat.rescueOrder)) return false
   if (filters.naming === 'unnamed' && index.namedOrders.has(cat.rescueOrder)) return false
   return true
 }
@@ -315,7 +316,7 @@ export function getActiveFilterChips(filters: FilterState): ActiveFilterChip[] {
   filters.naming !== 'all' && chips.push({
     key: 'naming',
     value: filters.naming,
-    label: filters.naming === 'named' ? 'Named' : 'Unnamed',
+    label: filters.naming === 'named' ? 'Named' : filters.naming === 'recentlyNamed' ? 'Recently Named' : 'Unnamed',
   })
   return chips
 }
