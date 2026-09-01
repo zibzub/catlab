@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { activeFilterCount, getActiveFilterChips, type FilterIndex, type RemovableFilterKey } from './collectionFilters'
 import { DisplayMenu } from './DisplayMenu'
 import { FilterDrawer } from './FilterDrawer'
@@ -72,6 +72,12 @@ const idleSpeedLabels: Record<IdleSpeed, string> = {
   fast: 'Fast',
 }
 
+interface ActiveChipItem {
+  id: string
+  label: string
+  onRemove?: () => void
+}
+
 export function FilterBar({
   filters,
   filterIndex,
@@ -113,34 +119,93 @@ export function FilterBar({
   onColorLabToggle,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [chipLimit, setChipLimit] = useState(4)
+  const [overflowOpen, setOverflowOpen] = useState(false)
   const filtersTriggerRef = useRef<HTMLButtonElement>(null)
+  const activeRowRef = useRef<HTMLDivElement>(null)
+  const chipsRef = useRef<HTMLDivElement>(null)
+  const clearFiltersRef = useRef<HTMLButtonElement>(null)
+  const overflowAnchorRef = useRef<HTMLDivElement>(null)
+  const overflowButtonRef = useRef<HTMLButtonElement>(null)
+  const overflowMeasureRef = useRef<HTMLButtonElement>(null)
+  const chipMeasureRef = useRef<HTMLDivElement>(null)
+  const chipMeasureRefs = useRef(new Map<string, HTMLElement>())
   const selectedFilterCount = activeFilterCount(filters)
   const chips = getActiveFilterChips(filters)
   const hasActiveFilters = chips.length > 0 || colorLabActive || walletFilter !== null
   const hasIdleAnimation = idlePattern !== 'off'
-  const showActiveTagRow = hasActiveFilters || hasIdleAnimation
-  const visibleChips = chips.slice(0, chipLimit)
-  const hiddenChipCount = Math.max(0, chips.length - visibleChips.length)
+  const activeChipItems: ActiveChipItem[] = [
+    ...(hasIdleAnimation
+      ? [{
+          id: 'idle',
+          label: `Idle: ${idlePatternLabels[idlePattern]} · ${idleSpeedLabels[idleSpeed]}`,
+          onRemove: () => onIdlePatternChange('off'),
+        }]
+      : []),
+    ...(walletFilter
+      ? [{ id: 'wallet', label: `Wallet ${walletFilter.label}`, onRemove: onClearWallet }]
+      : []),
+    ...chips.map((chip) => ({
+      id: `${chip.key}-${String(chip.value)}`,
+      label: chip.label,
+      onRemove: () => onRemoveFilter(chip.key, chip.value),
+    })),
+    ...(colorLabActive ? [{ id: 'colorlab', label: 'ColorLab match' }] : []),
+  ]
+  const activeChipKey = activeChipItems.map((item) => `${item.id}:${item.label}`).join('|')
+  const [visibleChipCount, setVisibleChipCount] = useState(activeChipItems.length)
+  const showActiveTagRow = activeChipItems.length > 0 || overflowOpen
+  const hasChipOverflow = visibleChipCount < activeChipItems.length
+  const visibleActiveChips = activeChipItems.slice(0, visibleChipCount)
 
   const toolbarRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const toolbar = toolbarRef.current
-    if (!toolbar) return
+  useLayoutEffect(() => {
+    const row = activeRowRef.current
+    const chipsElement = chipsRef.current
+    if (!row || !chipsElement || activeChipItems.length === 0) return
 
-    const updateChipLimit = (width: number) => {
-      setChipLimit(width <= 620 ? 2 : width <= 900 ? 1 : width <= 1180 ? 2 : 4)
+    const measure = () => {
+      const widths = activeChipItems.map((item) => chipMeasureRefs.current.get(item.id)?.getBoundingClientRect().width ?? 0)
+      const rowGap = Number.parseFloat(getComputedStyle(row).columnGap) || 0
+      const chipGap = Number.parseFloat(getComputedStyle(chipsElement).columnGap) || 0
+      const clearWidth = clearFiltersRef.current?.getBoundingClientRect().width ?? 0
+      const clearGap = clearFiltersRef.current ? rowGap : 0
+      const availableBeforeOverflow = row.clientWidth - clearWidth - clearGap
+      const allWidth = widths.reduce((total, width) => total + width, 0) + Math.max(0, widths.length - 1) * chipGap
+      let nextVisibleCount = activeChipItems.length
+
+      if (allWidth > availableBeforeOverflow) {
+        const overflowWidth = overflowMeasureRef.current?.getBoundingClientRect().width ?? 25
+        const availableWithOverflow = availableBeforeOverflow - rowGap - overflowWidth
+        let usedWidth = 0
+        nextVisibleCount = 0
+        for (const width of widths) {
+          const nextWidth = usedWidth + width + (nextVisibleCount > 0 ? chipGap : 0)
+          if (nextWidth > availableWithOverflow) break
+          usedWidth = nextWidth
+          nextVisibleCount += 1
+        }
+      }
+
+      setVisibleChipCount((current) => current === nextVisibleCount ? current : nextVisibleCount)
     }
 
-    updateChipLimit(toolbar.getBoundingClientRect().width)
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (entry) updateChipLimit(entry.contentRect.width)
-    })
-    observer.observe(toolbar)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(row)
+    if (chipMeasureRef.current) observer.observe(chipMeasureRef.current)
     return () => observer.disconnect()
-  }, [])
+  }, [activeChipKey, activeChipItems.length, visibleChipCount])
+
+  useEffect(() => {
+    if (!overflowOpen) return
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Node && !overflowAnchorRef.current?.contains(target)) setOverflowOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [overflowOpen])
 
   const closeFilters = () => {
     setFiltersOpen(false)
@@ -208,62 +273,85 @@ export function FilterBar({
             <span>of {totalCount.toLocaleString()} cats</span>
           </div>
           {showActiveTagRow && (
-            <div className="active-filter-row" aria-label="Active filters">
-              <div className="active-filter-row__chips">
-                {hasIdleAnimation && (
-                  <button
-                    className="active-filter-chip"
-                    type="button"
-                    onClick={() => onIdlePatternChange('off')}
-                    aria-label="Turn off idle animation"
-                  >
-                    <span>Idle: {idlePatternLabels[idlePattern]} · {idleSpeedLabels[idleSpeed]}</span>
+            <div className="active-filter-row" ref={activeRowRef} aria-label="Active filters">
+              <div className="active-filter-row__chips" ref={chipsRef}>
+                {visibleActiveChips.map((item) => item.onRemove ? (
+                  <button key={item.id} className="active-filter-chip" type="button" onClick={item.onRemove} aria-label={`Remove ${item.label}`}>
+                    <span>{item.label}</span>
                     <span aria-hidden="true">×</span>
                   </button>
-                )}
-                {walletFilter && (
-                  <button
-                    className="active-filter-chip active-filter-chip--wallet"
-                    type="button"
-                    onClick={onClearWallet}
-                    aria-label={`Remove wallet filter ${walletFilter.label}`}
-                  >
-                    <span>Wallet {walletFilter.label}</span>
-                    <span aria-hidden="true">×</span>
-                  </button>
-                )}
-                {visibleChips.map((chip) => (
-                  <button
-                    key={`${chip.key}-${String(chip.value)}`}
-                    className="active-filter-chip"
-                    type="button"
-                    onClick={() => onRemoveFilter(chip.key, chip.value)}
-                    aria-label={`Remove ${chip.label} filter`}
-                  >
-                    <span>{chip.label}</span>
-                    <span aria-hidden="true">×</span>
-                  </button>
+                ) : (
+                  <span key={item.id} className="active-filter-indicator" aria-label={item.label}>{item.label}</span>
                 ))}
               </div>
-              {colorLabActive && (
-                <span className="active-filter-indicator" aria-label="ColorLab color match is active">ColorLab match</span>
+              {(hasChipOverflow || overflowOpen) && (
+                <div className="active-filter-overflow-anchor" ref={overflowAnchorRef}>
+                  {hasChipOverflow && (
+                    <button
+                      ref={overflowButtonRef}
+                      className="active-filter-overflow"
+                      type="button"
+                      aria-label="Show active filters"
+                      aria-expanded={overflowOpen}
+                      aria-controls="active-filter-overflow-popover"
+                      aria-haspopup="dialog"
+                      onClick={() => setOverflowOpen((current) => !current)}
+                    >
+                      +
+                    </button>
+                  )}
+                  {overflowOpen && (
+                    <div className="active-filter-overflow-popover" id="active-filter-overflow-popover" role="dialog" aria-label="All active filters">
+                      <div className="active-filter-overflow-popover__header">
+                        <span>Active</span>
+                        <button className="active-filter-overflow-popover__close" type="button" aria-label="Close active filters" onClick={() => setOverflowOpen(false)}>×</button>
+                      </div>
+                      <div className="active-filter-overflow-popover__chips">
+                        {activeChipItems.length === 0 ? <span className="active-filter-overflow-popover__empty">No active filters</span> : activeChipItems.map((item) => item.onRemove ? (
+                          <button key={item.id} className="active-filter-chip" type="button" onClick={item.onRemove} aria-label={`Remove ${item.label}`}>
+                            <span>{item.label}</span>
+                            <span aria-hidden="true">×</span>
+                          </button>
+                        ) : (
+                          <span key={item.id} className="active-filter-indicator" aria-label={item.label}>{item.label}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-              {hiddenChipCount > 0 && (
-                <button
-                  className="active-filter-overflow"
-                  type="button"
-                  aria-label={`Show ${hiddenChipCount} more active filters`}
-                  aria-expanded={filtersOpen}
-                  aria-controls="filter-drawer"
-                  aria-haspopup="dialog"
-                  onClick={() => setFiltersOpen(true)}
-                >
-                  +{hiddenChipCount}
-                </button>
+              {hasActiveFilters && (
+                <button ref={clearFiltersRef} className="active-filter-row__clear" type="button" onClick={onClearFilters}>Clear</button>
               )}
-              <button className="active-filter-row__clear" type="button" onClick={onClearFilters}>
-                Clear
-              </button>
+              <div ref={chipMeasureRef} className="active-filter-row__measure" aria-hidden="true">
+                {activeChipItems.map((item) => item.onRemove ? (
+                  <button
+                    key={item.id}
+                    ref={(element) => {
+                      if (element) chipMeasureRefs.current.set(item.id, element)
+                      else chipMeasureRefs.current.delete(item.id)
+                    }}
+                    className="active-filter-chip"
+                    type="button"
+                    tabIndex={-1}
+                  >
+                    <span>{item.label}</span>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                ) : (
+                  <span
+                    key={item.id}
+                    ref={(element) => {
+                      if (element) chipMeasureRefs.current.set(item.id, element)
+                      else chipMeasureRefs.current.delete(item.id)
+                    }}
+                    className="active-filter-indicator"
+                  >
+                    {item.label}
+                  </span>
+                ))}
+                <button ref={overflowMeasureRef} className="active-filter-overflow" type="button" tabIndex={-1}>+</button>
+              </div>
             </div>
           )}
         </div>
