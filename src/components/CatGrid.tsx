@@ -124,7 +124,7 @@ export function CatGrid({
       column,
     }))
   }), [cats, columnCount, visibleRowsKey])
-  const idleOrders = useIdleAnimation({
+  const idleState = useIdleAnimation({
     cats: visibleCats,
     pattern: idlePattern,
     speed: idleSpeed,
@@ -251,7 +251,8 @@ export function CatGrid({
                           viewMode={viewMode}
                           artMode={artMode}
                           gridSize={gridSize}
-                          idleActive={idleOrders.has(cat.rescueOrder)}
+                          idlePulse={idleState.pulseByOrder.get(cat.rescueOrder)}
+                          idleHeld={idleState.heldOrders.has(cat.rescueOrder)}
                           selected={selectedOrders.has(cat.rescueOrder)}
                           interactionMode={interactionMode}
                           onToggle={onToggle}

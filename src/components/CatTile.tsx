@@ -17,7 +17,8 @@ interface CatTileProps {
   viewMode: GridViewMode
   artMode: GridArtMode
   gridSize: GridSize
-  idleActive: boolean
+  idlePulse?: number
+  idleHeld: boolean
   selected: boolean
   interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
@@ -31,7 +32,8 @@ export const CatTile = memo(function CatTile({
   viewMode,
   artMode,
   gridSize,
-  idleActive,
+  idlePulse,
+  idleHeld,
   selected,
   interactionMode,
   onToggle,
@@ -44,7 +46,7 @@ export const CatTile = memo(function CatTile({
     : `MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
   return (
     <button
-      className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${idleActive ? ' cat-tile--idle-hop' : ''}${selected ? ' cat-tile--selected' : ''}`}
+      className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${idlePulse !== undefined ? ' cat-tile--idle-hop' : ''}${idleHeld ? ' cat-tile--idle-held' : ''}${selected ? ' cat-tile--selected' : ''}`}
       type="button"
       aria-label={label}
       aria-pressed={interactionMode === 'select' ? selected : undefined}
@@ -54,7 +56,7 @@ export const CatTile = memo(function CatTile({
         else onToggle(cat.rescueOrder)
       }}
     >
-      <MoonCatSprite cat={cat} manifest={manifest} variant={viewMode} artMode={artMode} gridSize={gridSize} />
+      <MoonCatSprite key={idlePulse} cat={cat} manifest={manifest} variant={viewMode} artMode={artMode} gridSize={gridSize} />
       {viewMode === 'compact' ? (
         <span className="cat-tile__compact-id">
           <span className="cat-tile__compact-number">{cat.rescueOrder}</span>

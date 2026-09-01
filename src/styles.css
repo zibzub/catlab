@@ -1074,6 +1074,10 @@ h1 {
   animation: catlab-idle-hop 480ms cubic-bezier(0.2, 0.85, 0.25, 1);
 }
 
+.cat-tile--idle-held .cat-art__sprite {
+  transform: translateY(-12px);
+}
+
 .cat-art--detailed {
   --cat-art-bottom-padding: 4px;
   --cat-platform-offset-y: 3px;
