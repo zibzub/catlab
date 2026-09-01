@@ -19,6 +19,11 @@ export type GridArtMode = 'bodies' | 'faces'
 
 export type GridSize = 'small' | 'medium' | 'large'
 
+export interface CollectionScrollAnchor {
+  rescueOrder: number
+  token: number
+}
+
 export type RingStyle = 'off' | 'ac' | 'outline'
 
 export type IdlePattern = 'off' | 'wave' | 'cascade' | 'random' | 'popcorn' | 'ripple' | 'worm' | 'snake-game'
@@ -100,5 +105,5 @@ export interface FilterState {
   poses: string[]
   expressions: string[]
   facings: string[]
-  naming: 'all' | 'named' | 'unnamed' | 'recentlyNamed'
+  naming: 'all' | 'named' | 'recentlyNamed' | 'firstNamed' | 'unnamed'
 }

@@ -613,6 +613,14 @@ export function FilterDrawer({
               />
               <RadioOption
                 name="naming"
+                value="firstNamed"
+                label="First Named"
+                count={index.counts.naming.named}
+                checked={draft.naming === 'firstNamed'}
+                onChange={() => setDraft((current) => ({ ...current, naming: 'firstNamed' }))}
+              />
+              <RadioOption
+                name="naming"
                 value="unnamed"
                 label="Unnamed"
                 count={index.counts.naming.unnamed}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CatTile } from './CatTile'
 import { useIdleAnimation, type IdleGridCat } from '../idleAnimation'
@@ -6,6 +6,7 @@ import type { MoonCatNames } from '../mooncatDetails'
 import type {
   AtlasManifest,
   CatRecord,
+  CollectionScrollAnchor,
   CollectionInteractionMode,
   GridArtMode,
   GridSize,
@@ -20,6 +21,7 @@ interface CatGridProps {
   manifest: AtlasManifest
   names: MoonCatNames
   viewMode: GridViewMode
+  scrollAnchor: CollectionScrollAnchor | null
   artMode: GridArtMode
   gridSize: GridSize
   ringStyle: RingStyle
@@ -80,6 +82,7 @@ export function CatGrid({
   manifest,
   names,
   viewMode,
+  scrollAnchor,
   artMode,
   gridSize,
   ringStyle,
@@ -98,6 +101,7 @@ export function CatGrid({
   const largeStarsRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const faderRef = useRef<HTMLInputElement>(null)
+  const appliedScrollAnchorRef = useRef<number | null>(null)
   const [width, setWidth] = useState(0)
   const columnCount = columnsForWidth(width, viewMode, artMode, gridSize)
   const rowCount = Math.ceil(cats.length / columnCount)
@@ -131,7 +135,7 @@ export function CatGrid({
     isScrolling: rowVirtualizer.isScrolling,
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = scrollElementRef.current
     if (!element) return
     const updateWidth = () => setWidth(element.clientWidth)
@@ -141,10 +145,19 @@ export function CatGrid({
     return () => observer.disconnect()
   }, [cats.length])
 
-  useEffect(() => {
-    scrollElementRef.current?.scrollTo({ top: 0 })
+  useLayoutEffect(() => {
+    const scrollElement = scrollElementRef.current
+    const anchorIndex = scrollAnchor
+      ? cats.findIndex((cat) => cat.rescueOrder === scrollAnchor.rescueOrder)
+      : -1
     rowVirtualizer.measure()
-  }, [artMode, cats, columnCount, gridSize, rowVirtualizer, viewMode])
+    if (scrollElement && width > 0 && scrollAnchor && anchorIndex >= 0 && appliedScrollAnchorRef.current !== scrollAnchor.token) {
+      appliedScrollAnchorRef.current = scrollAnchor.token
+      rowVirtualizer.scrollToIndex(Math.floor(anchorIndex / columnCount), { align: 'start' })
+    } else {
+      scrollElement?.scrollTo({ top: 0 })
+    }
+  }, [artMode, cats, columnCount, gridSize, rowVirtualizer, scrollAnchor, viewMode, width])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current

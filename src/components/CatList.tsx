@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { MoonCatSprite } from './MoonCatSprite'
 import { getMoonCatName, type MoonCatNames } from '../mooncatDetails'
 import type {
   AtlasManifest,
   CatRecord,
+  CollectionScrollAnchor,
   CollectionInteractionMode,
   GridArtMode,
   RingStyle,
@@ -27,7 +28,8 @@ interface CatListProps {
   cats: CatRecord[]
   manifest: AtlasManifest
   names: MoonCatNames
-  recentlyNamed: boolean
+  namedOrder: 'recent' | 'first' | null
+  scrollAnchor: CollectionScrollAnchor | null
   artMode: GridArtMode
   ringStyle: RingStyle
   selectedOrders: Set<number>
@@ -132,7 +134,8 @@ export function CatList({
   cats,
   manifest,
   names,
-  recentlyNamed,
+  namedOrder,
+  scrollAnchor,
   artMode,
   ringStyle,
   selectedOrders,
@@ -146,17 +149,18 @@ export function CatList({
     direction: 'asc',
   })
   const [sortOverridden, setSortOverridden] = useState(false)
-  const recentlyNamedRef = useRef(recentlyNamed)
+  const namedOrderRef = useRef(namedOrder)
+  const appliedScrollAnchorRef = useRef<number | null>(null)
   const scrollElementRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const faderRef = useRef<HTMLInputElement>(null)
   const [viewportWidth, setViewportWidth] = useState(0)
   const isNarrow = viewportWidth > 0 && viewportWidth <= 620
   const sortedCats = useMemo(() => (
-    recentlyNamed && !sortOverridden
+    namedOrder !== null && !sortOverridden
       ? cats
       : [...cats].sort((first, second) => compareCats(first, second, sort.key, sort.direction, names))
-  ), [cats, names, recentlyNamed, sort, sortOverridden])
+  ), [cats, names, namedOrder, sort, sortOverridden])
   const rowVirtualizer = useVirtualizer({
     count: sortedCats.length,
     getScrollElement: () => scrollElementRef.current,
@@ -165,15 +169,15 @@ export function CatList({
     overscan: 8,
   })
 
-  useEffect(() => {
-    if (recentlyNamed && !recentlyNamedRef.current) {
+  useLayoutEffect(() => {
+    if (namedOrder !== null && namedOrderRef.current !== namedOrder) {
       setSort({ key: 'rescueOrder', direction: 'asc' })
       setSortOverridden(false)
     }
-    recentlyNamedRef.current = recentlyNamed
-  }, [recentlyNamed])
+    namedOrderRef.current = namedOrder
+  }, [namedOrder])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const scrollElement = scrollElementRef.current
     if (!scrollElement) return
     const updateWidth = () => setViewportWidth(scrollElement.clientWidth)
@@ -183,10 +187,18 @@ export function CatList({
     return () => observer.disconnect()
   }, [cats.length])
 
-  useEffect(() => {
-    scrollElementRef.current?.scrollTo({ top: 0, left: 0 })
+  useLayoutEffect(() => {
+    const scrollElement = scrollElementRef.current
+    const anchor = scrollAnchor
+    const anchorIndex = anchor ? sortedCats.findIndex((cat) => cat.rescueOrder === anchor.rescueOrder) : -1
     rowVirtualizer.measure()
-  }, [cats, isNarrow, recentlyNamed, rowVirtualizer, sort])
+    if (scrollElement && viewportWidth > 0 && anchor && anchorIndex >= 0 && appliedScrollAnchorRef.current !== anchor.token) {
+      appliedScrollAnchorRef.current = anchor.token
+      rowVirtualizer.scrollToIndex(anchorIndex, { align: 'start' })
+    } else {
+      scrollElement?.scrollTo({ top: 0, left: 0 })
+    }
+  }, [cats, isNarrow, namedOrder, rowVirtualizer, scrollAnchor, sort, sortedCats, viewportWidth])
 
   useEffect(() => {
     const scrollElement = scrollElementRef.current
@@ -270,6 +282,7 @@ export function CatList({
                     aria-label={label}
                     aria-pressed={interactionMode === 'select' ? selected : undefined}
                     aria-haspopup={interactionMode === 'inspect' ? 'dialog' : undefined}
+                    data-rescue-order={cat.rescueOrder}
                     data-index={virtualRow.index}
                     style={{ top: virtualRow.start }}
                     onClick={(event) => {

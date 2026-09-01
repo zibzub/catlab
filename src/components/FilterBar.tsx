@@ -53,6 +53,7 @@ interface FilterBarProps {
   onIdlePatternChange: (pattern: IdlePattern) => void
   onIdleSpeedChange: (speed: IdleSpeed) => void
   onColorLabToggle: () => void
+  onColorLabClear: () => void
 }
 
 const idlePatternLabels: Record<IdlePattern, string> = {
@@ -117,6 +118,7 @@ export function FilterBar({
   onIdlePatternChange,
   onIdleSpeedChange,
   onColorLabToggle,
+  onColorLabClear,
 }: FilterBarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
@@ -149,7 +151,7 @@ export function FilterBar({
       label: chip.label,
       onRemove: () => onRemoveFilter(chip.key, chip.value),
     })),
-    ...(colorLabActive ? [{ id: 'colorlab', label: 'ColorLab match' }] : []),
+    ...(colorLabActive ? [{ id: 'colorlab', label: 'ColorLab match', onRemove: onColorLabClear }] : []),
   ]
   const activeChipKey = activeChipItems.map((item) => `${item.id}:${item.label}`).join('|')
   const [visibleChipCount, setVisibleChipCount] = useState(activeChipItems.length)

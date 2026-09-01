@@ -220,7 +220,7 @@ export function matchesFilters(cat: CatRecord, filters: FilterState, index: Filt
   if (!matchesAny(filters.poses, cat.pose)) return false
   if (!matchesAny(filters.expressions, cat.expression)) return false
   if (!matchesAny(filters.facings, cat.facing)) return false
-  if ((filters.naming === 'named' || filters.naming === 'recentlyNamed') && !index.namedOrders.has(cat.rescueOrder)) return false
+  if ((filters.naming === 'named' || filters.naming === 'recentlyNamed' || filters.naming === 'firstNamed') && !index.namedOrders.has(cat.rescueOrder)) return false
   if (filters.naming === 'unnamed' && index.namedOrders.has(cat.rescueOrder)) return false
   return true
 }
@@ -316,7 +316,13 @@ export function getActiveFilterChips(filters: FilterState): ActiveFilterChip[] {
   filters.naming !== 'all' && chips.push({
     key: 'naming',
     value: filters.naming,
-    label: filters.naming === 'named' ? 'Named' : filters.naming === 'recentlyNamed' ? 'Recently Named' : 'Unnamed',
+    label: filters.naming === 'named'
+      ? 'Named'
+      : filters.naming === 'recentlyNamed'
+        ? 'Recently Named'
+        : filters.naming === 'firstNamed'
+          ? 'First Named'
+          : 'Unnamed',
   })
   return chips
 }

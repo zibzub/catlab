@@ -49,6 +49,7 @@ export const CatTile = memo(function CatTile({
       className={`cat-tile cat-tile--${viewMode} cat-tile--${artMode} cat-tile--size-${gridSize}${idlePulse !== undefined ? ' cat-tile--idle-hop' : ''}${idleHeld ? ' cat-tile--idle-held' : ''}${selected ? ' cat-tile--selected' : ''}`}
       type="button"
       aria-label={label}
+      data-rescue-order={cat.rescueOrder}
       aria-pressed={interactionMode === 'select' ? selected : undefined}
       aria-haspopup={interactionMode === 'inspect' ? 'dialog' : undefined}
       onClick={(event) => {

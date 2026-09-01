@@ -35,6 +35,7 @@ import type { ComposeBackground, ComposePlacedObject } from './composeExport'
 import type {
   AtlasManifest,
   CatRecord,
+  CollectionScrollAnchor,
   CollectionInteractionMode,
   FilterState,
   GridArtMode,
@@ -47,12 +48,12 @@ import type {
 
 const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
 
-function sortRecentlyNamed(cats: CatRecord[]) {
+function sortNamed(cats: CatRecord[], direction: 'asc' | 'desc') {
   return [...cats].sort((first, second) => {
     if (first.nameTimestamp === null && second.nameTimestamp !== null) return 1
     if (first.nameTimestamp !== null && second.nameTimestamp === null) return -1
     if (first.nameTimestamp !== null && second.nameTimestamp !== null && first.nameTimestamp !== second.nameTimestamp) {
-      return second.nameTimestamp - first.nameTimestamp
+      return (second.nameTimestamp - first.nameTimestamp) * (direction === 'desc' ? 1 : -1)
     }
     return first.rescueOrder - second.rescueOrder
   })
@@ -196,6 +197,8 @@ export default function App() {
   const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
   const [colorLabOpen, setColorLabOpen] = useState(false)
   const [colorLabSample, setColorLabSample] = useState<ColorLabSample | null>(null)
+  const [collectionScrollAnchor, setCollectionScrollAnchor] = useState<CollectionScrollAnchor | null>(null)
+  const collectionScrollAnchorTokenRef = useRef(0)
   const [walletFilter, setWalletFilter] = useState<WalletFilter | null>(null)
   const [walletInput, setWalletInput] = useState('')
   const [walletLookupLoading, setWalletLookupLoading] = useState(false)
@@ -276,7 +279,9 @@ export default function App() {
         && (colorLabMatchingOrders === null || colorLabMatchingOrders.has(cat.rescueOrder))
         && (walletFilter === null || walletFilter.ids.has(cat.rescueOrder))
       ))
-      return filters.naming === 'recentlyNamed' ? sortRecentlyNamed(matchingCats) : matchingCats
+      if (filters.naming === 'recentlyNamed') return sortNamed(matchingCats, 'desc')
+      if (filters.naming === 'firstNamed') return sortNamed(matchingCats, 'asc')
+      return matchingCats
     },
     [cats, colorLabMatchingOrders, filterIndex, filters, walletFilter],
   )
@@ -301,6 +306,33 @@ export default function App() {
     setWalletLookupError(null)
     if (syncUrl) setWalletUrl('')
   }, [])
+
+  const clearColorLab = useCallback(() => setColorLabSample(null), [])
+
+  const captureCollectionAnchor = useCallback(() => {
+    const panel = document.querySelector<HTMLElement>('.collection-panel')
+    const scrollElement = panel?.querySelector<HTMLElement>('.cat-grid-scroll, .cat-list-scroll')
+    if (!scrollElement) return
+    const viewport = scrollElement.getBoundingClientRect()
+    let anchorRescueOrder: number | null = null
+    let anchorTop = Number.POSITIVE_INFINITY
+    scrollElement.querySelectorAll<HTMLElement>('[data-rescue-order]').forEach((element) => {
+      const bounds = element.getBoundingClientRect()
+      if (bounds.bottom <= viewport.top || bounds.top >= viewport.bottom) return
+      const rescueOrder = Number(element.dataset.rescueOrder)
+      if (!Number.isInteger(rescueOrder) || bounds.top >= anchorTop) return
+      anchorRescueOrder = rescueOrder
+      anchorTop = bounds.top
+    })
+    if (anchorRescueOrder === null) return
+    collectionScrollAnchorTokenRef.current += 1
+    setCollectionScrollAnchor({ rescueOrder: anchorRescueOrder, token: collectionScrollAnchorTokenRef.current })
+  }, [])
+
+  const changeViewMode = useCallback((mode: GridViewMode) => {
+    captureCollectionAnchor()
+    setViewMode(mode)
+  }, [captureCollectionAnchor])
 
   const beginWalletLookup = useCallback(() => {
     const sequence = walletLookupSequenceRef.current + 1
@@ -386,9 +418,9 @@ export default function App() {
 
   const clearFilters = useCallback(() => {
     setFilters((current) => ({ ...createEmptyFilterState(), query: current.query }))
-    setColorLabSample(null)
+    clearColorLab()
     clearWalletFilter()
-  }, [clearWalletFilter])
+  }, [clearColorLab, clearWalletFilter])
 
   const removeFilter = useCallback((key: RemovableFilterKey, value: string | number) => {
     setFilters((current) => removeFilterValue(current, key, value))
@@ -415,9 +447,10 @@ export default function App() {
   const clearSelection = useCallback(() => setSelectedOrders(new Set()), [])
 
   const chooseGridSize = useCallback((size: GridSize) => {
+    captureCollectionAnchor()
     setGridSize(size)
     setViewMode('compact')
-  }, [])
+  }, [captureCollectionAnchor])
 
   const inspectCat = useCallback((cat: CatRecord, trigger: HTMLButtonElement) => {
     inspectTriggerRef.current = trigger
@@ -521,7 +554,7 @@ export default function App() {
               onDisconnectWallet={disconnectWallet}
               onRemoveFilter={removeFilter}
               onInteractionModeChange={setInteractionMode}
-              onViewModeChange={setViewMode}
+              onViewModeChange={changeViewMode}
               onArtModeChange={setArtMode}
               onGridSizeChange={chooseGridSize}
               onRingStyleChange={setRingStyle}
@@ -530,6 +563,7 @@ export default function App() {
               onIdlePatternChange={setIdlePattern}
               onIdleSpeedChange={setIdleSpeed}
               onColorLabToggle={() => setColorLabOpen((current) => !current)}
+              onColorLabClear={clearColorLab}
             />
           </div>
           <ColorLabPanel
@@ -543,7 +577,8 @@ export default function App() {
               cats={filteredCats}
               manifest={manifest}
               names={names}
-              recentlyNamed={filters.naming === 'recentlyNamed'}
+              namedOrder={filters.naming === 'recentlyNamed' ? 'recent' : filters.naming === 'firstNamed' ? 'first' : null}
+              scrollAnchor={collectionScrollAnchor}
               artMode={artMode}
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               selectedOrders={selectedOrders}
@@ -559,6 +594,7 @@ export default function App() {
               manifest={manifest}
               names={names}
               viewMode={viewMode}
+              scrollAnchor={collectionScrollAnchor}
               artMode={artMode}
               gridSize={viewMode === 'detailed' ? 'medium' : gridSize}
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
