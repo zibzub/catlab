@@ -55,6 +55,23 @@ interface FilterBarProps {
   onColorLabToggle: () => void
 }
 
+const idlePatternLabels: Record<IdlePattern, string> = {
+  off: 'Off',
+  wave: 'Wave',
+  cascade: 'Cascade',
+  random: 'Random',
+  popcorn: 'Popcorn',
+  ripple: 'Ripple',
+  worm: 'Worm',
+  'snake-game': 'Snake',
+}
+
+const idleSpeedLabels: Record<IdleSpeed, string> = {
+  slow: 'Slow',
+  medium: 'Medium',
+  fast: 'Fast',
+}
+
 export function FilterBar({
   filters,
   filterIndex,
@@ -101,6 +118,8 @@ export function FilterBar({
   const selectedFilterCount = activeFilterCount(filters)
   const chips = getActiveFilterChips(filters)
   const hasActiveFilters = chips.length > 0 || colorLabActive || walletFilter !== null
+  const hasIdleAnimation = idlePattern !== 'off'
+  const showActiveTagRow = hasActiveFilters || hasIdleAnimation
   const visibleChips = chips.slice(0, chipLimit)
   const hiddenChipCount = Math.max(0, chips.length - visibleChips.length)
 
@@ -188,9 +207,20 @@ export function FilterBar({
             <strong>{resultCount.toLocaleString()}</strong>
             <span>of {totalCount.toLocaleString()} cats</span>
           </div>
-          {hasActiveFilters && (
+          {showActiveTagRow && (
             <div className="active-filter-row" aria-label="Active filters">
               <div className="active-filter-row__chips">
+                {hasIdleAnimation && (
+                  <button
+                    className="active-filter-chip"
+                    type="button"
+                    onClick={() => onIdlePatternChange('off')}
+                    aria-label="Turn off idle animation"
+                  >
+                    <span>Idle: {idlePatternLabels[idlePattern]} · {idleSpeedLabels[idleSpeed]}</span>
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
                 {walletFilter && (
                   <button
                     className="active-filter-chip active-filter-chip--wallet"

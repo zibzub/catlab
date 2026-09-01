@@ -5157,6 +5157,7 @@ h1 {
 .display-menu__body {
   gap: 7px;
   margin-top: 9px;
+  padding-inline: 5px;
 }
 
 .display-menu__label,
@@ -5174,7 +5175,7 @@ h1 {
 .display-menu__effects {
   grid-template-columns: minmax(0, 1fr);
   row-gap: 0;
-  padding: 4px 0 0;
+  padding: 6px;
   overflow: hidden;
   border: 1px solid var(--console-divider-strong);
   border-radius: var(--console-radius-small);
@@ -5321,8 +5322,9 @@ h1 {
 .idle-controls {
   display: grid;
   gap: 5px;
-  padding-top: 6px;
+  padding: 6px 0 8px;
   border-top: 1px solid var(--console-divider);
+  /* border-bottom: 1px solid var(--console-divider); */
 }
 
 .idle-controls__row {
