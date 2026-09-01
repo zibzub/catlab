@@ -3,6 +3,8 @@ import type { IdlePattern, IdleSpeed } from './types'
 
 export const IDLE_HOP_DURATION_MS = 480
 export const SNAKE_MAX_LENGTH = 10
+export const SNAKE_DIRECTION_MIN_MS = 2500
+export const SNAKE_DIRECTION_MAX_MS = 3500
 
 export const IDLE_PATTERNS = ['off', 'wave', 'cascade', 'random', 'popcorn', 'ripple', 'worm', 'snake-game'] as const
 export const IDLE_SPEEDS = ['slow', 'medium', 'fast'] as const
@@ -246,6 +248,10 @@ function initialSnakeState(cats: IdleGridCat[], random: () => number) {
   return { body: [head, tail].slice(0, Math.min(2, cats.length)), direction }
 }
 
+function nextSnakeDirectionInterval(random: () => number) {
+  return SNAKE_DIRECTION_MIN_MS + Math.floor(random() * (SNAKE_DIRECTION_MAX_MS - SNAKE_DIRECTION_MIN_MS + 1))
+}
+
 export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnimationOptions) {
   const [activeOrders, setActiveOrders] = useState<ReadonlySet<number>>(() => new Set())
   const [pageVisible, setPageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState === 'visible')
@@ -363,6 +369,7 @@ export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnim
         let body = state.body
         let direction = state.direction
         let stepCount = 0
+        let nextDirectionDecisionAt = Date.now() + nextSnakeDirectionInterval(random)
         const stepsPerRun = Math.max(cats.length, SNAKE_MAX_LENGTH * 2)
         const scheduleSnake = () => {
           if (cancelled) return
@@ -374,12 +381,16 @@ export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnim
               if (nextState) {
                 body = nextState.body
                 direction = nextState.direction
+                nextDirectionDecisionAt = Date.now() + nextSnakeDirectionInterval(random)
               }
               scheduleSnake()
             }, timing.repeatPause)
             return
           }
-          direction = chooseSnakeDirection(cats, head, direction, random)
+          if (Date.now() >= nextDirectionDecisionAt) {
+            direction = chooseSnakeDirection(cats, head, direction, random)
+            nextDirectionDecisionAt = Date.now() + nextSnakeDirectionInterval(random)
+          }
           const nextHead = nextSnakeCell(cats, head, direction) ?? head
           stepCount += 1
           const targetLength = Math.min(cats.length, SNAKE_MAX_LENGTH, 2 + Math.floor(stepCount / 4))
