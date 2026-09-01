@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { IdlePattern, IdleSpeed } from './types'
 
 export const IDLE_HOP_DURATION_MS = 480
-export const SNAKE_MAX_LENGTH = 10
+export const SNAKE_MAX_LENGTH = 5
 export const SNAKE_DIRECTION_MIN_MS = 2500
 export const SNAKE_DIRECTION_MAX_MS = 3500
 
@@ -21,7 +21,6 @@ interface IdleSpeedTiming {
   popcornBase: number
   popcornJitter: number
   snakeStep: number
-  snakeStagger: number
 }
 
 export const IDLE_SPEED_TIMING: Record<IdleSpeed, IdleSpeedTiming> = {
@@ -37,7 +36,6 @@ export const IDLE_SPEED_TIMING: Record<IdleSpeed, IdleSpeedTiming> = {
     popcornBase: 1600,
     popcornJitter: 1100,
     snakeStep: 520,
-    snakeStagger: 55,
   },
   medium: {
     stagger: 120,
@@ -51,7 +49,6 @@ export const IDLE_SPEED_TIMING: Record<IdleSpeed, IdleSpeedTiming> = {
     popcornBase: 850,
     popcornJitter: 650,
     snakeStep: 340,
-    snakeStagger: 38,
   },
   fast: {
     stagger: 75,
@@ -65,7 +62,6 @@ export const IDLE_SPEED_TIMING: Record<IdleSpeed, IdleSpeedTiming> = {
     popcornBase: 360,
     popcornJitter: 360,
     snakeStep: 220,
-    snakeStagger: 26,
   },
 }
 
@@ -97,6 +93,14 @@ interface IdleStep {
 
 type SequencePattern = 'wave' | 'cascade' | 'ripple' | 'worm'
 type SnakeDirection = 'up' | 'right' | 'down' | 'left'
+
+interface SnakeState {
+  gridKey: string
+  body: IdleGridCat[]
+  direction: SnakeDirection
+  stepCount: number
+  nextDirectionDecisionAt: number
+}
 
 const SNAKE_DIRECTIONS: SnakeDirection[] = ['up', 'right', 'down', 'left']
 
@@ -236,14 +240,46 @@ function chooseSnakeDirection(cats: IdleGridCat[], head: IdleGridCat, direction:
   const candidates = SNAKE_DIRECTIONS.filter((candidate) => candidate !== opposite)
   const roll = random()
   const preferred = roll < 0.5 ? direction : roll < 0.75 ? turnedDirection(direction, -1) : turnedDirection(direction, 1)
-  if (candidates.includes(preferred) && nextSnakeCell(cats, head, preferred)) return preferred
-  return candidates.find((candidate) => nextSnakeCell(cats, head, candidate)) ?? direction
+  const canMove = (candidate: SnakeDirection) => {
+    const next = nextSnakeCell(cats, head, candidate)
+    return next && next.rescueOrder !== head.rescueOrder
+  }
+  if (candidates.includes(preferred) && canMove(preferred)) return preferred
+  return candidates.find(canMove) ?? direction
 }
 
 function initialSnakeState(cats: IdleGridCat[], random: () => number) {
-  const head = cats[Math.floor(random() * cats.length)]
+  const preferredDirection = SNAKE_DIRECTIONS[Math.floor(random() * SNAKE_DIRECTIONS.length)] ?? 'right'
+  const movableDirections = SNAKE_DIRECTIONS.filter((candidate) => cats.some((head) => {
+    const next = nextSnakeCell(cats, head, candidate)
+    return next && next.rescueOrder !== head.rescueOrder
+  }))
+  const direction = movableDirections.includes(preferredDirection)
+    ? preferredDirection
+    : movableDirections[Math.floor(random() * movableDirections.length)] ?? preferredDirection
+  const opposite = turnedDirection(direction, 2)
+  const rows = [...new Set(cats.map((cat) => cat.row))].sort((first, second) => first - second)
+  const columns = rowColumns(cats)
+  const candidates = cats
+    .map((head) => {
+      const values = columns.get(head.row) ?? []
+      const index = values.indexOf(head.column)
+      const rowDistance = rows.indexOf(head.row)
+      const edgeDistance = direction === 'right'
+        ? index
+        : direction === 'left'
+          ? values.length - 1 - index
+          : direction === 'down'
+            ? rowDistance
+            : rows.length - 1 - rowDistance
+      return { head, tail: nextSnakeCell(cats, head, opposite), edgeDistance }
+    })
+    .filter(({ head, tail }) => tail && tail.rescueOrder !== head.rescueOrder)
+  const nearestEdgeDistance = candidates.reduce((nearest, candidate) => Math.min(nearest, candidate.edgeDistance), Number.POSITIVE_INFINITY)
+  const entryCandidates = candidates.filter(({ edgeDistance }) => edgeDistance === nearestEdgeDistance)
+  const head = (entryCandidates[Math.floor(random() * entryCandidates.length)]?.head
+    ?? cats[Math.floor(random() * cats.length)])
   if (!head) return undefined
-  const direction = SNAKE_DIRECTIONS[Math.floor(random() * SNAKE_DIRECTIONS.length)] ?? 'right'
   const tail = nextSnakeCell(cats, head, turnedDirection(direction, 2)) ?? head
   return { body: [head, tail].slice(0, Math.min(2, cats.length)), direction }
 }
@@ -260,6 +296,7 @@ export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnim
   const timerRef = useRef<number | null>(null)
   const hopTimersRef = useRef(new Map<number, number>())
   const batchTimersRef = useRef(new Set<number>())
+  const snakeStateRef = useRef<SnakeState | null>(null)
   const catsKey = cats.map((cat) => `${cat.rescueOrder}:${cat.row}:${cat.column}`).join('|')
 
   useEffect(() => {
@@ -364,41 +401,36 @@ export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnim
       }
       schedulePopcorn()
     } else if (pattern === 'snake-game') {
-      const state = initialSnakeState(cats, random)
+      let state = snakeStateRef.current
+      if (!state || state.gridKey !== catsKey || state.body.length === 0) {
+        const initialState = initialSnakeState(cats, random)
+        state = initialState
+          ? {
+              ...initialState,
+              gridKey: catsKey,
+              stepCount: 0,
+              nextDirectionDecisionAt: Date.now() + nextSnakeDirectionInterval(random),
+            }
+          : null
+        snakeStateRef.current = state
+      }
       if (state) {
-        let body = state.body
-        let direction = state.direction
-        let stepCount = 0
-        let nextDirectionDecisionAt = Date.now() + nextSnakeDirectionInterval(random)
-        const stepsPerRun = Math.max(cats.length, SNAKE_MAX_LENGTH * 2)
         const scheduleSnake = () => {
           if (cancelled) return
-          const head = body[0]
-          if (!head || stepCount >= stepsPerRun) {
-            stepCount = 0
-            timerRef.current = window.setTimeout(() => {
-              const nextState = initialSnakeState(cats, random)
-              if (nextState) {
-                body = nextState.body
-                direction = nextState.direction
-                nextDirectionDecisionAt = Date.now() + nextSnakeDirectionInterval(random)
-              }
-              scheduleSnake()
-            }, timing.repeatPause)
-            return
+          const head = state.body[0]
+          if (!head) return
+          if (Date.now() >= state.nextDirectionDecisionAt) {
+            state.direction = chooseSnakeDirection(cats, head, state.direction, random)
+            state.nextDirectionDecisionAt = Date.now() + nextSnakeDirectionInterval(random)
           }
-          if (Date.now() >= nextDirectionDecisionAt) {
-            direction = chooseSnakeDirection(cats, head, direction, random)
-            nextDirectionDecisionAt = Date.now() + nextSnakeDirectionInterval(random)
-          }
-          const nextHead = nextSnakeCell(cats, head, direction) ?? head
-          stepCount += 1
-          const targetLength = Math.min(cats.length, SNAKE_MAX_LENGTH, 2 + Math.floor(stepCount / 4))
-          body = [nextHead, ...body].slice(0, targetLength)
-          triggerBatch(body.map((cat) => cat.rescueOrder), timing.snakeStagger)
+          const nextHead = nextSnakeCell(cats, head, state.direction) ?? head
+          state.stepCount += 1
+          const targetLength = Math.min(cats.length, SNAKE_MAX_LENGTH, 2 + Math.floor(state.stepCount / 4))
+          state.body = [nextHead, ...state.body].slice(0, targetLength)
+          triggerBatch(state.body.map((cat) => cat.rescueOrder), timing.cascadeStagger)
           timerRef.current = window.setTimeout(scheduleSnake, timing.snakeStep)
         }
-        triggerBatch(body.map((cat) => cat.rescueOrder), timing.snakeStagger)
+        triggerBatch(state.body.map((cat) => cat.rescueOrder), timing.cascadeStagger)
         timerRef.current = window.setTimeout(scheduleSnake, timing.snakeStep)
       }
     } else {
