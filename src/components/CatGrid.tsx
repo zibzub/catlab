@@ -59,7 +59,9 @@ function columnsForWidth(width: number, viewMode: GridViewMode, artMode: GridArt
       : isPhone
         ? { small: 120, medium: 142, large: 166 }[gridSize]
         : { small: 122, medium: 142, large: 166 }[gridSize]
-  const maxColumns = viewMode === 'compact' ? 14 : 9
+  const maxColumns = viewMode === 'compact'
+    ? isPhone || gridSize === 'large' ? 14 : 16
+    : 9
   const gap = isPhone ? 7 : 11
   const calculatedColumns = Math.floor((width + gap) / (targetTileWidth + gap))
   const minimumColumns = viewMode === 'compact' && gridSize === 'medium' && isPhone && width > 0 ? 4 : 1
