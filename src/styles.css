@@ -725,21 +725,80 @@ h1 {
   height: 0;
 }
 
-.cat-grid-fader {
-  flex: 0 0 16px;
-  width: 16px;
+.cat-grid-scroll-controls {
+  display: flex;
+  flex: 0 0 26px;
+  width: 26px;
   min-height: 0;
   align-self: stretch;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   margin: var(--cat-grid-frame-offset) 0;
+  transform: translateX(2px);
+}
+
+.cat-grid-fader {
+  flex: 1 1 auto;
+  width: 18px;
+  height: 0;
+  min-height: 0;
+  align-self: stretch;
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 4px;
   background: transparent;
   cursor: ns-resize;
+  transform: translateX(4px);
   writing-mode: vertical-lr;
   direction: ltr;
   appearance: none;
   -webkit-appearance: none;
+}
+
+.cat-grid-scroll-button {
+  display: grid;
+  flex: 0 0 20px;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(178, 197, 219, 0.24);
+  border-radius: 4px;
+  background: linear-gradient(145deg, #2c3848, #171f2b);
+  box-shadow: inset 0 1px 0 rgba(231, 244, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.42);
+  color: rgba(178, 154, 255, 0.88);
+  cursor: pointer;
+  font-family: var(--console-micro-font, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.58rem;
+  line-height: 1;
+  transition: border-color 110ms ease, background 110ms ease, box-shadow 110ms ease, color 110ms ease, transform 70ms ease;
+}
+
+.cat-grid-scroll-button:not(:disabled):hover {
+  border-color: rgba(153, 154, 255, 0.62);
+  background: linear-gradient(145deg, #35445a, #1c2533);
+  box-shadow: inset 0 1px 0 rgba(231, 244, 255, 0.14), 0 1px 3px rgba(0, 0, 0, 0.5);
+  color: #c8baff;
+}
+
+.cat-grid-scroll-button:not(:disabled):focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.cat-grid-scroll-button:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.42), 0 0 1px rgba(0, 0, 0, 0.42);
+}
+
+.cat-grid-scroll-button:disabled {
+  border-color: rgba(178, 197, 219, 0.1);
+  background: linear-gradient(145deg, #202936, #121820);
+  box-shadow: inset 0 1px 0 rgba(231, 244, 255, 0.04), 0 1px 1px rgba(0, 0, 0, 0.3);
+  color: rgba(178, 197, 219, 0.3);
+  cursor: default;
 }
 
 .cat-grid-fader::-webkit-slider-runnable-track {
@@ -1693,7 +1752,7 @@ h1 {
     margin-bottom: 4px;
   }
 
-  .cat-grid-fader {
+  .cat-grid-scroll-controls {
     display: none;
   }
 
@@ -1872,6 +1931,14 @@ h1 {
     animation: none;
     transition: none;
     transform: none !important;
+  }
+
+  .cat-grid-scroll-button {
+    transition: none;
+  }
+
+  .cat-grid-scroll-button:not(:disabled):active {
+    transform: none;
   }
 }
 

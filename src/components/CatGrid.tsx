@@ -77,6 +77,10 @@ function rowEstimateFor(viewMode: GridViewMode, artMode: GridArtMode, gridSize: 
     : { small: 205, medium: 225, large: 250 }[gridSize]
 }
 
+const ARROW_HOLD_DELAY_MS = 325
+const CONTINUOUS_SCROLL_VIEWPORTS_PER_SECOND = 1.2
+const PAGE_SCROLL_RATIO = 0.92
+
 export function CatGrid({
   cats,
   manifest,
@@ -103,8 +107,105 @@ export function CatGrid({
   const faderRef = useRef<HTMLInputElement>(null)
   const appliedScrollAnchorRef = useRef<number | null>(null)
   const [width, setWidth] = useState(0)
+  const [canScrollUp, setCanScrollUp] = useState(false)
+  const [canScrollDown, setCanScrollDown] = useState(false)
+  const canScrollUpRef = useRef(false)
+  const canScrollDownRef = useRef(false)
+  const holdTimerRef = useRef<number | null>(null)
+  const holdFrameRef = useRef<number | null>(null)
+  const holdDirectionRef = useRef<-1 | 1 | null>(null)
+  const holdTriggeredRef = useRef(false)
+  const holdLastTimestampRef = useRef<number | null>(null)
+  const holdPointerIdRef = useRef<number | null>(null)
+  const windowPointerUpHandlerRef = useRef<((event: PointerEvent) => void) | null>(null)
+  const windowPointerCancelHandlerRef = useRef<((event: PointerEvent) => void) | null>(null)
   const columnCount = columnsForWidth(width, viewMode, artMode, gridSize)
   const rowCount = Math.ceil(cats.length / columnCount)
+  const scrollByStep = (direction: -1 | 1) => {
+    const scrollElement = scrollElementRef.current
+    if (!scrollElement) return
+    const maxScroll = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight)
+    const scrollStep = scrollElement.clientHeight * PAGE_SCROLL_RATIO
+    const target = Math.min(maxScroll, Math.max(0, scrollElement.scrollTop + direction * scrollStep))
+    scrollElement.scrollTo({ top: target })
+  }
+  const stopArrowHold = () => {
+    if (holdTimerRef.current !== null) {
+      window.clearTimeout(holdTimerRef.current)
+      holdTimerRef.current = null
+    }
+    if (holdFrameRef.current !== null) {
+      window.cancelAnimationFrame(holdFrameRef.current)
+      holdFrameRef.current = null
+    }
+    if (windowPointerUpHandlerRef.current !== null) {
+      window.removeEventListener('pointerup', windowPointerUpHandlerRef.current)
+      windowPointerUpHandlerRef.current = null
+    }
+    if (windowPointerCancelHandlerRef.current !== null) {
+      window.removeEventListener('pointercancel', windowPointerCancelHandlerRef.current)
+      windowPointerCancelHandlerRef.current = null
+    }
+    holdDirectionRef.current = null
+    holdLastTimestampRef.current = null
+    holdPointerIdRef.current = null
+    holdTriggeredRef.current = false
+  }
+  const finishArrowPress = (direction: -1 | 1) => {
+    const wasHeld = holdTriggeredRef.current
+    const wasPressed = holdDirectionRef.current === direction
+    stopArrowHold()
+    if (wasPressed && !wasHeld) scrollByStep(direction)
+  }
+  const continueArrowScroll = (timestamp: number) => {
+    const scrollElement = scrollElementRef.current
+    const direction = holdDirectionRef.current
+    if (!scrollElement || direction === null) {
+      holdFrameRef.current = null
+      return
+    }
+
+    const previousTimestamp = holdLastTimestampRef.current ?? timestamp
+    const elapsed = Math.min(64, Math.max(0, timestamp - previousTimestamp))
+    holdLastTimestampRef.current = timestamp
+    const maxScroll = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight)
+    const distance = scrollElement.clientHeight
+      * CONTINUOUS_SCROLL_VIEWPORTS_PER_SECOND
+      * (elapsed / 1000)
+    const target = Math.min(maxScroll, Math.max(0, scrollElement.scrollTop + direction * distance))
+    scrollElement.scrollTop = target
+
+    const reachedEndpoint = (direction < 0 && target <= 0) || (direction > 0 && target >= maxScroll)
+    if (reachedEndpoint) {
+      stopArrowHold()
+      return
+    }
+    holdFrameRef.current = window.requestAnimationFrame(continueArrowScroll)
+  }
+  const beginArrowHold = (direction: -1 | 1, event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return
+    stopArrowHold()
+    holdDirectionRef.current = direction
+    holdTriggeredRef.current = false
+    holdPointerIdRef.current = event.pointerId
+    const handleWindowPointerUp = (pointerEvent: PointerEvent) => {
+      if (pointerEvent.pointerId === holdPointerIdRef.current) finishArrowPress(direction)
+    }
+    const handleWindowPointerCancel = (pointerEvent: PointerEvent) => {
+      if (pointerEvent.pointerId === holdPointerIdRef.current) stopArrowHold()
+    }
+    windowPointerUpHandlerRef.current = handleWindowPointerUp
+    windowPointerCancelHandlerRef.current = handleWindowPointerCancel
+    window.addEventListener('pointerup', handleWindowPointerUp)
+    window.addEventListener('pointercancel', handleWindowPointerCancel)
+    holdTimerRef.current = window.setTimeout(() => {
+      holdTimerRef.current = null
+      if (holdDirectionRef.current !== direction) return
+      holdTriggeredRef.current = true
+      holdLastTimestampRef.current = null
+      holdFrameRef.current = window.requestAnimationFrame(continueArrowScroll)
+    }, ARROW_HOLD_DELAY_MS)
+  }
   const overscan = width <= 900 ? 2 : 5
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
@@ -195,16 +296,27 @@ export function CatGrid({
     }
   }, [artMode, cats, columnCount, gridSize, showStars, viewMode])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const scrollElement = scrollElementRef.current
     const fader = faderRef.current
     if (!scrollElement || !fader) return
 
     const syncFader = () => {
       const maxScroll = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight)
+      const scrollTop = Math.min(maxScroll, Math.max(0, scrollElement.scrollTop))
       fader.max = String(maxScroll)
-      fader.value = String(Math.min(maxScroll, scrollElement.scrollTop))
+      fader.value = String(scrollTop)
       fader.disabled = maxScroll === 0
+      const nextCanScrollUp = scrollTop > 0
+      const nextCanScrollDown = maxScroll > 0 && scrollTop < maxScroll
+      if (canScrollUpRef.current !== nextCanScrollUp) {
+        canScrollUpRef.current = nextCanScrollUp
+        setCanScrollUp(nextCanScrollUp)
+      }
+      if (canScrollDownRef.current !== nextCanScrollDown) {
+        canScrollDownRef.current = nextCanScrollDown
+        setCanScrollDown(nextCanScrollDown)
+      }
     }
 
     const resizeObserver = new ResizeObserver(syncFader)
@@ -218,6 +330,10 @@ export function CatGrid({
       scrollElement.removeEventListener('scroll', syncFader)
     }
   }, [artMode, cats, columnCount, gridSize, viewMode])
+
+  useEffect(() => () => {
+    stopArrowHold()
+  }, [])
 
   if (cats.length === 0) {
     return (
@@ -288,19 +404,49 @@ export function CatGrid({
             </div>
           </div>
         </div>
-        <input
-          ref={faderRef}
-          className="cat-grid-fader"
-          type="range"
-          min="0"
-          max="0"
-          defaultValue="0"
-          aria-label="Scroll MoonCat grid"
-          onChange={(event) => {
-            const scrollElement = scrollElementRef.current
-            if (scrollElement) scrollElement.scrollTop = Number(event.currentTarget.value)
-          }}
-        />
+        <div className="cat-grid-scroll-controls">
+          <button
+            className="cat-grid-scroll-button"
+            type="button"
+            disabled={!canScrollUp}
+            aria-label="Scroll up"
+            onPointerDown={(event) => beginArrowHold(-1, event)}
+            onPointerUp={() => finishArrowPress(-1)}
+            onPointerCancel={stopArrowHold}
+            onClick={(event) => {
+              if (event.detail === 0) scrollByStep(-1)
+            }}
+          >
+            <span aria-hidden="true">▲</span>
+          </button>
+          <input
+            ref={faderRef}
+            className="cat-grid-fader"
+            type="range"
+            min="0"
+            max="0"
+            defaultValue="0"
+            aria-label="Scroll MoonCat grid"
+            onChange={(event) => {
+              const scrollElement = scrollElementRef.current
+              if (scrollElement) scrollElement.scrollTop = Number(event.currentTarget.value)
+            }}
+          />
+          <button
+            className="cat-grid-scroll-button"
+            type="button"
+            disabled={!canScrollDown}
+            aria-label="Scroll down"
+            onPointerDown={(event) => beginArrowHold(1, event)}
+            onPointerUp={() => finishArrowPress(1)}
+            onPointerCancel={stopArrowHold}
+            onClick={(event) => {
+              if (event.detail === 0) scrollByStep(1)
+            }}
+          >
+            <span aria-hidden="true">▼</span>
+          </button>
+        </div>
       </div>
     </div>
   )
