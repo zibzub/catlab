@@ -1050,7 +1050,7 @@ h1 {
   z-index: 1;
   overflow: hidden;
   pointer-events: none;
-  transition: transform 150ms ease;
+  transition: transform 300ms ease;
 }
 
 .cat-art__sprite-cell {
@@ -1247,11 +1247,13 @@ h1 {
 
 @media (hover: hover) and (pointer: fine) {
   .cat-tile:hover .cat-art__sprite {
+    transition-duration: 150ms;
     transform: translateY(-12px);
   }
 
   .cat-tile--idle-hop:hover .cat-art__sprite {
     animation: none;
+    transition-duration: 150ms;
     transform: translateY(-12px);
   }
 }
