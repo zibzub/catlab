@@ -21,12 +21,6 @@ async function openCollection(page: Page) {
   await expect(page.locator('.result-count strong')).toHaveText(FULL_COUNT)
 }
 
-async function clearFilters(page: Page) {
-  const clear = page.locator('.active-filter-row__clear')
-  if (await clear.isVisible().catch(() => false)) await clear.click()
-  await expect(page.locator('.result-count strong')).toHaveText(FULL_COUNT)
-}
-
 test.describe('@desktop Collection smoke', () => {
   test('loads a bounded virtualized collection and supports search', async ({ page }) => {
     const assertRuntime = captureRuntimeErrors(page)
@@ -56,15 +50,27 @@ test.describe('@desktop Collection smoke', () => {
     const assertRuntime = captureRuntimeErrors(page)
     await openCollection(page)
 
-    await page.getByRole('button', { name: 'Filters' }).click()
+    await page.locator('button[aria-controls="filter-drawer"]').click()
     const drawer = page.getByRole('dialog', { name: 'Filter MoonCats' })
     await expect(drawer).toBeVisible()
     await drawer.getByRole('button', { name: 'Rescue' }).click()
     await drawer.getByLabel('Day 1').check()
-    await drawer.getByLabel('Sub-100').check()
-    await drawer.getByRole('button', { name: /^Apply/ }).click()
+    await expect(drawer.getByLabel('Day 1')).toBeChecked()
     await expect(page.locator('.result-count strong')).not.toHaveText(FULL_COUNT)
-    await clearFilters(page)
+    await drawer.getByLabel('Sub-100').check()
+    await expect(drawer.getByLabel('Sub-100')).toBeChecked()
+    await expect(page.locator('.result-count strong')).not.toHaveText(FULL_COUNT)
+    await drawer.getByRole('button', { name: 'Close', exact: true }).click()
+    await expect(page.locator('.result-count strong')).not.toHaveText(FULL_COUNT)
+    await page.locator('button[aria-controls="filter-drawer"]').click()
+    const reopenedDrawer = page.getByRole('dialog', { name: 'Filter MoonCats' })
+    await reopenedDrawer.getByRole('button', { name: 'Rescue' }).click()
+    await expect(reopenedDrawer.getByLabel('Day 1')).toBeChecked()
+    await expect(reopenedDrawer.getByLabel('Sub-100')).toBeChecked()
+    await reopenedDrawer.getByRole('button', { name: 'Clear all' }).click()
+    await expect(page.locator('.result-count strong')).toHaveText(FULL_COUNT)
+    await expect(reopenedDrawer).toBeVisible()
+    await reopenedDrawer.getByRole('button', { name: 'Close', exact: true }).click()
 
     const details = page.getByRole('button', { name: 'Details view' })
     const list = page.getByRole('button', { name: 'List view' })
@@ -147,13 +153,18 @@ test.describe('@mobile Collection smoke', () => {
     await expect(page.locator('.result-count strong')).toHaveText('1')
     await page.getByRole('button', { name: 'Clear search' }).click()
 
-    await page.getByRole('button', { name: 'Filters' }).click()
+    await page.locator('button[aria-controls="filter-drawer"]').click()
     const drawer = page.getByRole('dialog', { name: 'Filter MoonCats' })
     await expect(drawer).toBeVisible()
     const drawerBox = await drawer.boundingBox()
     expect(drawerBox).not.toBeNull()
     expect(drawerBox!.x).toBeGreaterThanOrEqual(0)
     expect(drawerBox!.x + drawerBox!.width).toBeLessThanOrEqual(390)
+    await drawer.getByRole('button', { name: 'Rescue' }).click()
+    await drawer.getByLabel('Day 1').check()
+    await expect(page.locator('.result-count strong')).not.toHaveText(FULL_COUNT)
+    await drawer.getByRole('button', { name: 'Clear all' }).click()
+    await expect(page.locator('.result-count strong')).toHaveText(FULL_COUNT)
     await drawer.getByRole('button', { name: 'Close filters' }).click()
     await expect(drawer).toBeHidden()
 

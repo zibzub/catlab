@@ -237,7 +237,7 @@ export default function App() {
     setFilters((current) => ({ ...current, query }))
   }, [])
 
-  const applyFilters = useCallback((nextFilters: FilterState) => {
+  const updateFilters = useCallback((nextFilters: FilterState) => {
     setFilters((current) => ({ ...nextFilters, query: current.query }))
   }, [])
 
@@ -488,7 +488,7 @@ export default function App() {
               walletLookupLoading={walletLookupLoading}
               walletLookupError={walletLookupError}
               onQueryChange={updateQuery}
-              onApplyFilters={applyFilters}
+              onFiltersChange={updateFilters}
               onClearFilters={clearFilters}
               onWalletLookup={lookupWallet}
               onWalletInputChange={setWalletInput}

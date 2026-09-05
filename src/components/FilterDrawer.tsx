@@ -3,7 +3,7 @@ import {
   activeFilterCount,
   CLASSIFICATION_FILTER_OPTIONS,
 } from './collectionFilters'
-import { cloneFilterState, createEmptyFilterState, type FilterIndex } from '../mooncat-index/filters'
+import { createEmptyFilterState, type FilterIndex } from '../mooncat-index/filters'
 import type { FilterState } from '../types'
 import {
   getInjectedWalletProvider,
@@ -21,7 +21,7 @@ interface FilterDrawerProps {
   walletInput: string
   walletLookupLoading: boolean
   walletLookupError: string | null
-  onApply: (filters: FilterState) => void
+  onFiltersChange: (filters: FilterState) => void
   onWalletLookup: (input: string) => void
   onWalletInputChange: (input: string) => void
   onUseConnectedWallet: () => void
@@ -155,7 +155,7 @@ export function FilterDrawer({
   walletInput,
   walletLookupLoading,
   walletLookupError,
-  onApply,
+  onFiltersChange,
   onWalletLookup,
   onWalletInputChange,
   onUseConnectedWallet,
@@ -163,7 +163,6 @@ export function FilterDrawer({
   onDisconnectWallet,
   onClose,
 }: FilterDrawerProps) {
-  const [draft, setDraft] = useState<FilterState>(() => cloneFilterState(activeFilters))
   const [hueSearch, setHueSearch] = useState('')
   const [walletHistory, setWalletHistory] = useState(loadWalletLookupHistory)
   const [walletHistoryOpen, setWalletHistoryOpen] = useState(false)
@@ -179,7 +178,6 @@ export function FilterDrawer({
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
-      setDraft(cloneFilterState(activeFilters))
       setHueSearch('')
       window.requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }))
     }
@@ -208,35 +206,34 @@ export function FilterDrawer({
 
   if (!open) return null
 
-  const draftCount = activeFilterCount(draft)
+  const activeCount = activeFilterCount(activeFilters)
   const filteredHues = index.options.hueNames.filter((hue) => (
     hue.toLowerCase().includes(hueSearch.trim().toLowerCase())
   ))
-  const characterCatsCount = draft.classifications.filter((value) =>
+  const characterCatsCount = activeFilters.classifications.filter((value) =>
     CHARACTER_CLASSIFICATION_OPTIONS.some((option) => option.value === value),
   ).length
-  const rescueCount = draft.rescueYears.length + draft.classifications.filter((value) => RESCUE_CLASSIFICATION_KEYS.has(value)).length
-  const coatCount = draft.hueNames.length
-    + (draft.hueValueMin !== null || draft.hueValueMax !== null ? 1 : 0)
-    + draft.patterns.length
-    + (draft.pale === 'all' ? 0 : 1)
-  const traitsCount = draft.poses.length + draft.expressions.length + draft.facings.length
-    + draft.classifications.filter((value) => TRAIT_CLASSIFICATION_KEYS.has(value)).length
-  const namingCount = draft.naming === 'all' ? 0 : 1
+  const rescueCount = activeFilters.rescueYears.length + activeFilters.classifications.filter((value) => RESCUE_CLASSIFICATION_KEYS.has(value)).length
+  const coatCount = activeFilters.hueNames.length
+    + (activeFilters.hueValueMin !== null || activeFilters.hueValueMax !== null ? 1 : 0)
+    + activeFilters.patterns.length
+    + (activeFilters.pale === 'all' ? 0 : 1)
+  const traitsCount = activeFilters.poses.length + activeFilters.expressions.length + activeFilters.facings.length
+    + activeFilters.classifications.filter((value) => TRAIT_CLASSIFICATION_KEYS.has(value)).length
+  const namingCount = activeFilters.naming === 'all' ? 0 : 1
   const injectedWalletAvailable = getInjectedWalletProvider() !== null
   const connectedWalletActive = walletFilter?.source === 'connected'
+
+  const updateFilters = (update: (current: FilterState) => FilterState) => {
+    onFiltersChange(update(activeFilters))
+  }
 
   const setSectionOpen = (section: FilterSectionKey) => {
     setOpenSections((current) => ({ ...current, [section]: !current[section] }))
   }
 
-  const clearDraft = () => {
-    setDraft({ ...createEmptyFilterState(), query: activeFilters.query })
-  }
-
-  const applyDraft = () => {
-    onApply({ ...cloneFilterState(draft), query: activeFilters.query })
-    onClose()
+  const clearFilters = () => {
+    onFiltersChange({ ...createEmptyFilterState(), query: activeFilters.query })
   }
 
   return (
@@ -401,8 +398,8 @@ export function FilterDrawer({
                     key={hue}
                     label={hue.replace(/\b\w/g, (character) => character.toUpperCase())}
                     count={index.counts.hueNames[hue] ?? 0}
-                    checked={draft.hueNames.includes(hue)}
-                    onChange={() => setDraft((current) => ({
+                    checked={activeFilters.hueNames.includes(hue)}
+                    onChange={() => updateFilters((current) => ({
                       ...current,
                       hueNames: toggleValue(current.hueNames, hue),
                     }))}
@@ -423,10 +420,10 @@ export function FilterDrawer({
                     type="number"
                     step="1"
                     inputMode="numeric"
-                    value={draft.hueValueMin ?? ''}
+                    value={activeFilters.hueValueMin ?? ''}
                     aria-label="Minimum hue value"
                     placeholder="Any"
-                    onChange={(event) => setDraft((current) => ({
+                    onChange={(event) => updateFilters((current) => ({
                       ...current,
                       hueValueMin: parseHueBound(event.target.value),
                     }))}
@@ -438,10 +435,10 @@ export function FilterDrawer({
                     type="number"
                     step="1"
                     inputMode="numeric"
-                    value={draft.hueValueMax ?? ''}
+                    value={activeFilters.hueValueMax ?? ''}
                     aria-label="Maximum hue value"
                     placeholder="Any"
-                    onChange={(event) => setDraft((current) => ({
+                    onChange={(event) => updateFilters((current) => ({
                       ...current,
                       hueValueMax: parseHueBound(event.target.value),
                     }))}
@@ -457,24 +454,24 @@ export function FilterDrawer({
                   value="all"
                   label="All coats"
                   count={index.totalCount}
-                  checked={draft.pale === 'all'}
-                  onChange={() => setDraft((current) => ({ ...current, pale: 'all' }))}
+                  checked={activeFilters.pale === 'all'}
+                  onChange={() => updateFilters((current) => ({ ...current, pale: 'all' }))}
                 />
                 <RadioOption
                   name="coat-pale"
                   value="pale"
                   label="Pale"
                   count={index.counts.pale.pale}
-                  checked={draft.pale === 'pale'}
-                  onChange={() => setDraft((current) => ({ ...current, pale: 'pale' }))}
+                  checked={activeFilters.pale === 'pale'}
+                  onChange={() => updateFilters((current) => ({ ...current, pale: 'pale' }))}
                 />
                 <RadioOption
                   name="coat-pale"
                   value="normal"
                   label="Normal"
                   count={index.counts.pale.normal}
-                  checked={draft.pale === 'normal'}
-                  onChange={() => setDraft((current) => ({ ...current, pale: 'normal' }))}
+                  checked={activeFilters.pale === 'normal'}
+                  onChange={() => updateFilters((current) => ({ ...current, pale: 'normal' }))}
                 />
               </div>
             </div>
@@ -486,8 +483,8 @@ export function FilterDrawer({
                     key={pattern}
                     label={pattern.replace(/\b\w/g, (character) => character.toUpperCase())}
                     count={index.counts.patterns[pattern] ?? 0}
-                    checked={draft.patterns.includes(pattern)}
-                    onChange={() => setDraft((current) => ({
+                    checked={activeFilters.patterns.includes(pattern)}
+                    onChange={() => updateFilters((current) => ({
                       ...current,
                       patterns: toggleValue(current.patterns, pattern),
                     }))}
@@ -512,9 +509,9 @@ export function FilterDrawer({
                     key={option.value}
                     label={option.label}
                     count={count}
-                    checked={draft.classifications.includes(option.value)}
+                    checked={activeFilters.classifications.includes(option.value)}
                     disabled={count === 0}
-                    onChange={() => setDraft((current) => ({
+                    onChange={() => updateFilters((current) => ({
                       ...current,
                       classifications: toggleValue(current.classifications, option.value),
                     }))}
@@ -541,9 +538,9 @@ export function FilterDrawer({
                       key={option.value}
                       label={option.label}
                       count={count}
-                      checked={draft.classifications.includes(option.value)}
+                      checked={activeFilters.classifications.includes(option.value)}
                       disabled={count === 0}
-                      onChange={() => setDraft((current) => ({
+                      onChange={() => updateFilters((current) => ({
                         ...current,
                         classifications: toggleValue(current.classifications, option.value),
                       }))}
@@ -565,8 +562,8 @@ export function FilterDrawer({
                       key={value}
                       label={value.replace(/\b\w/g, (character) => character.toUpperCase())}
                       count={counts[value] ?? 0}
-                      checked={draft[key].includes(value)}
-                      onChange={() => setDraft((current) => ({
+                      checked={activeFilters[key].includes(value)}
+                      onChange={() => updateFilters((current) => ({
                         ...current,
                         [key]: toggleValue(current[key], value),
                       }))}
@@ -590,40 +587,40 @@ export function FilterDrawer({
                 value="all"
                 label="All cats"
                 count={index.totalCount}
-                checked={draft.naming === 'all'}
-                onChange={() => setDraft((current) => ({ ...current, naming: 'all' }))}
+                checked={activeFilters.naming === 'all'}
+                onChange={() => updateFilters((current) => ({ ...current, naming: 'all' }))}
               />
               <RadioOption
                 name="naming"
                 value="named"
                 label="Named"
                 count={index.counts.naming.named}
-                checked={draft.naming === 'named'}
-                onChange={() => setDraft((current) => ({ ...current, naming: 'named' }))}
+                checked={activeFilters.naming === 'named'}
+                onChange={() => updateFilters((current) => ({ ...current, naming: 'named' }))}
               />
               <RadioOption
                 name="naming"
                 value="recentlyNamed"
                 label="Recently Named"
                 count={index.counts.naming.named}
-                checked={draft.naming === 'recentlyNamed'}
-                onChange={() => setDraft((current) => ({ ...current, naming: 'recentlyNamed' }))}
+                checked={activeFilters.naming === 'recentlyNamed'}
+                onChange={() => updateFilters((current) => ({ ...current, naming: 'recentlyNamed' }))}
               />
               <RadioOption
                 name="naming"
                 value="firstNamed"
                 label="First Named"
                 count={index.counts.naming.named}
-                checked={draft.naming === 'firstNamed'}
-                onChange={() => setDraft((current) => ({ ...current, naming: 'firstNamed' }))}
+                checked={activeFilters.naming === 'firstNamed'}
+                onChange={() => updateFilters((current) => ({ ...current, naming: 'firstNamed' }))}
               />
               <RadioOption
                 name="naming"
                 value="unnamed"
                 label="Unnamed"
                 count={index.counts.naming.unnamed}
-                checked={draft.naming === 'unnamed'}
-                onChange={() => setDraft((current) => ({ ...current, naming: 'unnamed' }))}
+                checked={activeFilters.naming === 'unnamed'}
+                onChange={() => updateFilters((current) => ({ ...current, naming: 'unnamed' }))}
               />
             </div>
           </FilterAccordionSection>
@@ -645,9 +642,9 @@ export function FilterDrawer({
                       key={option.value}
                       label={option.label}
                       count={count}
-                      checked={draft.classifications.includes(option.value)}
+                      checked={activeFilters.classifications.includes(option.value)}
                       disabled={count === 0}
-                      onChange={() => setDraft((current) => ({
+                      onChange={() => updateFilters((current) => ({
                         ...current,
                         classifications: toggleValue(current.classifications, option.value),
                       }))}
@@ -664,8 +661,8 @@ export function FilterDrawer({
                     key={year}
                     label={String(year)}
                     count={index.counts.rescueYears[String(year)] ?? 0}
-                    checked={draft.rescueYears.includes(year)}
-                    onChange={() => setDraft((current) => ({
+                    checked={activeFilters.rescueYears.includes(year)}
+                    onChange={() => updateFilters((current) => ({
                       ...current,
                       rescueYears: toggleValue(current.rescueYears, year),
                     }))}
@@ -677,14 +674,11 @@ export function FilterDrawer({
         </div>
 
         <div className="filter-drawer__footer">
-          <button className="filter-drawer__clear" type="button" onClick={clearDraft} disabled={draftCount === 0}>
+          <button className="filter-drawer__clear" type="button" onClick={clearFilters} disabled={activeCount === 0}>
             Clear all
           </button>
           <div className="filter-drawer__footer-actions">
-            <button className="filter-drawer__cancel" type="button" onClick={onClose}>Cancel</button>
-            <button className="filter-drawer__apply" type="button" onClick={applyDraft}>
-              Apply{draftCount > 0 ? ` (${draftCount})` : ''}
-            </button>
+            <button className="filter-drawer__cancel" type="button" onClick={onClose}>Close</button>
           </div>
         </div>
       </aside>

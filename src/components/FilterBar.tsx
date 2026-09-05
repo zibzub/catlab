@@ -36,7 +36,7 @@ interface FilterBarProps {
   walletLookupLoading: boolean
   walletLookupError: string | null
   onQueryChange: (query: string) => void
-  onApplyFilters: (filters: FilterState) => void
+  onFiltersChange: (filters: FilterState) => void
   onClearFilters: () => void
   onWalletLookup: (input: string) => void
   onWalletInputChange: (input: string) => void
@@ -101,7 +101,7 @@ export function FilterBar({
   walletLookupLoading,
   walletLookupError,
   onQueryChange,
-  onApplyFilters,
+  onFiltersChange,
   onClearFilters,
   onWalletLookup,
   onWalletInputChange,
@@ -480,7 +480,7 @@ export function FilterBar({
         walletInput={walletInput}
         walletLookupLoading={walletLookupLoading}
         walletLookupError={walletLookupError}
-        onApply={onApplyFilters}
+        onFiltersChange={onFiltersChange}
         onWalletLookup={onWalletLookup}
         onWalletInputChange={onWalletInputChange}
         onUseConnectedWallet={onUseConnectedWallet}
