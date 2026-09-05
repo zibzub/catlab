@@ -18,7 +18,14 @@ import {
   type ComposePlacedRect,
 } from '../composeExport'
 import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
-import { canTransformComposeObject, defaultComposeObjectState, resetComposeTransform } from '../composeModel'
+import {
+  canTransformComposeObject,
+  defaultComposeObjectState,
+  moveComposeLayer,
+  resetComposeTransform,
+  type ComposeLayerMove,
+} from '../composeModel'
+import { ComposeLayersPanel } from './ComposeLayersPanel'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -372,6 +379,7 @@ export function ComposePage({
       manifest,
       background,
       stageWidth,
+      cropMoonCatAlpha: false,
     })
     const objectUrl = URL.createObjectURL(blob)
     try {
@@ -589,8 +597,12 @@ export function ComposePage({
 
   function updateSelected(update: Partial<ComposePlacedObject>) {
     if (!selectedId) return
+    updateObject(selectedId, update)
+  }
+
+  function updateObject(id: string, update: Partial<ComposePlacedObject>) {
     setPlacedObjects((current) =>
-      current.map((item) => (item.id === selectedId ? ({ ...item, ...update } as ComposePlacedObject) : item)),
+      current.map((item) => (item.id === id ? ({ ...item, ...update } as ComposePlacedObject) : item)),
     )
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
   }
@@ -815,22 +827,9 @@ export function ComposePage({
     window.requestAnimationFrame(() => moveableRef.current?.dragStart(nativeEvent))
   }
 
-  function reorderSelected(direction: 'forward' | 'backward' | 'front' | 'back') {
+  function reorderSelected(direction: ComposeLayerMove) {
     if (!selectedId) return
-    setPlacedObjects((current) => {
-      const ordered = [...current].sort((a, b) => a.z - b.z)
-      const index = ordered.findIndex((item) => item.id === selectedId)
-      if (index < 0) return current
-      let target = index
-      if (direction === 'forward') target = Math.min(index + 1, ordered.length - 1)
-      if (direction === 'backward') target = Math.max(index - 1, 0)
-      if (direction === 'front') target = ordered.length - 1
-      if (direction === 'back') target = 0
-      if (target === index) return current
-      const [moved] = ordered.splice(index, 1)
-      ordered.splice(target, 0, moved)
-      return ordered.map((item, z) => ({ ...item, z }))
-    })
+    setPlacedObjects((current) => moveComposeLayer(current, selectedId, direction))
   }
 
   async function handleExport() {
@@ -1450,6 +1449,17 @@ export function ComposePage({
             PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.
           </p>
         </section>
+
+        <ComposeLayersPanel
+          objects={placedObjects}
+          manifest={manifest}
+          selectedId={selectedId}
+          onSelect={(id) => {
+            setEditingTextId(null)
+            setSelectedId(id)
+          }}
+          onUpdate={updateObject}
+        />
 
         <section className="compose-card compose-selected" aria-labelledby="compose-selected-title">
           <div className="compose-card__header">

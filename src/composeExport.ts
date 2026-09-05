@@ -48,6 +48,7 @@ export interface ComposeExportOptions {
   manifest: AtlasManifest
   background: ComposeBackground | null
   stageWidth: number
+  cropMoonCatAlpha?: boolean
 }
 
 export function getExportableComposeObjects(placedObjects: ComposePlacedObject[]) {
@@ -129,6 +130,7 @@ export async function renderComposition({
   manifest,
   background,
   stageWidth,
+  cropMoonCatAlpha = true,
 }: ComposeExportOptions) {
   const dimensions = background ?? EMPTY_COMPOSITION
   const pixelArea =
@@ -180,14 +182,16 @@ export async function renderComposition({
       const image = await loadImage(atlasCell.assetUrl)
       const sourceX = atlasCell.x
       const sourceY = atlasCell.y
-      const bounds = getAlphaBounds({
-        image,
-        cacheKey: atlasCell.assetUrl,
-        sourceX,
-        sourceY,
-        width: atlasCell.cellWidth,
-        height: atlasCell.cellHeight,
-      })
+      const bounds = cropMoonCatAlpha
+        ? getAlphaBounds({
+            image,
+            cacheKey: atlasCell.assetUrl,
+            sourceX,
+            sourceY,
+            width: atlasCell.cellWidth,
+            height: atlasCell.cellHeight,
+          })
+        : { x: 0, y: 0, width: atlasCell.cellWidth, height: atlasCell.cellHeight }
       const catScale = COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
       const width = bounds.width * catScale
       const height = bounds.height * catScale
