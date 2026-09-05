@@ -20,10 +20,16 @@ import {
 import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
 import {
   canTransformComposeObject,
+  cloneComposeObjectFromSnapshot,
+  createComposeClipboardSnapshot,
+  createComposeObjectId,
   defaultComposeObjectState,
+  getComposePastePosition,
   moveComposeLayer,
   moveComposeLayerToIndex,
+  offsetComposePosition,
   resetComposeTransform,
+  type ComposeClipboardSnapshot,
   type ComposeLayerMove,
 } from '../composeModel'
 import { ComposeLayersPanel } from './ComposeLayersPanel'
@@ -159,7 +165,11 @@ export function ComposePage({
   const moveableRef = useRef<Moveable>(null)
   const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
   const rectangleScaleStartRef = useRef<{ id: string; width: number; height: number; scale: number } | null>(null)
+  const placedObjectsRef = useRef(placedObjects)
+  const pasteCountRef = useRef(0)
+  placedObjectsRef.current = placedObjects
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [composeClipboard, setComposeClipboard] = useState<ComposeClipboardSnapshot<ComposePlacedObject> | null>(null)
   const [editingTextId, setEditingTextId] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
   const [exportBusy, setExportBusy] = useState(false)
@@ -216,8 +226,6 @@ export function ComposePage({
   }, [])
 
   useEffect(() => {
-    if (!selectedId) return
-
     function handleKeyDown(event: KeyboardEvent) {
       if (editingTextId) return
       const target = event.target
@@ -232,6 +240,23 @@ export function ComposePage({
           return
         }
       }
+
+      const hasModifier = event.ctrlKey || event.metaKey
+      if (hasModifier && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'c') {
+        if (!selectedId) return
+        event.preventDefault()
+        copySelected()
+        return
+      }
+
+      if (hasModifier && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'v') {
+        if (!composeClipboard) return
+        event.preventDefault()
+        pasteCopied()
+        return
+      }
+
+      if (!selectedId) return
 
       if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'd') {
         event.preventDefault()
@@ -275,7 +300,7 @@ export function ComposePage({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [editingTextId, selectedId])
+  }, [composeClipboard, editingTextId, selectedId])
 
   useEffect(() => {
     if (!stageSamplingTarget) return
@@ -502,7 +527,7 @@ export function ComposePage({
 
   function addCat(cat: CatRecord) {
     cancelStageSampling()
-    const id = `${cat.rescueOrder}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const id = createComposeObjectId(String(cat.rescueOrder))
     setPlacedObjects((current) => [
       ...current,
       {
@@ -526,7 +551,7 @@ export function ComposePage({
 
   function addText() {
     cancelStageSampling()
-    const id = `text-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const id = createComposeObjectId('text')
     setPlacedObjects((current) => [
       ...current,
       {
@@ -554,7 +579,7 @@ export function ComposePage({
 
   function addRectangle() {
     cancelStageSampling()
-    const id = `rect-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const id = createComposeObjectId('rect')
     setPlacedObjects((current) => {
       const rectangle: ComposePlacedRect = {
         id,
@@ -577,23 +602,45 @@ export function ComposePage({
     setSelectedId(id)
   }
 
+  function copySelected() {
+    if (!selectedId) return
+    const source = placedObjectsRef.current.find((item) => item.id === selectedId)
+    if (!source) return
+    setComposeClipboard(createComposeClipboardSnapshot(source))
+    pasteCountRef.current = 0
+  }
+
+  function pasteCopied() {
+    if (!composeClipboard) return
+    const id = createComposeObjectId(
+      `${composeClipboard.kind}-paste`,
+      new Set(placedObjectsRef.current.map((object) => object.id)),
+    )
+    pasteCountRef.current += 1
+    const position = getComposePastePosition(composeClipboard, pasteCountRef.current)
+    setPlacedObjects((current) => [
+      ...current,
+      cloneComposeObjectFromSnapshot<ComposePlacedObject>(composeClipboard, id, nextLayer(current), position),
+    ])
+    setSelectedId(id)
+  }
+
   function duplicateSelected() {
     if (!selectedId) return
-    const id = `${selectedId}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    const offsetPosition = (value: number) => (value > 0.92 ? clamp(value - 0.04, 0, 1) : clamp(value + 0.04, 0, 1))
+    const id = createComposeObjectId(`${selectedId}-copy`, new Set(placedObjectsRef.current.map((object) => object.id)))
 
     setPlacedObjects((current) => {
       const source = current.find((item) => item.id === selectedId)
       if (!source) return current
+      const position = offsetComposePosition(source)
       return [
         ...current,
-        {
-          ...source,
+        cloneComposeObjectFromSnapshot<ComposePlacedObject>(
+          createComposeClipboardSnapshot(source),
           id,
-          x: offsetPosition(source.x),
-          y: offsetPosition(source.y),
-          z: nextLayer(current),
-        },
+          nextLayer(current),
+          position,
+        ),
       ]
     })
     setSelectedId(id)
@@ -684,6 +731,8 @@ export function ComposePage({
     setEditingTextId(null)
     setSelectedId(null)
     setPlacedObjects(candidate.document.placedObjects)
+    setComposeClipboard(null)
+    pasteCountRef.current = 0
     onBackgroundChange(candidate.document.background)
     setBackgroundError(null)
     setExportError(null)
@@ -919,6 +968,8 @@ export function ComposePage({
                 cancelStageSampling()
                 setPlacedObjects([])
                 setSelectedId(null)
+                setComposeClipboard(null)
+                pasteCountRef.current = 0
               }}
             >
               Clear layers
@@ -1694,6 +1745,17 @@ export function ComposePage({
                 </button>
                 <button className="compose-duplicate" type="button" onClick={duplicateSelected}>
                   Duplicate selected
+                </button>
+                <button className="compose-object-action" type="button" onClick={copySelected}>
+                  Copy selected
+                </button>
+                <button
+                  className="compose-object-action"
+                  type="button"
+                  onClick={pasteCopied}
+                  disabled={!composeClipboard}
+                >
+                  Paste copied
                 </button>
               </div>
               <label className="compose-range">

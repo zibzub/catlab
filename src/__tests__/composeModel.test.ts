@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   canTransformComposeObject,
+  cloneComposeObjectFromSnapshot,
+  createComposeClipboardSnapshot,
+  getComposePastePosition,
   moveComposeLayer,
   moveComposeLayerToIndex,
+  offsetComposePosition,
   orderComposeLayers,
   resetComposeTransform,
 } from '../composeModel'
@@ -101,5 +105,119 @@ describe('Compose object model', () => {
       ['middle', 1],
       ['front', 2],
     ])
+  })
+
+  it('creates ID-free snapshots and clones each placed-object shape', () => {
+    const cat = {
+      id: 'cat-1',
+      kind: 'cat' as const,
+      rescueOrder: 42,
+      artMode: 'faces' as const,
+      x: 0.2,
+      y: 0.3,
+      z: 4,
+      scale: 1.4,
+      rotation: 12,
+      opacity: 0.7,
+      flipX: true,
+      flipY: false,
+      locked: true,
+      visible: false,
+    }
+    const text = {
+      id: 'text-1',
+      kind: 'text' as const,
+      text: 'Hello',
+      fill: '#fff',
+      stroke: '#000',
+      strokeWidth: 2,
+      fontSize: 56,
+      fontFamily: 'sans-serif',
+      x: 0.4,
+      y: 0.5,
+      z: 2,
+      scale: 1,
+      rotation: 0,
+      opacity: 1,
+      flipX: false,
+      flipY: true,
+      locked: false,
+      visible: true,
+    }
+    const rect = {
+      id: 'rect-1',
+      kind: 'rect' as const,
+      width: 0.4,
+      height: 0.2,
+      fill: '#abcdef',
+      x: 0.6,
+      y: 0.7,
+      z: 1,
+      scale: 0.8,
+      rotation: -15,
+      opacity: 0.5,
+      flipX: false,
+      flipY: false,
+      locked: true,
+      visible: true,
+    }
+
+    const catSnapshot = createComposeClipboardSnapshot(cat)
+    const textSnapshot = createComposeClipboardSnapshot(text)
+    const rectSnapshot = createComposeClipboardSnapshot(rect)
+    expect(catSnapshot).not.toHaveProperty('id')
+    expect(catSnapshot).not.toHaveProperty('z')
+    expect(cloneComposeObjectFromSnapshot(catSnapshot, 'cat-2', 8, { x: 0.24, y: 0.34 })).toMatchObject({
+      id: 'cat-2',
+      z: 8,
+      rescueOrder: 42,
+      artMode: 'faces',
+      locked: true,
+      visible: false,
+      x: 0.24,
+      y: 0.34,
+    })
+    expect(cloneComposeObjectFromSnapshot(textSnapshot, 'text-2', 9, { x: 0.44, y: 0.54 })).toMatchObject({
+      id: 'text-2',
+      z: 9,
+      text: 'Hello',
+      fill: '#fff',
+      flipY: true,
+    })
+    expect(cloneComposeObjectFromSnapshot(rectSnapshot, 'rect-2', 10, { x: 0.64, y: 0.74 })).toMatchObject({
+      id: 'rect-2',
+      z: 10,
+      width: 0.4,
+      height: 0.2,
+      locked: true,
+    })
+    expect(cat.id).toBe('cat-1')
+    expect(cat.z).toBe(4)
+  })
+
+  it('offsets repeated paste positions and clamps them to the stage', () => {
+    expect(offsetComposePosition({ x: 0.5, y: 0.5 })).toEqual({ x: 0.54, y: 0.54 })
+    expect(offsetComposePosition({ x: 0.96, y: 0.95 })).toEqual({ x: expect.closeTo(0.92), y: expect.closeTo(0.91) })
+    expect(offsetComposePosition({ x: 0, y: 1 })).toEqual({ x: 0.04, y: 0.96 })
+  })
+
+  it('cascades successive paste positions without edge oscillation', () => {
+    const source = { x: 0.9, y: 0.9 }
+    const positions = [1, 2, 3, 4].map((pasteNumber) => getComposePastePosition(source, pasteNumber))
+
+    expect(positions[0].x).toBeCloseTo(0.94)
+    expect(positions[0].y).toBeCloseTo(0.94)
+    expect(positions[1].x).toBeCloseTo(0.98)
+    expect(positions[1].y).toBeCloseTo(0.98)
+    expect(positions[2].x).toBeCloseTo(0.02)
+    expect(positions[2].y).toBeCloseTo(0.02)
+    expect(new Set(positions.map((position) => `${position.x}:${position.y}`)).size).toBe(4)
+    for (const position of positions) {
+      expect(position.x).toBeGreaterThanOrEqual(0)
+      expect(position.x).toBeLessThanOrEqual(1)
+      expect(position.y).toBeGreaterThanOrEqual(0)
+      expect(position.y).toBeLessThanOrEqual(1)
+    }
+    expect(source).toEqual({ x: 0.9, y: 0.9 })
   })
 })

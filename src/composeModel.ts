@@ -11,6 +11,54 @@ export interface ComposeTransform {
   flipY: boolean
 }
 
+export type ComposeClipboardSnapshot<T extends { id: string; z: number }> = T extends unknown
+  ? Omit<T, 'id' | 'z'>
+  : never
+
+export function createComposeClipboardSnapshot<T extends { id: string; z: number }>(
+  object: T,
+): ComposeClipboardSnapshot<T> {
+  const { id: _id, z: _z, ...snapshot } = object
+  return snapshot as ComposeClipboardSnapshot<T>
+}
+
+export function createComposeObjectId(prefix: string, existingIds?: ReadonlySet<string>) {
+  let id = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  while (existingIds?.has(id)) {
+    id = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+  }
+  return id
+}
+
+export function offsetComposePosition(position: { x: number; y: number }) {
+  const offset = (value: number) =>
+    value > 0.92 ? clampComposePosition(value - 0.04) : clampComposePosition(value + 0.04)
+  return { x: offset(position.x), y: offset(position.y) }
+}
+
+export function getComposePastePosition(origin: { x: number; y: number }, pasteNumber: number) {
+  const advance = (value: number) => {
+    const direction = value > 0.92 ? -1 : 1
+    const next = value + direction * 0.04 * pasteNumber
+    if (next >= 0 && next <= 1) return next
+    return ((next % 1) + 1) % 1
+  }
+  return { x: advance(origin.x), y: advance(origin.y) }
+}
+
+export function cloneComposeObjectFromSnapshot<T extends { id: string; z: number; x: number; y: number }>(
+  snapshot: ComposeClipboardSnapshot<T>,
+  id: string,
+  z: number,
+  position: { x: number; y: number },
+): T {
+  return { ...snapshot, id, z, ...position } as T
+}
+
+function clampComposePosition(value: number) {
+  return Math.min(1, Math.max(0, value))
+}
+
 export function defaultComposeObjectState(): ComposeObjectState {
   return { locked: false, visible: true }
 }
