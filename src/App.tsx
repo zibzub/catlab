@@ -8,7 +8,6 @@ import { FilterBar } from './components/FilterBar'
 import {
   buildFilterIndex,
   createEmptyFilterState,
-  matchesFilters,
   removeFilterValue,
   type RemovableFilterKey,
 } from './components/collectionFilters'
@@ -16,6 +15,7 @@ import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import { loadGeneratedData } from './data'
 import { isIdlePattern, isIdleSpeed } from './idleAnimation'
+import { deriveMoonCatIndexResult } from './mooncat-index/result'
 import {
   getWalletParamFromUrl,
   lookupWalletCats,
@@ -47,17 +47,6 @@ import type {
 } from './types'
 
 const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
-
-function sortNamed(cats: CatRecord[], direction: 'asc' | 'desc') {
-  return [...cats].sort((first, second) => {
-    if (first.nameTimestamp === null && second.nameTimestamp !== null) return 1
-    if (first.nameTimestamp !== null && second.nameTimestamp === null) return -1
-    if (first.nameTimestamp !== null && second.nameTimestamp !== null && first.nameTimestamp !== second.nameTimestamp) {
-      return (second.nameTimestamp - first.nameTimestamp) * (direction === 'desc' ? 1 : -1)
-    }
-    return first.rescueOrder - second.rescueOrder
-  })
-}
 
 interface CollectionDisplayPreferences {
   viewMode?: GridViewMode
@@ -273,16 +262,13 @@ export default function App() {
     )
   }, [cats, colorLabMatch])
   const filteredCats = useMemo(
-    () => {
-      const matchingCats = (cats ?? []).filter((cat) => (
-        matchesFilters(cat, filters, filterIndex)
-        && (colorLabMatchingOrders === null || colorLabMatchingOrders.has(cat.rescueOrder))
-        && (walletFilter === null || walletFilter.ids.has(cat.rescueOrder))
-      ))
-      if (filters.naming === 'recentlyNamed') return sortNamed(matchingCats, 'desc')
-      if (filters.naming === 'firstNamed') return sortNamed(matchingCats, 'asc')
-      return matchingCats
-    },
+    () => deriveMoonCatIndexResult({
+      cats: cats ?? [],
+      filterIndex,
+      filters,
+      colorMatchingOrders: colorLabMatchingOrders,
+      ownedOrders: walletFilter?.ids ?? null,
+    }),
     [cats, colorLabMatchingOrders, filterIndex, filters, walletFilter],
   )
   const selectedCats = useMemo(
