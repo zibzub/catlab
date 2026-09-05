@@ -21,13 +21,16 @@ without leaving the page.
 
 - Search by rescue ID or MoonCat name.
 - Open Filters to narrow the collection by coat/color, Character Cats, traits,
-  naming status, rescue groups, and other available categories. Active filters
-  appear above the results; remove individual filters or use Clear to return
-  to the normal result set.
+  naming status, rescue groups, and other available categories. Selecting or
+  deselecting an option updates Collection and its result count immediately
+  while the drawer stays open. Active filters appear above the results; remove
+  individual filters or use Clear to return to the normal result set. Closing
+  the drawer preserves the filters you selected.
 - Choose Compact, Details, or List. Compact offers Small, Medium, and Large
   grid sizes; List provides a horizontally scrollable table on narrow screens.
-- Choose Full or Face art. Open Display effects to toggle AC rings, Stars, and
-  Vignette where those options apply.
+- Choose Full or Face art. For Full art, Display effects offers Off, AC, or
+  Outline rings. It also controls the idle animation pattern and speed, Stars,
+  and Vignette; ring styles are unavailable for Face art.
 - In Select mode, clicking a MoonCat toggles it in the Palette. In Inspect
   mode, clicking a MoonCat opens its detail view instead.
 - In Filters, enter an Ethereum address or ENS name (with or without `.eth`) in
@@ -53,7 +56,7 @@ an Ethereum address. Opening such a link performs the lookup automatically.
 Open ColorLab from the Collection toolbar, then choose one of its example
 images or upload an image of your own. Click or tap a visible image color or
 MoonCat coat color to sample it. CatLab narrows Collection to MoonCats matching
-that hue. Use Clear color match to return to the normal Collection results.
+that hue. Use Clear sample to return to the normal Collection results.
 
 ## Palette
 
@@ -162,8 +165,9 @@ required for these controls.
 
 ## State, reloads, and local files
 
-Collection display preferences—view mode, compact grid size, AC rings, Stars,
-and Vignette—are saved in this browser's `localStorage`. Successful wallet
+Collection display preferences—view mode, compact grid size, ring style, Stars,
+Vignette, idle animation pattern, and idle animation speed—are saved in this
+browser's `localStorage`. Successful wallet
 lookups are also remembered there as up to 8 recent lookup entries. The active
 wallet filter is represented by the `wallet` query parameter, but its ownership
 result IDs and any connected-wallet provider state are not persisted. Palette
@@ -220,8 +224,13 @@ sibling repository after generation.
 | `npm run generate:classifications -- --source <path>` | Generate the compact classification artifact from CatMoon filter data. |
 | `npm run validate:classifications` | Validate the classification artifact. |
 | `npm run validate:generated` | Validate generated catalog, atlas, classification, and live name artifacts. |
+| `npm test` | Run the fast Vitest unit and regression tests. |
+| `npm run test:browser` | Run the Playwright desktop/mobile Collection smoke tests. |
 | `npm run check` | Run the TypeScript check. |
 | `npm run build` | Build the static app with Vite. |
+
+The browser smoke tests require the Playwright Chromium binary. After
+`npm install`, install it once with `npx playwright install chromium`.
 
 For structured QA scenarios, see [TESTING.md](./TESTING.md).
 
