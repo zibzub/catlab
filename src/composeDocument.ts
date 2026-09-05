@@ -1,16 +1,18 @@
 import { normalizeCssHex } from './colorPicker'
 import type { ComposeBackground, ComposePlacedObject } from './composeExport'
+import { defaultComposeObjectState } from './composeModel'
 import { MAX_RESCUE_ORDER } from './mooncat-index/domain'
 
 export const COMPOSE_DOCUMENT_FORMAT = 'catlab-composition'
-export const COMPOSE_DOCUMENT_VERSION = 1
+export const COMPOSE_DOCUMENT_V1_VERSION = 1
+export const COMPOSE_DOCUMENT_VERSION = 2
 export const MAX_EMBEDDED_BACKGROUND_DATA_URL_LENGTH = 25_000_000
 interface ComposeDocumentDimensions {
   width: number
   height: number
 }
 
-interface ComposeDocumentTransform {
+interface ComposeDocumentTransformV1 {
   x: number
   y: number
   scale: number
@@ -21,13 +23,24 @@ interface ComposeDocumentTransform {
   z: number
 }
 
-interface ComposeDocumentCat extends ComposeDocumentTransform {
+interface ComposeDocumentTransformV2 extends ComposeDocumentTransformV1 {
+  locked: boolean
+  visible: boolean
+}
+
+interface ComposeDocumentCatV1 extends ComposeDocumentTransformV1 {
   kind: 'cat'
   rescueOrder: number
   artMode: 'bodies' | 'faces'
 }
 
-interface ComposeDocumentText extends ComposeDocumentTransform {
+interface ComposeDocumentCatV2 extends ComposeDocumentTransformV2 {
+  kind: 'cat'
+  rescueOrder: number
+  artMode: 'bodies' | 'faces'
+}
+
+interface ComposeDocumentTextV1 extends ComposeDocumentTransformV1 {
   kind: 'text'
   text: string
   fill: string
@@ -37,14 +50,33 @@ interface ComposeDocumentText extends ComposeDocumentTransform {
   fontFamily: string
 }
 
-interface ComposeDocumentRect extends ComposeDocumentTransform {
+interface ComposeDocumentTextV2 extends ComposeDocumentTransformV2 {
+  kind: 'text'
+  text: string
+  fill: string
+  stroke: string
+  strokeWidth: number
+  fontSize: number
+  fontFamily: string
+}
+
+interface ComposeDocumentRectV1 extends ComposeDocumentTransformV1 {
   kind: 'rect'
   width: number
   height: number
   fill: string
 }
 
-export type ComposeDocumentObject = ComposeDocumentCat | ComposeDocumentText | ComposeDocumentRect
+interface ComposeDocumentRectV2 extends ComposeDocumentTransformV2 {
+  kind: 'rect'
+  width: number
+  height: number
+  fill: string
+}
+
+type ComposeDocumentObjectV1 = ComposeDocumentCatV1 | ComposeDocumentTextV1 | ComposeDocumentRectV1
+type ComposeDocumentObjectV2 = ComposeDocumentCatV2 | ComposeDocumentTextV2 | ComposeDocumentRectV2
+type ComposeDocumentObject = ComposeDocumentObjectV1 | ComposeDocumentObjectV2
 
 interface EmbeddedBackground {
   kind: 'embedded'
@@ -66,9 +98,16 @@ type ComposeDocumentBackground = EmbeddedBackground | ReferencedBackground
 
 export interface ComposeDocumentV1 {
   format: typeof COMPOSE_DOCUMENT_FORMAT
+  version: typeof COMPOSE_DOCUMENT_V1_VERSION
+  background: ComposeDocumentBackground | null
+  objects: ComposeDocumentObjectV1[]
+}
+
+export interface ComposeDocumentV2 {
+  format: typeof COMPOSE_DOCUMENT_FORMAT
   version: typeof COMPOSE_DOCUMENT_VERSION
   background: ComposeDocumentBackground | null
-  objects: ComposeDocumentObject[]
+  objects: ComposeDocumentObjectV2[]
 }
 
 export interface LoadedComposeDocument {
@@ -114,9 +153,9 @@ function colorField(value: unknown, label: string): string {
   return normalized
 }
 
-function transformFields(value: Record<string, unknown>): ComposeDocumentTransform {
+function transformFields(value: Record<string, unknown>, version: number): ComposeDocumentTransformV1 | ComposeDocumentTransformV2 {
   if (typeof value.flipX !== 'boolean' || typeof value.flipY !== 'boolean') throw new Error('Invalid object flip state.')
-  return {
+  const transform = {
     x: numberField(value.x, 'object x position', 0, 1),
     y: numberField(value.y, 'object y position', 0, 1),
     scale: numberField(value.scale, 'object scale', 0.4, 12),
@@ -126,11 +165,16 @@ function transformFields(value: Record<string, unknown>): ComposeDocumentTransfo
     flipY: value.flipY === true,
     z: numberField(value.z, 'object layer order', -1, 1_000_000, true),
   }
+  if (version === COMPOSE_DOCUMENT_VERSION) {
+    if (typeof value.locked !== 'boolean' || typeof value.visible !== 'boolean') throw new Error('Invalid object visibility or lock state.')
+    return { ...transform, locked: value.locked, visible: value.visible }
+  }
+  return transform
 }
 
-function parseObject(value: unknown, index: number): ComposeDocumentObject {
+function parseObject(value: unknown, index: number, version: number): ComposeDocumentObjectV1 | ComposeDocumentObjectV2 {
   if (!isRecord(value)) throw new Error(`Invalid object ${index + 1}.`)
-  const transform = transformFields(value)
+  const transform = transformFields(value, version)
   const kind = value.kind
 
   if (kind === 'cat') {
@@ -209,6 +253,9 @@ function runtimeId(kind: ComposePlacedObject['kind'], index: number): string {
 }
 
 function restoreObject(value: ComposeDocumentObject, index: number): ComposePlacedObject {
+  const state = 'locked' in value && 'visible' in value
+    ? { locked: value.locked, visible: value.visible }
+    : defaultComposeObjectState()
   const transform = {
     id: runtimeId(value.kind, index),
     x: value.x,
@@ -219,6 +266,7 @@ function restoreObject(value: ComposeDocumentObject, index: number): ComposePlac
     flipX: value.flipX,
     flipY: value.flipY,
     z: value.z,
+    ...state,
   }
 
   if (value.kind === 'cat') return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
@@ -238,14 +286,15 @@ function restoreObject(value: ComposeDocumentObject, index: number): ComposePlac
 export function parseComposeDocument(value: unknown): LoadedComposeDocument {
   if (!isRecord(value)) throw new Error('The CatLab composition file must contain an object.')
   if (value.format !== COMPOSE_DOCUMENT_FORMAT) throw new Error('This is not a CatLab composition file.')
-  if (value.version !== COMPOSE_DOCUMENT_VERSION) {
-    throw new Error(`Unsupported CatLab composition version: ${String(value.version)}.`)
+  const version = value.version
+  if (version !== COMPOSE_DOCUMENT_V1_VERSION && version !== COMPOSE_DOCUMENT_VERSION) {
+    throw new Error(`Unsupported CatLab composition version: ${String(version)}.`)
   }
 
   const background = parseBackground(value.background)
   if (!Array.isArray(value.objects) || value.objects.length > 500) throw new Error('Invalid composition object list.')
 
-  const documentObjects = value.objects.map((object, index) => parseObject(object, index))
+  const documentObjects = value.objects.map((object, index) => parseObject(object, index, version))
   return {
     background: background?.kind === 'embedded'
       ? { url: background.dataUrl, width: background.width, height: background.height, name: background.name }
@@ -292,7 +341,7 @@ async function serializeBackground(background: ComposeBackground): Promise<Compo
   throw new Error('The background image has an unsupported source.')
 }
 
-function serializeObject(value: ComposePlacedObject): ComposeDocumentObject {
+function serializeObject(value: ComposePlacedObject): ComposeDocumentObjectV2 {
   const transform = {
     x: value.x,
     y: value.y,
@@ -302,6 +351,8 @@ function serializeObject(value: ComposePlacedObject): ComposeDocumentObject {
     flipX: value.flipX,
     flipY: value.flipY,
     z: value.z,
+    locked: value.locked,
+    visible: value.visible,
   }
 
   if (value.kind === 'cat') return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
@@ -321,8 +372,8 @@ function serializeObject(value: ComposePlacedObject): ComposeDocumentObject {
 export async function serializeComposeDocument(
   placedObjects: ComposePlacedObject[],
   background: ComposeBackground | null,
-): Promise<ComposeDocumentV1> {
-  const document: ComposeDocumentV1 = {
+): Promise<ComposeDocumentV2> {
+  const document: ComposeDocumentV2 = {
     format: COMPOSE_DOCUMENT_FORMAT,
     version: COMPOSE_DOCUMENT_VERSION,
     background: background ? await serializeBackground(background) : null,

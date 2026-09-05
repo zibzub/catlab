@@ -4,6 +4,7 @@ import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { sampleCanvasColor } from '../colorLab'
 import { loadComposeBackground, renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
 import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
+import { canTransformComposeObject, defaultComposeObjectState, resetComposeTransform } from '../composeModel'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -208,11 +209,12 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
       event.preventDefault()
       const step = event.shiftKey ? 10 : 1
       setPlacedObjects((current) => current.map((item) => item.id === selectedId
-        ? {
+        ? canTransformComposeObject(item) ? {
             ...item,
             x: clamp(item.x + (direction[0] * step) / rect.width, 0, 1),
             y: clamp(item.y + (direction[1] * step) / rect.height, 0, 1),
           }
+          : item
         : item))
       window.requestAnimationFrame(() => moveableRef.current?.updateRect())
     }
@@ -461,6 +463,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
       flipX: false,
       flipY: false,
       z: nextLayer(current),
+      ...defaultComposeObjectState(),
     }])
     setSelectedId(id)
   }
@@ -485,6 +488,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
       flipX: false,
       flipY: false,
       z: nextLayer(current),
+      ...defaultComposeObjectState(),
     }])
     setSelectedId(id)
   }
@@ -507,6 +511,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
         flipX: false,
         flipY: false,
         z: nextLayer(current),
+        ...defaultComposeObjectState(),
       }
       return [...current, rectangle]
     })
@@ -697,7 +702,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
     const id = moveableTargetId(event.target)
     if (!id || !rect) return
     setPlacedObjects((current) => current.map((item) => {
-      if (item.id !== id) return item
+      if (item.id !== id || !canTransformComposeObject(item)) return item
       return {
         ...item,
         x: clamp(item.x + event.delta[0] / rect.width, 0, 1),
@@ -709,7 +714,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   function handleMoveableScaleStart(event: OnScaleStart) {
     const id = moveableTargetId(event.target)
     const item = id ? placedObjects.find((candidate) => candidate.id === id) : null
-    if (!id || item?.kind !== 'rect') {
+    if (!id || !item || !canTransformComposeObject(item) || item.kind !== 'rect') {
       rectangleScaleStartRef.current = null
       return
     }
@@ -720,7 +725,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
     const id = moveableTargetId(event.target)
     if (!id) return
     setPlacedObjects((current) => current.map((item) => {
-      if (item.id !== id) return item
+      if (item.id !== id || !canTransformComposeObject(item)) return item
       if (item.kind === 'rect') {
         const start = rectangleScaleStartRef.current?.id === id
           ? rectangleScaleStartRef.current
@@ -739,14 +744,16 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   function handleMoveableRotate(event: OnRotate) {
     const id = moveableTargetId(event.target)
     if (!id) return
-    setPlacedObjects((current) => current.map((item) => item.id === id
+    setPlacedObjects((current) => current.map((item) => item.id === id && canTransformComposeObject(item)
       ? { ...item, rotation: event.rotation }
       : item))
   }
 
   function handleObjectPointerDown(event: React.PointerEvent<HTMLElement>, id: string) {
-    if (selectedId === id) return
+    const object = placedObjects.find((item) => item.id === id)
+    if (selectedId === id || !object) return
     setSelectedId(id)
+    if (!canTransformComposeObject(object)) return
     const nativeEvent = event.nativeEvent
     window.requestAnimationFrame(() => moveableRef.current?.dragStart(nativeEvent))
   }
@@ -1040,6 +1047,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                   </button>
                 )}
                 {placedObjects
+                  .filter((item) => item.visible)
                   .slice()
                   .sort((a, b) => a.z - b.z)
                   .map((item) => {
@@ -1186,8 +1194,9 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               )}
               <Moveable
                 ref={moveableRef}
+                key={`${selectedId ?? 'none'}-${selected?.locked ? 'locked' : 'free'}-${selected?.visible ? 'visible' : 'hidden'}`}
                 ables={[ComposeObjectToggleAble]}
-                target={selectedId && !editingTextId ? `[data-compose-id="${selectedId}"]` : null}
+                target={selectedId && selected && canTransformComposeObject(selected) && !editingTextId ? `[data-compose-id="${selectedId}"]` : null}
                 container={stageRef.current}
                 props={{
                   composeObjectToggle: selected?.kind === 'cat' ? {
@@ -1389,6 +1398,13 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                 <button type="button" className={selected.flipY ? 'is-active' : ''} aria-pressed={selected.flipY} onClick={() => updateSelected({ flipY: !selected.flipY })}>Flip Vertical</button>
               </div>
               <div className="compose-object-actions">
+                <button className="compose-object-action" type="button" onClick={() => updateSelected(resetComposeTransform(selected))}>Reset transform</button>
+                <button className="compose-object-action" type="button" onClick={() => updateSelected({ locked: !selected.locked })}>
+                  {selected.locked ? 'Unlock object' : 'Lock object'}
+                </button>
+                <button className="compose-object-action" type="button" onClick={() => updateSelected({ visible: !selected.visible })}>
+                  {selected.visible ? 'Hide object' : 'Show object'}
+                </button>
                 <button className="compose-duplicate" type="button" onClick={duplicateSelected}>Duplicate selected</button>
               </div>
               <label className="compose-range">

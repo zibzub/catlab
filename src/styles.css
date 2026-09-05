@@ -2994,7 +2994,8 @@ h1 {
   margin-bottom: 11px;
 }
 
-.compose-duplicate {
+.compose-duplicate,
+.compose-object-action {
   width: 100%;
   height: 29px;
   padding: 0 6px;
@@ -3007,6 +3008,11 @@ h1 {
 }
 
 .compose-duplicate:hover {
+  color: var(--ink);
+  background: var(--control-surface);
+}
+
+.compose-object-action:hover {
   color: var(--ink);
   background: var(--control-surface);
 }
@@ -6349,6 +6355,7 @@ h1 {
 .compose-layer-actions button,
 .compose-clear,
 .compose-duplicate,
+.compose-object-action,
 .compose-remove {
   border-color: var(--console-divider-strong);
   border-radius: var(--console-radius-small);
@@ -6364,6 +6371,11 @@ h1 {
 .compose-layer-actions button:hover,
 .compose-clear:hover:not(:disabled),
 .compose-duplicate:hover {
+  color: var(--console-ink);
+  background: var(--console-surface-hover);
+}
+
+.compose-object-action:hover {
   color: var(--console-ink);
   background: var(--console-surface-hover);
 }

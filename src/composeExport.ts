@@ -1,16 +1,12 @@
 import { getAlphaBounds, getIsolatedSprite } from './composeCatCrop'
+import type { ComposeObjectState, ComposeTransform } from './composeModel'
 import { getMoonCatAtlasCell } from './mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from './types'
 
-interface ComposePlacedTransform {
+interface ComposePlacedTransform extends ComposeObjectState, ComposeTransform {
   id: string
   x: number
   y: number
-  scale: number
-  rotation: number
-  opacity: number
-  flipX: boolean
-  flipY: boolean
   z: number
 }
 
@@ -52,6 +48,10 @@ export interface ComposeExportOptions {
   manifest: AtlasManifest
   background: ComposeBackground | null
   stageWidth: number
+}
+
+export function getExportableComposeObjects(placedObjects: ComposePlacedObject[]) {
+  return placedObjects.filter((placed) => placed.visible).sort((a, b) => a.z - b.z)
 }
 
 const EMPTY_COMPOSITION = { width: 1200, height: 900 }
@@ -159,7 +159,7 @@ export async function renderComposition({
   context.imageSmoothingEnabled = false
   const outputScale = dimensions.width / Math.max(1, stageWidth)
   const catsByOrder = new Map(catalogCats.map((cat) => [cat.rescueOrder, cat]))
-  const ordered = [...placedObjects].sort((a, b) => a.z - b.z)
+  const ordered = getExportableComposeObjects(placedObjects)
 
   for (const placed of ordered) {
     context.save()
