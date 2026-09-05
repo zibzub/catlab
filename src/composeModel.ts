@@ -42,6 +42,41 @@ export function offsetComposePosition(position: { x: number; y: number }) {
   return { x: offset(position.x), y: offset(position.y) }
 }
 
+export function resizeComposeRectangle(
+  start: {
+    x: number
+    y: number
+    width: number
+    height: number
+    scale: number
+    rotation: number
+  },
+  scale: readonly [number, number],
+  direction: readonly [number, number],
+  stageSize: { width: number; height: number },
+) {
+  const startWidth = clampComposePosition(start.width * Math.abs(start.scale), 0.04, 1.5)
+  const startHeight = clampComposePosition(start.height * Math.abs(start.scale), 0.04, 1.5)
+  const widthScale = direction[0] === 0 ? 1 : Math.max(0, scale[0])
+  const heightScale = direction[1] === 0 ? 1 : Math.max(0, scale[1])
+  const width = clampComposePosition(startWidth * widthScale, 0.04, 1.5)
+  const height = clampComposePosition(startHeight * heightScale, 0.04, 1.5)
+
+  const localShiftX = (direction[0] * (width - startWidth) * stageSize.width) / 2
+  const localShiftY = (direction[1] * (height - startHeight) * stageSize.height) / 2
+  const rotation = (start.rotation * Math.PI) / 180
+  const worldShiftX = localShiftX * Math.cos(rotation) - localShiftY * Math.sin(rotation)
+  const worldShiftY = localShiftX * Math.sin(rotation) + localShiftY * Math.cos(rotation)
+
+  return {
+    x: stageSize.width > 0 ? clampComposePosition(start.x + worldShiftX / stageSize.width) : start.x,
+    y: stageSize.height > 0 ? clampComposePosition(start.y + worldShiftY / stageSize.height) : start.y,
+    width,
+    height,
+    scale: 1,
+  }
+}
+
 export function getComposePastePosition(origin: { x: number; y: number }, pasteNumber: number) {
   const advance = (value: number) => {
     const direction = value > 0.92 ? -1 : 1
@@ -61,8 +96,8 @@ export function cloneComposeObjectFromSnapshot<T extends { id: string; z: number
   return { ...snapshot, id, z, ...position } as T
 }
 
-function clampComposePosition(value: number) {
-  return Math.min(1, Math.max(0, value))
+function clampComposePosition(value: number, min = 0, max = 1) {
+  return Math.min(max, Math.max(min, value))
 }
 
 export function defaultComposeObjectState(): ComposeObjectState {

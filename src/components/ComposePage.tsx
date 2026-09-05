@@ -5,6 +5,7 @@ import Moveable, {
   type OnDrag,
   type OnRotate,
   type OnScale,
+  type OnScaleEnd,
   type OnScaleStart,
   type Renderer,
 } from 'react-moveable'
@@ -30,6 +31,7 @@ import {
   moveComposeLayer,
   moveComposeLayerToIndex,
   offsetComposePosition,
+  resizeComposeRectangle,
   resetComposeTransform,
   type ComposeClipboardSnapshot,
   type ComposeLayerMove,
@@ -166,7 +168,17 @@ export function ComposePage({
   const exportFilenameInputRef = useRef<HTMLInputElement>(null)
   const moveableRef = useRef<Moveable>(null)
   const inlineTextEditorRef = useRef<HTMLTextAreaElement>(null)
-  const rectangleScaleStartRef = useRef<{ id: string; width: number; height: number; scale: number } | null>(null)
+  const rectangleScaleStartRef = useRef<{
+    id: string
+    x: number
+    y: number
+    width: number
+    height: number
+    scale: number
+    rotation: number
+    direction: [number, number]
+    stageSize: { width: number; height: number }
+  } | null>(null)
   const placedObjectsRef = useRef(placedObjects)
   const pasteCountRef = useRef(0)
   placedObjectsRef.current = placedObjects
@@ -842,12 +854,23 @@ export function ComposePage({
 
   function handleMoveableScaleStart(event: OnScaleStart) {
     const id = moveableTargetId(event.target)
-    const item = id ? placedObjects.find((candidate) => candidate.id === id) : null
+    const item = id ? placedObjectsRef.current.find((candidate) => candidate.id === id) : null
+    const stageBounds = stageRef.current?.getBoundingClientRect()
     if (!id || !item || !canTransformComposeObject(item) || item.kind !== 'rect') {
       rectangleScaleStartRef.current = null
       return
     }
-    rectangleScaleStartRef.current = { id, width: item.width, height: item.height, scale: item.scale }
+    rectangleScaleStartRef.current = {
+      id,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      scale: item.scale,
+      rotation: item.rotation,
+      direction: [event.direction[0], event.direction[1]],
+      stageSize: { width: stageBounds?.width ?? 0, height: stageBounds?.height ?? 0 },
+    }
   }
 
   function handleMoveableScale(event: OnScale) {
@@ -857,20 +880,28 @@ export function ComposePage({
       current.map((item) => {
         if (item.id !== id || !canTransformComposeObject(item)) return item
         if (item.kind === 'rect') {
-          const start =
-            rectangleScaleStartRef.current?.id === id
-              ? rectangleScaleStartRef.current
-              : { width: item.width, height: item.height, scale: item.scale }
+          const start = rectangleScaleStartRef.current
+          if (start?.id !== id) return item
+          const resized = resizeComposeRectangle(
+            start,
+            [event.scale[0], event.scale[1]],
+            start.direction,
+            start.stageSize,
+          )
           return {
             ...item,
-            width: clamp(start.width * start.scale * Math.abs(event.scale[0]), 0.04, 1.5),
-            height: clamp(start.height * start.scale * Math.abs(event.scale[1]), 0.04, 1.5),
-            scale: 1,
+            ...resized,
           }
         }
         return { ...item, scale: clamp(Math.abs(event.scale[0]), 0.4, 12) }
       }),
     )
+  }
+
+  function handleMoveableScaleEnd(event: OnScaleEnd) {
+    if (rectangleScaleStartRef.current?.id === moveableTargetId(event.target)) {
+      rectangleScaleStartRef.current = null
+    }
   }
 
   function handleMoveableRotate(event: OnRotate) {
@@ -1442,7 +1473,9 @@ export function ComposePage({
                 keepRatio={selected?.kind !== 'rect'}
                 rotatable
                 origin={false}
-                renderDirections={['nw', 'ne', 'sw', 'se']}
+                renderDirections={
+                  selected?.kind === 'rect' ? ['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se'] : ['nw', 'ne', 'sw', 'se']
+                }
                 rotationPosition="top"
                 throttleDrag={0}
                 throttleScale={0}
@@ -1450,6 +1483,7 @@ export function ComposePage({
                 onDrag={handleMoveableDrag}
                 onScaleStart={handleMoveableScaleStart}
                 onScale={handleMoveableScale}
+                onScaleEnd={handleMoveableScaleEnd}
                 onRotate={handleMoveableRotate}
               />
             </div>

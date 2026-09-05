@@ -10,6 +10,7 @@ import {
   offsetComposePosition,
   orderComposeLayers,
   resetComposeTransform,
+  resizeComposeRectangle,
 } from '../composeModel'
 
 describe('Compose object model', () => {
@@ -226,5 +227,76 @@ describe('Compose object model', () => {
       expect(position.y).toBeLessThanOrEqual(1)
     }
     expect(source).toEqual({ x: 0.9, y: 0.9 })
+  })
+
+  it('resizes each rectangle axis from a fixed start and anchors the opposite edge', () => {
+    const rectangle = { x: 0.5, y: 0.5, width: 0.2, height: 0.3, scale: 1, rotation: 0 }
+    const stage = { width: 100, height: 100 }
+    const east = resizeComposeRectangle(rectangle, [2, 1], [1, 0], stage)
+    const west = resizeComposeRectangle(rectangle, [2, 1], [-1, 0], stage)
+    const north = resizeComposeRectangle(rectangle, [1, 2], [0, -1], stage)
+    const south = resizeComposeRectangle(rectangle, [1, 2], [0, 1], stage)
+    const corner = resizeComposeRectangle(rectangle, [2, 1.5], [1, 1], stage)
+
+    expect(east).toEqual({ x: 0.6, y: 0.5, width: 0.4, height: 0.3, scale: 1 })
+    expect(west).toEqual({ x: 0.4, y: 0.5, width: 0.4, height: 0.3, scale: 1 })
+    expect(north).toEqual({ x: 0.5, y: 0.35, width: 0.2, height: 0.6, scale: 1 })
+    expect(south).toEqual({ x: 0.5, y: 0.65, width: 0.2, height: 0.6, scale: 1 })
+    expect(corner.x).toBeCloseTo(0.6)
+    expect(corner.y).toBeCloseTo(0.575)
+    expect(corner.width).toBeCloseTo(0.4)
+    expect(corner.height).toBeCloseTo(0.45)
+    expect(corner.scale).toBe(1)
+    expect(rectangle).toEqual({ x: 0.5, y: 0.5, width: 0.2, height: 0.3, scale: 1, rotation: 0 })
+  })
+
+  it.each([
+    { rotation: 45, direction: [1, -1] as const, scale: [1.5, 2] as const },
+    { rotation: 90, direction: [1, 0] as const, scale: [2, 1] as const },
+  ])('keeps the opposite anchor fixed for a $rotation degree rectangle', ({ rotation, direction, scale }) => {
+    const rectangle = { x: 0.5, y: 0.5, width: 0.2, height: 0.3, scale: 1, rotation }
+    const stage = { width: 800, height: 600 }
+    const resized = resizeComposeRectangle(rectangle, scale, direction, stage)
+
+    const fixedAnchor = (value: typeof rectangle | typeof resized) => {
+      const radians = (rotation * Math.PI) / 180
+      const localX = (-direction[0] * value.width * stage.width) / 2
+      const localY = (-direction[1] * value.height * stage.height) / 2
+      return [
+        value.x * stage.width + localX * Math.cos(radians) - localY * Math.sin(radians),
+        value.y * stage.height + localX * Math.sin(radians) + localY * Math.cos(radians),
+      ]
+    }
+
+    const beforeAnchor = fixedAnchor(rectangle)
+    const afterAnchor = fixedAnchor(resized)
+    expect(afterAnchor[0]).toBeCloseTo(beforeAnchor[0])
+    expect(afterAnchor[1]).toBeCloseTo(beforeAnchor[1])
+    expect(resized.scale).toBe(1)
+  })
+
+  it('uses clamped size deltas for anchoring and stops at the crossing minimum', () => {
+    const rectangle = { x: 0.5, y: 0.5, width: 0.2, height: 0.3, scale: 1, rotation: 0 }
+    const stage = { width: 100, height: 100 }
+    const atMinimum = resizeComposeRectangle(rectangle, [0, 1], [1, 0], stage)
+    const pastCrossing = resizeComposeRectangle(rectangle, [-4, 1], [1, 0], stage)
+    const atMaximum = resizeComposeRectangle({ ...rectangle, width: 1 }, [4, 1], [1, 0], stage)
+    const pastMaximum = resizeComposeRectangle({ ...rectangle, width: 1 }, [20, 1], [1, 0], stage)
+
+    expect(atMinimum).toEqual({ x: 0.42, y: 0.5, width: 0.04, height: 0.3, scale: 1 })
+    expect(pastCrossing).toEqual(atMinimum)
+    expect(atMaximum).toEqual({ x: 0.75, y: 0.5, width: 1.5, height: 0.3, scale: 1 })
+    expect(pastMaximum).toEqual(atMaximum)
+  })
+
+  it('returns deterministic geometry from the same immutable resize-start snapshot', () => {
+    const rectangle = { x: 0.4, y: 0.6, width: 0.25, height: 0.2, scale: 1, rotation: 30 }
+    const original = { ...rectangle }
+    const stage = { width: 640, height: 480 }
+    const first = resizeComposeRectangle(rectangle, [1.8, 0.7], [-1, 1], stage)
+    const second = resizeComposeRectangle(rectangle, [1.8, 0.7], [-1, 1], stage)
+
+    expect(second).toEqual(first)
+    expect(rectangle).toEqual(original)
   })
 })
