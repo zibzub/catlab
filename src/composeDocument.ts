@@ -1,11 +1,10 @@
 import { normalizeCssHex } from './colorPicker'
 import type { ComposeBackground, ComposePlacedObject } from './composeExport'
+import { MAX_RESCUE_ORDER } from './mooncat-index/domain'
 
 export const COMPOSE_DOCUMENT_FORMAT = 'catlab-composition'
 export const COMPOSE_DOCUMENT_VERSION = 1
 export const MAX_EMBEDDED_BACKGROUND_DATA_URL_LENGTH = 25_000_000
-const MAX_RESCUE_ORDER = 25_439
-
 interface ComposeDocumentDimensions {
   width: number
   height: number

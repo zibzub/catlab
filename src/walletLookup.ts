@@ -1,5 +1,6 @@
+import { isValidRescueOrder } from './mooncat-index/domain'
+
 const CATMOON_WALLET_ENDPOINT = 'https://catmoon.zibzub.art/api/wallet-cats'
-const MAX_RESCUE_ORDER = 25439
 const MAX_INPUT_LENGTH = 80
 const WALLET_LOOKUP_HISTORY_KEY = 'catlab.walletLookupHistory'
 const WALLET_LOOKUP_HISTORY_LIMIT = 8
@@ -86,9 +87,7 @@ export function normalizeWalletRescueOrders(ids: unknown) {
   }
 
   return Array.from(new Set(ids.filter((id): id is number => (
-    Number.isInteger(id)
-    && id >= 0
-    && id <= MAX_RESCUE_ORDER
+    isValidRescueOrder(id)
   )))).sort((first, second) => first - second)
 }
 

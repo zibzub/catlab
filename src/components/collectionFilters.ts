@@ -4,6 +4,7 @@ import {
   type MoonCatClassifications,
   type MoonCatNames,
 } from '../mooncatDetails'
+import { isDay1RescueOrder, isDay2RescueOrder } from '../mooncat-index/domain'
 import type { CatRecord, FilterState } from '../types'
 
 export const CLASSIFICATION_FILTER_OPTIONS = [
@@ -145,8 +146,8 @@ export function buildFilterIndex(
   for (const cat of cats) {
     if (cat.genesis) classificationSets.genesis.add(cat.rescueOrder)
     if (cat.rescueOrder < 100) classificationSets.sub100.add(cat.rescueOrder)
-    if (cat.rescueOrder <= 491) classificationSets.day1.add(cat.rescueOrder)
-    else if (cat.rescueOrder <= 903) classificationSets.day2.add(cat.rescueOrder)
+    if (isDay1RescueOrder(cat.rescueOrder)) classificationSets.day1.add(cat.rescueOrder)
+    else if (isDay2RescueOrder(cat.rescueOrder)) classificationSets.day2.add(cat.rescueOrder)
 
     increment(counts.rescueYears, String(cat.rescueYear))
     increment(counts.hueNames, cat.hueName)

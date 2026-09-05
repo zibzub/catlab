@@ -1,4 +1,5 @@
 import { assetPath } from './data'
+import { isDay1RescueOrder, isDay2RescueOrder, isValidRescueOrder } from './mooncat-index/domain'
 import type { AtlasManifest, CatRecord } from './types'
 
 export const CHARACTER_CLASSIFICATION_KEYS = [
@@ -51,7 +52,7 @@ export function validateMoonCatNames(value: unknown): MoonCatNames | null {
   for (const [id, entry] of Object.entries(value)) {
     if (!/^\d+$/.test(id)) return null
     const rescueOrder = Number(id)
-    if (String(rescueOrder) !== id || rescueOrder < 0 || rescueOrder >= 25_440 || !isObject(entry)) return null
+    if (String(rescueOrder) !== id || !isValidRescueOrder(rescueOrder) || !isObject(entry)) return null
     if (typeof entry.name !== 'string' || entry.name.length === 0) return null
     if (entry.timestamp !== null && (typeof entry.timestamp !== 'number' || !Number.isFinite(entry.timestamp) || entry.timestamp < 0)) return null
     names[id] = { name: entry.name, timestamp: entry.timestamp }
@@ -158,8 +159,8 @@ export function getMoonCatClassificationLabels(
 ) {
   if (!classifications || cat.rescueOrder < 0 || cat.rescueOrder > classifications.maxId) return []
   const labels: string[] = []
-  if (cat.rescueOrder <= 491) labels.push('day 1')
-  else if (cat.rescueOrder <= 903) labels.push('day 2')
+  if (isDay1RescueOrder(cat.rescueOrder)) labels.push('day 1')
+  else if (isDay2RescueOrder(cat.rescueOrder)) labels.push('day 2')
   else if (classifications.categories.week1.ids.includes(cat.rescueOrder)) labels.push('week 1')
 
   if (cat.genesis) {
