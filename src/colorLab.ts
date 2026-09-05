@@ -232,8 +232,10 @@ export function findValidNearbySample(
     }
   }
 
-  return Array.from(validSamples.values())
-    .sort((a, b) => b.count - a.count || a.firstIndex - b.firstIndex)[0]?.sample ?? null
+  return (
+    Array.from(validSamples.values()).sort((a, b) => b.count - a.count || a.firstIndex - b.firstIndex)[0]?.sample ??
+    null
+  )
 }
 
 export function getClosestMoonCatCoatHueLabel(detection: MoonCatColorDetection, sampledHue: number): string {
@@ -241,9 +243,9 @@ export function getClosestMoonCatCoatHueLabel(detection: MoonCatColorDetection, 
   if (detection.kind === 'white') return 'Genesis White'
 
   const targetHue = detection.hueInt ?? sampledHue
-  return MOONCAT_COAT_HUE_TARGETS.reduce((closest, target) => (
-    circularHueDistance(targetHue, target.hue) < circularHueDistance(targetHue, closest.hue) ? target : closest
-  )).label
+  return MOONCAT_COAT_HUE_TARGETS.reduce((closest, target) =>
+    circularHueDistance(targetHue, target.hue) < circularHueDistance(targetHue, closest.hue) ? target : closest,
+  ).label
 }
 
 export function getMoonCatColorMatch(sample: ColorLabSample): MoonCatColorMatch | null {
@@ -252,11 +254,7 @@ export function getMoonCatColorMatch(sample: ColorLabSample): MoonCatColorMatch 
   return { kind, hueInt, pale }
 }
 
-export function findMoonCatsByExactHue(
-  moonCats: CatRecord[],
-  sampledHue: number,
-  pale?: boolean | null,
-): CatRecord[] {
+export function findMoonCatsByExactHue(moonCats: CatRecord[], sampledHue: number, pale?: boolean | null): CatRecord[] {
   return moonCats
     .filter((moonCat) => Number.isFinite(moonCat.hueInt))
     .filter((moonCat) => pale == null || moonCat.pale === pale)

@@ -60,10 +60,14 @@ function loadAtlasImage(url: string) {
 
 function imageBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number) {
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob)
-      else reject(new Error(`Your browser could not encode ${mimeType} output.`))
-    }, mimeType, quality)
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob)
+        else reject(new Error(`Your browser could not encode ${mimeType} output.`))
+      },
+      mimeType,
+      quality,
+    )
   })
 }
 
@@ -118,11 +122,7 @@ function triggerDownload(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-export async function exportSelectedCats(
-  cats: CatRecord[],
-  manifest: AtlasManifest,
-  options: ExportOptions,
-) {
+export async function exportSelectedCats(cats: CatRecord[], manifest: AtlasManifest, options: ExportOptions) {
   validateExportSelectionCount(cats.length)
 
   const files = await Promise.all(cats.map((cat) => renderCat(cat, manifest, options)))

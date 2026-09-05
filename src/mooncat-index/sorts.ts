@@ -6,11 +6,7 @@ export type NamedSortDirection = 'asc' | 'desc'
  * Compares named records chronologically while keeping missing timestamps last
  * and rescue order as the deterministic tie-break.
  */
-export function compareNamedCats(
-  first: CatRecord,
-  second: CatRecord,
-  direction: NamedSortDirection,
-) {
+export function compareNamedCats(first: CatRecord, second: CatRecord, direction: NamedSortDirection) {
   if (first.nameTimestamp === null && second.nameTimestamp !== null) return 1
   if (first.nameTimestamp !== null && second.nameTimestamp === null) return -1
   if (first.nameTimestamp !== null && second.nameTimestamp !== null && first.nameTimestamp !== second.nameTimestamp) {

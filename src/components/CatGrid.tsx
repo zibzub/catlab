@@ -189,14 +189,18 @@ export function CatGrid({
     .filter((row) => row.start < scrollOffset + viewportHeight && row.start + row.size > scrollOffset)
     .map((row) => row.index)
   const visibleRowsKey = visibleRowIndexes.join(',')
-  const visibleCats = useMemo<IdleGridCat[]>(() => visibleRowIndexes.flatMap((rowIndex) => {
-    const rowStart = rowIndex * columnCount
-    return cats.slice(rowStart, rowStart + columnCount).map((cat, column) => ({
-      rescueOrder: cat.rescueOrder,
-      row: rowIndex,
-      column,
-    }))
-  }), [cats, columnCount, visibleRowsKey])
+  const visibleCats = useMemo<IdleGridCat[]>(
+    () =>
+      visibleRowIndexes.flatMap((rowIndex) => {
+        const rowStart = rowIndex * columnCount
+        return cats.slice(rowStart, rowStart + columnCount).map((cat, column) => ({
+          rescueOrder: cat.rescueOrder,
+          row: rowIndex,
+          column,
+        }))
+      }),
+    [cats, columnCount, visibleRowsKey],
+  )
   const idleState = useIdleAnimation({
     cats: visibleCats,
     pattern: idlePattern,
@@ -216,12 +220,9 @@ export function CatGrid({
 
   useLayoutEffect(() => {
     const scrollElement = scrollElementRef.current
-    const anchorIndex = scrollAnchor
-      ? cats.findIndex((cat) => cat.rescueOrder === scrollAnchor.rescueOrder)
-      : -1
-    const hasPendingAnchor = scrollAnchor !== null
-      && anchorIndex >= 0
-      && appliedScrollAnchorRef.current !== scrollAnchor.token
+    const anchorIndex = scrollAnchor ? cats.findIndex((cat) => cat.rescueOrder === scrollAnchor.rescueOrder) : -1
+    const hasPendingAnchor =
+      scrollAnchor !== null && anchorIndex >= 0 && appliedScrollAnchorRef.current !== scrollAnchor.token
     if (hasPendingAnchor) return
     scrollElement?.scrollTo({ top: 0 })
     rowVirtualizer.measure()
@@ -299,16 +300,23 @@ export function CatGrid({
     }
   }, [artMode, cats, columnCount, gridSize, viewMode])
 
-  useEffect(() => () => {
-    stopArrowHold()
-  }, [])
+  useEffect(
+    () => () => {
+      stopArrowHold()
+    },
+    [],
+  )
 
   if (cats.length === 0) {
     return (
       <div className="grid-empty" role="status">
         <span className="grid-empty__mark">∅</span>
         <strong>{emptyStateMessage ?? 'No cats match these filters.'}</strong>
-        <span>{emptyStateMessage ? 'Try another wallet or clear the wallet filter.' : 'Try clearing a trait or searching for another rescue order.'}</span>
+        <span>
+          {emptyStateMessage
+            ? 'Try another wallet or clear the wallet filter.'
+            : 'Try clearing a trait or searching for another rescue order.'}
+        </span>
       </div>
     )
   }
@@ -329,11 +337,7 @@ export function CatGrid({
               </div>
             )}
             <div className="cat-grid-scroll" ref={scrollElementRef}>
-              <div
-                className="cat-grid-canvas"
-                ref={canvasRef}
-                style={{ height: rowVirtualizer.getTotalSize() }}
-              >
+              <div className="cat-grid-canvas" ref={canvasRef} style={{ height: rowVirtualizer.getTotalSize() }}>
                 {virtualRows.map((virtualRow) => {
                   const rowStart = virtualRow.index * columnCount
                   const rowCats = cats.slice(rowStart, rowStart + columnCount)
@@ -366,7 +370,7 @@ export function CatGrid({
                         />
                       ))}
                     </div>
-                  );
+                  )
                 })}
               </div>
             </div>

@@ -12,15 +12,7 @@ import type {
 } from '../types'
 
 type CatListSortKey =
-  | 'rescueOrder'
-  | 'name'
-  | 'rescueYear'
-  | 'hue'
-  | 'hueValue'
-  | 'pattern'
-  | 'pose'
-  | 'expression'
-  | 'facing'
+  'rescueOrder' | 'name' | 'rescueYear' | 'hue' | 'hueValue' | 'pattern' | 'pose' | 'expression' | 'facing'
 
 type SortDirection = 'asc' | 'desc'
 
@@ -102,7 +94,9 @@ function SortButton({ label, sortKey, sort, onSort, className = '' }: SortHeader
   const active = sort.key === sortKey
   const directionLabel = active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'not sorted'
   const ariaSort: 'none' | 'ascending' | 'descending' = active
-    ? sort.direction === 'asc' ? 'ascending' : 'descending'
+    ? sort.direction === 'asc'
+      ? 'ascending'
+      : 'descending'
     : 'none'
   return (
     <button
@@ -113,7 +107,9 @@ function SortButton({ label, sortKey, sort, onSort, className = '' }: SortHeader
       onClick={() => onSort(sortKey)}
     >
       <span>{label}</span>
-      <span className="cat-list-sort__indicator" aria-hidden="true">{active ? (sort.direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+      <span className="cat-list-sort__indicator" aria-hidden="true">
+        {active ? (sort.direction === 'asc' ? '↑' : '↓') : '↕'}
+      </span>
     </button>
   )
 }
@@ -156,15 +152,17 @@ export function CatList({
   const faderRef = useRef<HTMLInputElement>(null)
   const [viewportWidth, setViewportWidth] = useState(0)
   const isNarrow = viewportWidth > 0 && viewportWidth <= 620
-  const sortedCats = useMemo(() => (
-    namedOrder !== null && !sortOverridden
-      ? cats
-      : [...cats].sort((first, second) => compareCats(first, second, sort.key, sort.direction, names))
-  ), [cats, names, namedOrder, sort, sortOverridden])
+  const sortedCats = useMemo(
+    () =>
+      namedOrder !== null && !sortOverridden
+        ? cats
+        : [...cats].sort((first, second) => compareCats(first, second, sort.key, sort.direction, names)),
+    [cats, names, namedOrder, sort, sortOverridden],
+  )
   const rowVirtualizer = useVirtualizer({
     count: sortedCats.length,
     getScrollElement: () => scrollElementRef.current,
-    estimateSize: () => isNarrow ? 49 : 78,
+    estimateSize: () => (isNarrow ? 49 : 78),
     getItemKey: (index) => sortedCats[index]?.rescueOrder ?? index,
     overscan: 8,
   })
@@ -191,9 +189,7 @@ export function CatList({
     const scrollElement = scrollElementRef.current
     const anchor = scrollAnchor
     const anchorIndex = anchor ? sortedCats.findIndex((cat) => cat.rescueOrder === anchor.rescueOrder) : -1
-    const hasPendingAnchor = anchor !== null
-      && anchorIndex >= 0
-      && appliedScrollAnchorRef.current !== anchor.token
+    const hasPendingAnchor = anchor !== null && anchorIndex >= 0 && appliedScrollAnchorRef.current !== anchor.token
     if (hasPendingAnchor) return
     scrollElement?.scrollTo({ top: 0, left: 0 })
     rowVirtualizer.measure()
@@ -201,7 +197,8 @@ export function CatList({
 
   useLayoutEffect(() => {
     const scrollElement = scrollElementRef.current
-    if (!scrollElement || viewportWidth <= 0 || !scrollAnchor || appliedScrollAnchorRef.current === scrollAnchor.token) return
+    if (!scrollElement || viewportWidth <= 0 || !scrollAnchor || appliedScrollAnchorRef.current === scrollAnchor.token)
+      return
     const anchorIndex = sortedCats.findIndex((cat) => cat.rescueOrder === scrollAnchor.rescueOrder)
     if (anchorIndex < 0) return
     rowVirtualizer.measure()
@@ -246,7 +243,11 @@ export function CatList({
       <div className="grid-empty" role="status">
         <span className="grid-empty__mark">∅</span>
         <strong>{emptyStateMessage ?? 'No cats match these filters.'}</strong>
-        <span>{emptyStateMessage ? 'Try another wallet or clear the wallet filter.' : 'Try clearing a trait or searching for another rescue order.'}</span>
+        <span>
+          {emptyStateMessage
+            ? 'Try another wallet or clear the wallet filter.'
+            : 'Try clearing a trait or searching for another rescue order.'}
+        </span>
       </div>
     )
   }
@@ -271,16 +272,22 @@ export function CatList({
               <SortHeader label="Expression" sortKey="expression" sort={sort} onSort={handleSort} />
               <SortHeader label="Facing" sortKey="facing" sort={sort} onSort={handleSort} />
             </div>
-            <div className="cat-list-canvas" ref={canvasRef} style={{ height: rowVirtualizer.getTotalSize() }} role="rowgroup">
+            <div
+              className="cat-list-canvas"
+              ref={canvasRef}
+              style={{ height: rowVirtualizer.getTotalSize() }}
+              role="rowgroup"
+            >
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const cat = sortedCats[virtualRow.index]
                 if (!cat) return null
                 const name = getMoonCatName(names, cat.rescueOrder)
                 const selected = selectedOrders.has(cat.rescueOrder)
                 const nameSuffix = name ? `, ${name}` : ''
-                const label = interactionMode === 'inspect'
-                  ? `Inspect MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
-                  : `MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
+                const label =
+                  interactionMode === 'inspect'
+                    ? `Inspect MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
+                    : `MoonCat rescue order ${cat.rescueOrder}${nameSuffix}, ${cat.hueName} ${cat.pattern}`
                 return (
                   <button
                     key={virtualRow.key}
@@ -314,13 +321,27 @@ export function CatList({
                         {name && <span>{name}</span>}
                       </span>
                     </span>
-                    <span className="cat-list-row__cell" role="cell">{cat.rescueYear}</span>
-                    <span className="cat-list-row__cell" role="cell">{traitLabel(cat.hueName)}</span>
-                    <span className="cat-list-row__cell" role="cell">{cat.hueInt}</span>
-                    <span className="cat-list-row__cell" role="cell">{traitLabel(cat.pattern)}</span>
-                    <span className="cat-list-row__cell" role="cell">{traitLabel(cat.pose)}</span>
-                    <span className="cat-list-row__cell" role="cell">{traitLabel(cat.expression)}</span>
-                    <span className="cat-list-row__cell" role="cell">{traitLabel(cat.facing)}</span>
+                    <span className="cat-list-row__cell" role="cell">
+                      {cat.rescueYear}
+                    </span>
+                    <span className="cat-list-row__cell" role="cell">
+                      {traitLabel(cat.hueName)}
+                    </span>
+                    <span className="cat-list-row__cell" role="cell">
+                      {cat.hueInt}
+                    </span>
+                    <span className="cat-list-row__cell" role="cell">
+                      {traitLabel(cat.pattern)}
+                    </span>
+                    <span className="cat-list-row__cell" role="cell">
+                      {traitLabel(cat.pose)}
+                    </span>
+                    <span className="cat-list-row__cell" role="cell">
+                      {traitLabel(cat.expression)}
+                    </span>
+                    <span className="cat-list-row__cell" role="cell">
+                      {traitLabel(cat.facing)}
+                    </span>
                   </button>
                 )
               })}

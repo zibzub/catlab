@@ -1,10 +1,7 @@
 import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import {
-  CLASSIFICATION_CATEGORY_KEYS,
-  validateClassificationArtifact,
-} from './lib/mooncat-classifications.mjs'
+import { CLASSIFICATION_CATEGORY_KEYS, validateClassificationArtifact } from './lib/mooncat-classifications.mjs'
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname)
 const DEFAULT_SOURCE = path.resolve(ROOT, '../catmoon/public/data/mooncat-filters.json')

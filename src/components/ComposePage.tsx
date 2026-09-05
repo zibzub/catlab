@@ -1,8 +1,22 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
-import Moveable, { type Able, type MoveableManagerInterface, type OnDrag, type OnRotate, type OnScale, type OnScaleStart, type Renderer } from 'react-moveable'
+import Moveable, {
+  type Able,
+  type MoveableManagerInterface,
+  type OnDrag,
+  type OnRotate,
+  type OnScale,
+  type OnScaleStart,
+  type Renderer,
+} from 'react-moveable'
 import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { sampleCanvasColor } from '../colorLab'
-import { loadComposeBackground, renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
+import {
+  loadComposeBackground,
+  renderComposition,
+  type ComposeBackground,
+  type ComposePlacedObject,
+  type ComposePlacedRect,
+} from '../composeExport'
 import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
 import { canTransformComposeObject, defaultComposeObjectState, resetComposeTransform } from '../composeModel'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
@@ -65,22 +79,28 @@ const ComposeObjectToggleAble: Able<ComposeObjectToggleProps> = {
     const y = (renderPoses[2][1] + renderPoses[3][1]) / 2 + 26
     const zoom = moveable.props.zoom ?? 1
 
-    return [React.createElement('button', {
-      key: 'compose-object-toggle',
-      className: 'moveable-compose-object-toggle',
-      type: 'button',
-      'aria-label': `${options.label} view. Switch to ${options.nextLabel}.`,
-      title: `Switch to ${options.nextLabel}`,
-      style: {
-        transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}rad) scale(${zoom})`,
-      },
-      onPointerDown: (event: Event) => event.stopPropagation(),
-      onClick: (event: Event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        options.onToggle()
-      },
-    }, options.label)]
+    return [
+      React.createElement(
+        'button',
+        {
+          key: 'compose-object-toggle',
+          className: 'moveable-compose-object-toggle',
+          type: 'button',
+          'aria-label': `${options.label} view. Switch to ${options.nextLabel}.`,
+          title: `Switch to ${options.nextLabel}`,
+          style: {
+            transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotation}rad) scale(${zoom})`,
+          },
+          onPointerDown: (event: Event) => event.stopPropagation(),
+          onClick: (event: Event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            options.onToggle()
+          },
+        },
+        options.label,
+      ),
+    ]
   },
 }
 
@@ -97,13 +117,27 @@ function normalizeComposeFilename(value: string, extension: 'catlab' | 'png') {
   filename = filename.replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '-').trim()
   filename = filename.replace(/[. ]+$/g, '')
 
-  if (!filename || filename === '.' || filename === '..' || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i.test(filename)) {
+  if (
+    !filename ||
+    filename === '.' ||
+    filename === '..' ||
+    /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i.test(filename)
+  ) {
     return DEFAULT_COMPOSE_FILENAME
   }
   return filename
 }
 
-export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, setPlacedObjects, background, onBackgroundChange, onBack }: ComposePageProps) {
+export function ComposePage({
+  sourceCats,
+  catalogCats,
+  manifest,
+  placedObjects,
+  setPlacedObjects,
+  background,
+  onBackgroundChange,
+  onBack,
+}: ComposePageProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const stageContentRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
@@ -139,13 +173,16 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   const backgroundSelectionSequenceRef = useRef(0)
   const pendingBackgroundRef = useRef<{ sequence: number; url: string } | null>(null)
 
-  useEffect(() => () => {
-    backgroundSelectionSequenceRef.current += 1
-    if (pendingBackgroundRef.current) {
-      URL.revokeObjectURL(pendingBackgroundRef.current.url)
-      pendingBackgroundRef.current = null
-    }
-  }, [])
+  useEffect(
+    () => () => {
+      backgroundSelectionSequenceRef.current += 1
+      if (pendingBackgroundRef.current) {
+        URL.revokeObjectURL(pendingBackgroundRef.current.url)
+        pendingBackgroundRef.current = null
+      }
+    },
+    [],
+  )
 
   useEffect(() => {
     function handleDocumentPointerDown(event: PointerEvent) {
@@ -178,7 +215,8 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
       const target = event.target
       if (
         target instanceof HTMLElement &&
-        ((target.matches('button, input, textarea, select') && !target.matches('.compose-cat')) || target.isContentEditable)
+        ((target.matches('button, input, textarea, select') && !target.matches('.compose-cat')) ||
+          target.isContentEditable)
       ) {
         return
       }
@@ -208,14 +246,19 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
 
       event.preventDefault()
       const step = event.shiftKey ? 10 : 1
-      setPlacedObjects((current) => current.map((item) => item.id === selectedId
-        ? canTransformComposeObject(item) ? {
-            ...item,
-            x: clamp(item.x + (direction[0] * step) / rect.width, 0, 1),
-            y: clamp(item.y + (direction[1] * step) / rect.height, 0, 1),
-          }
-          : item
-        : item))
+      setPlacedObjects((current) =>
+        current.map((item) =>
+          item.id === selectedId
+            ? canTransformComposeObject(item)
+              ? {
+                  ...item,
+                  x: clamp(item.x + (direction[0] * step) / rect.width, 0, 1),
+                  y: clamp(item.y + (direction[1] * step) / rect.height, 0, 1),
+                }
+              : item
+            : item,
+        ),
+      )
       window.requestAnimationFrame(() => moveableRef.current?.updateRect())
     }
 
@@ -301,13 +344,11 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   }, [exportDialogOpen])
 
   const selected = placedObjects.find((item) => item.id === selectedId) ?? null
-  const catalogCatsByOrder = useMemo(
-    () => new Map(catalogCats.map((cat) => [cat.rescueOrder, cat])),
-    [catalogCats],
-  )
-  const selectedCat = selected?.kind === 'cat' ? catalogCatsByOrder.get(selected.rescueOrder) ?? null : null
+  const catalogCatsByOrder = useMemo(() => new Map(catalogCats.map((cat) => [cat.rescueOrder, cat])), [catalogCats])
+  const selectedCat = selected?.kind === 'cat' ? (catalogCatsByOrder.get(selected.rescueOrder) ?? null) : null
   const colorPickerSupported = supportsColorPicker()
-  const selectedDefaultColorTarget: 'fill' | null = selected?.kind === 'rect' || selected?.kind === 'text' ? 'fill' : null
+  const selectedDefaultColorTarget: 'fill' | null =
+    selected?.kind === 'rect' || selected?.kind === 'text' ? 'fill' : null
   const stageRatio = background ? background.width / background.height : EMPTY_STAGE_RATIO
   const stageStyle = {
     '--compose-ratio': stageRatio,
@@ -450,46 +491,52 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   function addCat(cat: CatRecord) {
     cancelStageSampling()
     const id = `${cat.rescueOrder}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    setPlacedObjects((current) => [...current, {
-      id,
-      kind: 'cat',
-      rescueOrder: cat.rescueOrder,
-      artMode: 'bodies',
-      x: 0.5,
-      y: 0.5,
-      scale: 1,
-      rotation: 0,
-      opacity: 1,
-      flipX: false,
-      flipY: false,
-      z: nextLayer(current),
-      ...defaultComposeObjectState(),
-    }])
+    setPlacedObjects((current) => [
+      ...current,
+      {
+        id,
+        kind: 'cat',
+        rescueOrder: cat.rescueOrder,
+        artMode: 'bodies',
+        x: 0.5,
+        y: 0.5,
+        scale: 1,
+        rotation: 0,
+        opacity: 1,
+        flipX: false,
+        flipY: false,
+        z: nextLayer(current),
+        ...defaultComposeObjectState(),
+      },
+    ])
     setSelectedId(id)
   }
 
   function addText() {
     cancelStageSampling()
     const id = `text-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    setPlacedObjects((current) => [...current, {
-      id,
-      kind: 'text',
-      text: 'Text',
-      fill: '#ffffff',
-      stroke: '#000000',
-      strokeWidth: 2,
-      fontSize: 56,
-      fontFamily: COMPOSE_TEXT_FONT,
-      x: 0.5,
-      y: 0.5,
-      scale: 1,
-      rotation: 0,
-      opacity: 1,
-      flipX: false,
-      flipY: false,
-      z: nextLayer(current),
-      ...defaultComposeObjectState(),
-    }])
+    setPlacedObjects((current) => [
+      ...current,
+      {
+        id,
+        kind: 'text',
+        text: 'Text',
+        fill: '#ffffff',
+        stroke: '#000000',
+        strokeWidth: 2,
+        fontSize: 56,
+        fontFamily: COMPOSE_TEXT_FONT,
+        x: 0.5,
+        y: 0.5,
+        scale: 1,
+        rotation: 0,
+        opacity: 1,
+        flipX: false,
+        flipY: false,
+        z: nextLayer(current),
+        ...defaultComposeObjectState(),
+      },
+    ])
     setSelectedId(id)
   }
 
@@ -521,27 +568,30 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   function duplicateSelected() {
     if (!selectedId) return
     const id = `${selectedId}-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    const offsetPosition = (value: number) => value > 0.92
-      ? clamp(value - 0.04, 0, 1)
-      : clamp(value + 0.04, 0, 1)
+    const offsetPosition = (value: number) => (value > 0.92 ? clamp(value - 0.04, 0, 1) : clamp(value + 0.04, 0, 1))
 
     setPlacedObjects((current) => {
       const source = current.find((item) => item.id === selectedId)
       if (!source) return current
-      return [...current, {
-        ...source,
-        id,
-        x: offsetPosition(source.x),
-        y: offsetPosition(source.y),
-        z: nextLayer(current),
-      }]
+      return [
+        ...current,
+        {
+          ...source,
+          id,
+          x: offsetPosition(source.x),
+          y: offsetPosition(source.y),
+          z: nextLayer(current),
+        },
+      ]
     })
     setSelectedId(id)
   }
 
   function updateSelected(update: Partial<ComposePlacedObject>) {
     if (!selectedId) return
-    setPlacedObjects((current) => current.map((item) => (item.id === selectedId ? { ...item, ...update } as ComposePlacedObject : item)))
+    setPlacedObjects((current) =>
+      current.map((item) => (item.id === selectedId ? ({ ...item, ...update } as ComposePlacedObject) : item)),
+    )
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
   }
 
@@ -701,14 +751,16 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
     const rect = stageRef.current?.getBoundingClientRect()
     const id = moveableTargetId(event.target)
     if (!id || !rect) return
-    setPlacedObjects((current) => current.map((item) => {
-      if (item.id !== id || !canTransformComposeObject(item)) return item
-      return {
-        ...item,
-        x: clamp(item.x + event.delta[0] / rect.width, 0, 1),
-        y: clamp(item.y + event.delta[1] / rect.height, 0, 1),
-      }
-    }))
+    setPlacedObjects((current) =>
+      current.map((item) => {
+        if (item.id !== id || !canTransformComposeObject(item)) return item
+        return {
+          ...item,
+          x: clamp(item.x + event.delta[0] / rect.width, 0, 1),
+          y: clamp(item.y + event.delta[1] / rect.height, 0, 1),
+        }
+      }),
+    )
   }
 
   function handleMoveableScaleStart(event: OnScaleStart) {
@@ -724,29 +776,34 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
   function handleMoveableScale(event: OnScale) {
     const id = moveableTargetId(event.target)
     if (!id) return
-    setPlacedObjects((current) => current.map((item) => {
-      if (item.id !== id || !canTransformComposeObject(item)) return item
-      if (item.kind === 'rect') {
-        const start = rectangleScaleStartRef.current?.id === id
-          ? rectangleScaleStartRef.current
-          : { width: item.width, height: item.height, scale: item.scale }
-        return {
-          ...item,
-          width: clamp(start.width * start.scale * Math.abs(event.scale[0]), 0.04, 1.5),
-          height: clamp(start.height * start.scale * Math.abs(event.scale[1]), 0.04, 1.5),
-          scale: 1,
+    setPlacedObjects((current) =>
+      current.map((item) => {
+        if (item.id !== id || !canTransformComposeObject(item)) return item
+        if (item.kind === 'rect') {
+          const start =
+            rectangleScaleStartRef.current?.id === id
+              ? rectangleScaleStartRef.current
+              : { width: item.width, height: item.height, scale: item.scale }
+          return {
+            ...item,
+            width: clamp(start.width * start.scale * Math.abs(event.scale[0]), 0.04, 1.5),
+            height: clamp(start.height * start.scale * Math.abs(event.scale[1]), 0.04, 1.5),
+            scale: 1,
+          }
         }
-      }
-      return { ...item, scale: clamp(Math.abs(event.scale[0]), 0.4, 12) }
-    }))
+        return { ...item, scale: clamp(Math.abs(event.scale[0]), 0.4, 12) }
+      }),
+    )
   }
 
   function handleMoveableRotate(event: OnRotate) {
     const id = moveableTargetId(event.target)
     if (!id) return
-    setPlacedObjects((current) => current.map((item) => item.id === id && canTransformComposeObject(item)
-      ? { ...item, rotation: event.rotation }
-      : item))
+    setPlacedObjects((current) =>
+      current.map((item) =>
+        item.id === id && canTransformComposeObject(item) ? { ...item, rotation: event.rotation } : item,
+      ),
+    )
   }
 
   function handleObjectPointerDown(event: React.PointerEvent<HTMLElement>, id: string) {
@@ -812,7 +869,9 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
             <h1 id="compose-title">Compose</h1>
             <p>Build a simple scene from your Palette. Everything stays in this browser.</p>
           </div>
-          <button className="compose-back" type="button" onClick={onBack}>← Collection</button>
+          <button className="compose-back" type="button" onClick={onBack}>
+            ← Collection
+          </button>
         </div>
 
         <div className="compose-action-bar" aria-label="Composition actions">
@@ -828,8 +887,12 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
             />
           </label>
           <div className="compose-action-bar__document" aria-label="Document actions">
-            <button type="button" disabled={documentBusy} onClick={() => openInputRef.current?.click()}>Open</button>
-            <button type="button" disabled={documentBusy} onClick={openSaveDialog}>Save</button>
+            <button type="button" disabled={documentBusy} onClick={() => openInputRef.current?.click()}>
+              Open
+            </button>
+            <button type="button" disabled={documentBusy} onClick={openSaveDialog}>
+              Save
+            </button>
             <input
               ref={openInputRef}
               className="compose-document-input"
@@ -843,7 +906,11 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               className="compose-clear"
               type="button"
               disabled={placedObjects.length === 0}
-              onClick={() => { cancelStageSampling(); setPlacedObjects([]); setSelectedId(null) }}
+              onClick={() => {
+                cancelStageSampling()
+                setPlacedObjects([])
+                setSelectedId(null)
+              }}
             >
               Clear layers
             </button>
@@ -854,7 +921,9 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
         </div>
         {(exportError || documentError) && (
           <div className="compose-action-status">
-            <p className="compose-message compose-message--error" role="alert">{documentError ?? exportError}</p>
+            <p className="compose-message compose-message--error" role="alert">
+              {documentError ?? exportError}
+            </p>
           </div>
         )}
 
@@ -879,12 +948,19 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                 <p className="eyebrow">CatLab document</p>
                 <h2 id="compose-save-dialog-title">Save composition</h2>
               </div>
-              <button className="compose-save-dialog__close" type="button" onClick={closeSaveDialog} disabled={documentBusy}>
+              <button
+                className="compose-save-dialog__close"
+                type="button"
+                onClick={closeSaveDialog}
+                disabled={documentBusy}
+              >
                 <span aria-hidden="true">×</span>
                 <span className="sr-only">Cancel save</span>
               </button>
             </div>
-            <label className="compose-save-dialog__label" htmlFor="compose-save-filename">Filename</label>
+            <label className="compose-save-dialog__label" htmlFor="compose-save-filename">
+              Filename
+            </label>
             <div className="compose-save-dialog__filename">
               <input
                 ref={saveFilenameInputRef}
@@ -898,9 +974,15 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               />
               <span aria-hidden="true">.catlab</span>
             </div>
-            {documentError && <p className="compose-save-dialog__error" role="alert">{documentError}</p>}
+            {documentError && (
+              <p className="compose-save-dialog__error" role="alert">
+                {documentError}
+              </p>
+            )}
             <div className="compose-save-dialog__actions">
-              <button type="button" onClick={closeSaveDialog} disabled={documentBusy}>Cancel</button>
+              <button type="button" onClick={closeSaveDialog} disabled={documentBusy}>
+                Cancel
+              </button>
               <button className="compose-save-dialog__save" type="submit" disabled={documentBusy}>
                 {documentBusy ? 'Saving…' : 'Save'}
               </button>
@@ -929,15 +1011,28 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                 <p className="eyebrow">CatLab document</p>
                 <h2 id="compose-open-dialog-title">Open composition?</h2>
               </div>
-              <button className="compose-save-dialog__close" type="button" onClick={closeOpenConfirmDialog} disabled={documentBusy}>
+              <button
+                className="compose-save-dialog__close"
+                type="button"
+                onClick={closeOpenConfirmDialog}
+                disabled={documentBusy}
+              >
                 <span aria-hidden="true">×</span>
                 <span className="sr-only">Cancel open</span>
               </button>
             </div>
             <p className="compose-open-dialog__message">Opening this file will replace the current composition.</p>
             <div className="compose-save-dialog__actions">
-              <button ref={openConfirmCancelRef} type="button" onClick={closeOpenConfirmDialog} disabled={documentBusy}>Cancel</button>
-              <button className="compose-save-dialog__save" type="submit" disabled={documentBusy || !pendingOpenDocument}>Open</button>
+              <button ref={openConfirmCancelRef} type="button" onClick={closeOpenConfirmDialog} disabled={documentBusy}>
+                Cancel
+              </button>
+              <button
+                className="compose-save-dialog__save"
+                type="submit"
+                disabled={documentBusy || !pendingOpenDocument}
+              >
+                Open
+              </button>
             </div>
           </form>
         </dialog>
@@ -963,12 +1058,19 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                 <p className="eyebrow">PNG image</p>
                 <h2 id="compose-export-dialog-title">Export PNG</h2>
               </div>
-              <button className="compose-save-dialog__close" type="button" onClick={closeExportDialog} disabled={exportBusy}>
+              <button
+                className="compose-save-dialog__close"
+                type="button"
+                onClick={closeExportDialog}
+                disabled={exportBusy}
+              >
                 <span aria-hidden="true">×</span>
                 <span className="sr-only">Cancel export</span>
               </button>
             </div>
-            <label className="compose-save-dialog__label" htmlFor="compose-export-filename">Filename</label>
+            <label className="compose-save-dialog__label" htmlFor="compose-export-filename">
+              Filename
+            </label>
             <div className="compose-save-dialog__filename">
               <input
                 ref={exportFilenameInputRef}
@@ -982,9 +1084,15 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               />
               <span aria-hidden="true">.png</span>
             </div>
-            {exportError && <p className="compose-save-dialog__error" role="alert">{exportError}</p>}
+            {exportError && (
+              <p className="compose-save-dialog__error" role="alert">
+                {exportError}
+              </p>
+            )}
             <div className="compose-save-dialog__actions">
-              <button type="button" onClick={closeExportDialog} disabled={exportBusy}>Cancel</button>
+              <button type="button" onClick={closeExportDialog} disabled={exportBusy}>
+                Cancel
+              </button>
               <button className="compose-save-dialog__save" type="submit" disabled={exportBusy}>
                 {exportBusy ? 'Exporting…' : 'Export'}
               </button>
@@ -994,16 +1102,35 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
 
         <div className="compose-canvas-area">
           <nav className="compose-tool-rail" aria-label="Canvas tools">
-            <button className="compose-tool is-active" type="button" aria-label="Select and move" aria-pressed="true" title="Select and move" onClick={cancelStageSampling}>
-              <span className="compose-tool__icon" aria-hidden="true">↖</span>
+            <button
+              className="compose-tool is-active"
+              type="button"
+              aria-label="Select and move"
+              aria-pressed="true"
+              title="Select and move"
+              onClick={cancelStageSampling}
+            >
+              <span className="compose-tool__icon" aria-hidden="true">
+                ↖
+              </span>
               <span className="compose-tool__label">Select / Move</span>
             </button>
-            <button className="compose-tool" type="button" onClick={addRectangle} aria-label="Add rectangle" title="Add rectangle">
-              <span className="compose-tool__icon" aria-hidden="true">□</span>
+            <button
+              className="compose-tool"
+              type="button"
+              onClick={addRectangle}
+              aria-label="Add rectangle"
+              title="Add rectangle"
+            >
+              <span className="compose-tool__icon" aria-hidden="true">
+                □
+              </span>
               <span className="compose-tool__label">Rectangle</span>
             </button>
             <button className="compose-tool" type="button" onClick={addText} aria-label="Add text" title="Add text">
-              <span className="compose-tool__icon" aria-hidden="true">T</span>
+              <span className="compose-tool__icon" aria-hidden="true">
+                T
+              </span>
               <span className="compose-tool__label">Text</span>
             </button>
             <button
@@ -1011,16 +1138,34 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               type="button"
               disabled={!selectedDefaultColorTarget || colorPickerBusy}
               aria-pressed={Boolean(stageSamplingTarget)}
-              aria-label={colorPickerSupported
-                ? selectedDefaultColorTarget ? 'Sample color for selected layer fill' : 'Select a rectangle or text layer to sample a color'
-                : selectedDefaultColorTarget ? 'Sample color for selected layer fill' : 'Select a rectangle or text layer to sample a color'}
-              title={colorPickerSupported
-                ? selectedDefaultColorTarget ? 'Sample selected layer fill (Shift-click for screen picker)' : 'Select a rectangle or text layer first'
-                : selectedDefaultColorTarget ? 'Sample selected layer fill' : 'Select a rectangle or text layer first'}
-              onClick={(event) => { if (selectedDefaultColorTarget) handleColorPickClick(selectedDefaultColorTarget, event) }}
+              aria-label={
+                colorPickerSupported
+                  ? selectedDefaultColorTarget
+                    ? 'Sample color for selected layer fill'
+                    : 'Select a rectangle or text layer to sample a color'
+                  : selectedDefaultColorTarget
+                    ? 'Sample color for selected layer fill'
+                    : 'Select a rectangle or text layer to sample a color'
+              }
+              title={
+                colorPickerSupported
+                  ? selectedDefaultColorTarget
+                    ? 'Sample selected layer fill (Shift-click for screen picker)'
+                    : 'Select a rectangle or text layer first'
+                  : selectedDefaultColorTarget
+                    ? 'Sample selected layer fill'
+                    : 'Select a rectangle or text layer first'
+              }
+              onClick={(event) => {
+                if (selectedDefaultColorTarget) handleColorPickClick(selectedDefaultColorTarget, event)
+              }}
             >
-              <span className="compose-tool__icon" aria-hidden="true">{colorPickerBusy ? '…' : stageSamplingTarget ? '×' : '⌖'}</span>
-              <span className="compose-tool__label">{colorPickerBusy ? 'Preparing…' : stageSamplingTarget ? 'Cancel sample' : 'Eyedropper'}</span>
+              <span className="compose-tool__icon" aria-hidden="true">
+                {colorPickerBusy ? '…' : stageSamplingTarget ? '×' : '⌖'}
+              </span>
+              <span className="compose-tool__label">
+                {colorPickerBusy ? 'Preparing…' : stageSamplingTarget ? 'Cancel sample' : 'Eyedropper'}
+              </span>
             </button>
           </nav>
           <div className="compose-stage-wrap">
@@ -1051,159 +1196,169 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                   .slice()
                   .sort((a, b) => a.z - b.z)
                   .map((item) => {
-                if (item.kind === 'cat') {
-                  const cat = catalogCatsByOrder.get(item.rescueOrder)
-                  if (!cat) return null
-                  const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, item.artMode)
-                  const artScale = ART_SCALE[item.artMode]
-                  const spriteStyle = {
-                    width: atlasCell.cellWidth * artScale,
-                    height: atlasCell.cellHeight * artScale,
-                    backgroundImage: `url(${atlasCell.assetUrl})`,
-                    backgroundPosition: `-${atlasCell.x * artScale}px -${atlasCell.y * artScale}px`,
-                    backgroundSize: `${atlasCell.atlas.width * artScale}px ${atlasCell.atlas.height * artScale}px`,
-                    opacity: item.opacity,
-                    left: `${item.x * 100}%`,
-                    top: `${item.y * 100}%`,
-                    zIndex: item.z + 1,
-                    transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
-                  } as CSSProperties
-                  return (
-                    <button
-                      className="compose-cat"
-                      key={item.id}
-                      type="button"
-                      aria-label={`MoonCat ${cat.rescueOrder}, ${item.artMode === 'faces' ? 'Face' : 'Full'}`}
-                      data-compose-id={item.id}
-                      style={spriteStyle}
-                      onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
-                      onClick={() => setSelectedId(item.id)}
-                    />
-                  )
-                }
+                    if (item.kind === 'cat') {
+                      const cat = catalogCatsByOrder.get(item.rescueOrder)
+                      if (!cat) return null
+                      const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, item.artMode)
+                      const artScale = ART_SCALE[item.artMode]
+                      const spriteStyle = {
+                        width: atlasCell.cellWidth * artScale,
+                        height: atlasCell.cellHeight * artScale,
+                        backgroundImage: `url(${atlasCell.assetUrl})`,
+                        backgroundPosition: `-${atlasCell.x * artScale}px -${atlasCell.y * artScale}px`,
+                        backgroundSize: `${atlasCell.atlas.width * artScale}px ${atlasCell.atlas.height * artScale}px`,
+                        opacity: item.opacity,
+                        left: `${item.x * 100}%`,
+                        top: `${item.y * 100}%`,
+                        zIndex: item.z + 1,
+                        transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
+                      } as CSSProperties
+                      return (
+                        <button
+                          className="compose-cat"
+                          key={item.id}
+                          type="button"
+                          aria-label={`MoonCat ${cat.rescueOrder}, ${item.artMode === 'faces' ? 'Face' : 'Full'}`}
+                          data-compose-id={item.id}
+                          style={spriteStyle}
+                          onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
+                          onClick={() => setSelectedId(item.id)}
+                        />
+                      )
+                    }
 
-                if (item.kind === 'rect') {
-                  const rectangleStyle = {
-                    left: `${item.x * 100}%`,
-                    top: `${item.y * 100}%`,
-                    width: `${item.width * 100}%`,
-                    height: `${item.height * 100}%`,
-                    zIndex: item.z + 1,
-                    opacity: item.opacity,
-                    backgroundColor: item.fill,
-                    transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
-                  } as CSSProperties
-                  return (
-                    <div
-                      className="compose-rectangle"
-                      key={item.id}
-                      role="button"
-                      tabIndex={0}
-                      aria-label="Rectangle layer"
-                      data-compose-id={item.id}
-                      style={rectangleStyle}
-                      onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
-                      onClick={() => setSelectedId(item.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
+                    if (item.kind === 'rect') {
+                      const rectangleStyle = {
+                        left: `${item.x * 100}%`,
+                        top: `${item.y * 100}%`,
+                        width: `${item.width * 100}%`,
+                        height: `${item.height * 100}%`,
+                        zIndex: item.z + 1,
+                        opacity: item.opacity,
+                        backgroundColor: item.fill,
+                        transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
+                      } as CSSProperties
+                      return (
+                        <div
+                          className="compose-rectangle"
+                          key={item.id}
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Rectangle layer"
+                          data-compose-id={item.id}
+                          style={rectangleStyle}
+                          onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
+                          onClick={() => setSelectedId(item.id)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              setSelectedId(item.id)
+                            }
+                          }}
+                        />
+                      )
+                    }
+
+                    const textStyle = {
+                      left: `${item.x * 100}%`,
+                      top: `${item.y * 100}%`,
+                      zIndex: item.z + 1,
+                      color: item.fill,
+                      fontFamily: item.fontFamily,
+                      fontSize: `${item.fontSize}px`,
+                      lineHeight: 1.1,
+                      opacity: item.opacity,
+                      paintOrder: 'stroke fill',
+                      textAlign: 'center',
+                      whiteSpace: 'pre-wrap',
+                      WebkitTextStroke: `${item.strokeWidth}px ${item.stroke}`,
+                      transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
+                    } as CSSProperties
+                    if (editingTextId === item.id) {
+                      return (
+                        <textarea
+                          ref={inlineTextEditorRef}
+                          className="compose-text compose-text-editor"
+                          key={item.id}
+                          aria-label="Edit text layer"
+                          data-compose-id={item.id}
+                          rows={Math.max(3, item.text.split('\n').length)}
+                          value={item.text}
+                          style={{
+                            ...textStyle,
+                            width: 'min(70vw, 420px)',
+                            maxWidth: 'calc(100vw - 48px)',
+                            minHeight: '100px',
+                            color: item.fill,
+                            paintOrder: 'normal',
+                            WebkitTextStroke: '0 transparent',
+                          }}
+                          onChange={(event) => updateSelected({ text: event.currentTarget.value })}
+                          onBlur={finishTextEditing}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              event.preventDefault()
+                              finishTextEditing()
+                            }
+                          }}
+                          onPointerDown={(event) => event.stopPropagation()}
+                        />
+                      )
+                    }
+                    return (
+                      <div
+                        className="compose-text"
+                        key={item.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Text layer: ${item.text}`}
+                        data-compose-id={item.id}
+                        style={textStyle}
+                        onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
+                        onClick={() => setSelectedId(item.id)}
+                        onDoubleClick={(event) => {
                           event.preventDefault()
+                          event.stopPropagation()
                           setSelectedId(item.id)
-                        }
-                      }}
-                    />
-                  )
-                }
-
-                const textStyle = {
-                  left: `${item.x * 100}%`,
-                  top: `${item.y * 100}%`,
-                  zIndex: item.z + 1,
-                  color: item.fill,
-                  fontFamily: item.fontFamily,
-                  fontSize: `${item.fontSize}px`,
-                  lineHeight: 1.1,
-                  opacity: item.opacity,
-                  paintOrder: 'stroke fill',
-                  textAlign: 'center',
-                  whiteSpace: 'pre-wrap',
-                  WebkitTextStroke: `${item.strokeWidth}px ${item.stroke}`,
-                  transform: `translate(-50%, -50%) rotate(${item.rotation}deg) scale(${item.scale * (item.flipX ? -1 : 1)}, ${item.scale * (item.flipY ? -1 : 1)})`,
-                } as CSSProperties
-                if (editingTextId === item.id) {
-                  return (
-                    <textarea
-                      ref={inlineTextEditorRef}
-                      className="compose-text compose-text-editor"
-                      key={item.id}
-                      aria-label="Edit text layer"
-                      data-compose-id={item.id}
-                      rows={Math.max(3, item.text.split('\n').length)}
-                      value={item.text}
-                      style={{
-                        ...textStyle,
-                        width: 'min(70vw, 420px)',
-                        maxWidth: 'calc(100vw - 48px)',
-                        minHeight: '100px',
-                        color: item.fill,
-                        paintOrder: 'normal',
-                        WebkitTextStroke: '0 transparent',
-                      }}
-                      onChange={(event) => updateSelected({ text: event.currentTarget.value })}
-                      onBlur={finishTextEditing}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Escape') {
-                          event.preventDefault()
-                          finishTextEditing()
-                        }
-                      }}
-                      onPointerDown={(event) => event.stopPropagation()}
-                    />
-                  )
-                }
-                return (
-                  <div
-                    className="compose-text"
-                    key={item.id}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Text layer: ${item.text}`}
-                    data-compose-id={item.id}
-                    style={textStyle}
-                    onPointerDown={(event) => handleObjectPointerDown(event, item.id)}
-                    onClick={() => setSelectedId(item.id)}
-                    onDoubleClick={(event) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      setSelectedId(item.id)
-                      setEditingTextId(item.id)
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        setSelectedId(item.id)
-                      }
-                    }}
-                  >
-                    {item.text}
-                  </div>
-                )
+                          setEditingTextId(item.id)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            setSelectedId(item.id)
+                          }
+                        }}
+                      >
+                        {item.text}
+                      </div>
+                    )
                   })}
               </div>
               {stageSamplingMessage && (
-                <div className="compose-stage__sampling-status" role="status">{stageSamplingMessage}</div>
+                <div className="compose-stage__sampling-status" role="status">
+                  {stageSamplingMessage}
+                </div>
               )}
               <Moveable
                 ref={moveableRef}
                 key={`${selectedId ?? 'none'}-${selected?.locked ? 'locked' : 'free'}-${selected?.visible ? 'visible' : 'hidden'}`}
                 ables={[ComposeObjectToggleAble]}
-                target={selectedId && selected && canTransformComposeObject(selected) && !editingTextId ? `[data-compose-id="${selectedId}"]` : null}
+                target={
+                  selectedId && selected && canTransformComposeObject(selected) && !editingTextId
+                    ? `[data-compose-id="${selectedId}"]`
+                    : null
+                }
                 container={stageRef.current}
                 props={{
-                  composeObjectToggle: selected?.kind === 'cat' ? {
-                    label: selected.artMode === 'bodies' ? 'Full' : 'Face',
-                    nextLabel: selected.artMode === 'bodies' ? 'Face' : 'Full',
-                    onToggle: () => updateSelected({ artMode: selected.artMode === 'bodies' ? 'faces' : 'bodies' }),
-                  } : undefined,
+                  composeObjectToggle:
+                    selected?.kind === 'cat'
+                      ? {
+                          label: selected.artMode === 'bodies' ? 'Full' : 'Face',
+                          nextLabel: selected.artMode === 'bodies' ? 'Face' : 'Full',
+                          onToggle: () =>
+                            updateSelected({ artMode: selected.artMode === 'bodies' ? 'faces' : 'bodies' }),
+                        }
+                      : undefined,
                 }}
                 draggable
                 scalable
@@ -1271,15 +1426,29 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
             <div>
               <h2 id="compose-background-title">Background</h2>
             </div>
-            {background && <span className="compose-file-name" title={background.name}>{background.name}</span>}
+            {background && (
+              <span className="compose-file-name" title={background.name}>
+                {background.name}
+              </span>
+            )}
           </div>
           <label className="compose-upload">
             <span>{background ? 'Replace image' : 'Choose image'}</span>
             <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackground} />
           </label>
-          {background && <button className="compose-text-button" type="button" onClick={() => onBackgroundChange(null)}>Remove background</button>}
-          {backgroundError && <p className="compose-message compose-message--error" role="alert">{backgroundError}</p>}
-          <p className="compose-export-note">PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.</p>
+          {background && (
+            <button className="compose-text-button" type="button" onClick={() => onBackgroundChange(null)}>
+              Remove background
+            </button>
+          )}
+          {backgroundError && (
+            <p className="compose-message compose-message--error" role="alert">
+              {backgroundError}
+            </p>
+          )}
+          <p className="compose-export-note">
+            PNG uses the background's natural pixel dimensions. Without one, export is a transparent 1200×900 canvas.
+          </p>
         </section>
 
         <section className="compose-card compose-selected" aria-labelledby="compose-selected-title">
@@ -1313,26 +1482,55 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
               </div>
               {selected.kind === 'cat' && (
                 <div className="compose-art-options" role="group" aria-label="Placed cat art">
-                  <button type="button" className={selected.artMode === 'bodies' ? 'is-active' : ''} aria-pressed={selected.artMode === 'bodies'} onClick={() => updateSelected({ artMode: 'bodies' })}>Full</button>
-                  <button type="button" className={selected.artMode === 'faces' ? 'is-active' : ''} aria-pressed={selected.artMode === 'faces'} onClick={() => updateSelected({ artMode: 'faces' })}>Face</button>
+                  <button
+                    type="button"
+                    className={selected.artMode === 'bodies' ? 'is-active' : ''}
+                    aria-pressed={selected.artMode === 'bodies'}
+                    onClick={() => updateSelected({ artMode: 'bodies' })}
+                  >
+                    Full
+                  </button>
+                  <button
+                    type="button"
+                    className={selected.artMode === 'faces' ? 'is-active' : ''}
+                    aria-pressed={selected.artMode === 'faces'}
+                    onClick={() => updateSelected({ artMode: 'faces' })}
+                  >
+                    Face
+                  </button>
                 </div>
               )}
               {selected.kind === 'text' && (
                 <div className="compose-text-options">
                   <label className="compose-text-field">
                     <span>Text</span>
-                    <textarea rows={3} value={selected.text} onChange={(event) => updateSelected({ text: event.currentTarget.value })} />
+                    <textarea
+                      rows={3}
+                      value={selected.text}
+                      onChange={(event) => updateSelected({ text: event.currentTarget.value })}
+                    />
                   </label>
                   <label className="compose-text-field">
                     <span>Font family</span>
-                    <select value={selected.fontFamily} onChange={(event) => updateSelected({ fontFamily: event.currentTarget.value })}>
-                      {COMPOSE_TEXT_FONTS.map((font) => <option key={font.label} value={font.value}>{font.label}</option>)}
+                    <select
+                      value={selected.fontFamily}
+                      onChange={(event) => updateSelected({ fontFamily: event.currentTarget.value })}
+                    >
+                      {COMPOSE_TEXT_FONTS.map((font) => (
+                        <option key={font.label} value={font.value}>
+                          {font.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <div className="compose-color-options">
                     <div className="compose-color-control">
                       <label className="compose-color-field">
-                        <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
+                        <input
+                          type="color"
+                          value={selected.fill}
+                          onChange={(event) => updateSelected({ fill: event.currentTarget.value })}
+                        />
                         <span>Fill</span>
                       </label>
                       <button
@@ -1340,7 +1538,11 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                         type="button"
                         disabled={colorPickerBusy}
                         aria-label="Sample text fill color"
-                        title={colorPickerSupported ? 'Sample text fill color (Shift-click for screen picker)' : 'Sample text fill color'}
+                        title={
+                          colorPickerSupported
+                            ? 'Sample text fill color (Shift-click for screen picker)'
+                            : 'Sample text fill color'
+                        }
                         onClick={(event) => handleColorPickClick('fill', event)}
                       >
                         ⌖
@@ -1348,7 +1550,11 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                     </div>
                     <div className="compose-color-control">
                       <label className="compose-color-field">
-                        <input type="color" value={selected.stroke} onChange={(event) => updateSelected({ stroke: event.currentTarget.value })} />
+                        <input
+                          type="color"
+                          value={selected.stroke}
+                          onChange={(event) => updateSelected({ stroke: event.currentTarget.value })}
+                        />
                         <span>Outline</span>
                       </label>
                       <button
@@ -1356,7 +1562,11 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                         type="button"
                         disabled={colorPickerBusy}
                         aria-label="Sample text outline color"
-                        title={colorPickerSupported ? 'Sample text outline color (Shift-click for screen picker)' : 'Sample text outline color'}
+                        title={
+                          colorPickerSupported
+                            ? 'Sample text outline color (Shift-click for screen picker)'
+                            : 'Sample text outline color'
+                        }
                         onClick={(event) => handleColorPickClick('stroke', event)}
                       >
                         ⌖
@@ -1364,12 +1574,30 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                     </div>
                   </div>
                   <label className="compose-range">
-                    <span>Outline width <output>{selected.strokeWidth.toFixed(1)} px</output></span>
-                    <input type="range" min="0" max="16" step="0.5" value={selected.strokeWidth} onChange={(event) => updateSelected({ strokeWidth: Number(event.currentTarget.value) })} />
+                    <span>
+                      Outline width <output>{selected.strokeWidth.toFixed(1)} px</output>
+                    </span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="16"
+                      step="0.5"
+                      value={selected.strokeWidth}
+                      onChange={(event) => updateSelected({ strokeWidth: Number(event.currentTarget.value) })}
+                    />
                   </label>
                   <label className="compose-range">
-                    <span>Font size <output>{selected.fontSize} px</output></span>
-                    <input type="range" min="12" max="240" step="1" value={selected.fontSize} onChange={(event) => updateSelected({ fontSize: Number(event.currentTarget.value) })} />
+                    <span>
+                      Font size <output>{selected.fontSize} px</output>
+                    </span>
+                    <input
+                      type="range"
+                      min="12"
+                      max="240"
+                      step="1"
+                      value={selected.fontSize}
+                      onChange={(event) => updateSelected({ fontSize: Number(event.currentTarget.value) })}
+                    />
                   </label>
                 </div>
               )}
@@ -1377,7 +1605,11 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                 <div className="compose-color-options compose-rectangle-options">
                   <div className="compose-color-control">
                     <label className="compose-color-field">
-                      <input type="color" value={selected.fill} onChange={(event) => updateSelected({ fill: event.currentTarget.value })} />
+                      <input
+                        type="color"
+                        value={selected.fill}
+                        onChange={(event) => updateSelected({ fill: event.currentTarget.value })}
+                      />
                       <span>Fill</span>
                     </label>
                     <button
@@ -1385,7 +1617,11 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                       type="button"
                       disabled={colorPickerBusy}
                       aria-label="Sample rectangle fill color"
-                      title={colorPickerSupported ? 'Sample rectangle fill color (Shift-click for screen picker)' : 'Sample rectangle fill color'}
+                      title={
+                        colorPickerSupported
+                          ? 'Sample rectangle fill color (Shift-click for screen picker)'
+                          : 'Sample rectangle fill color'
+                      }
                       onClick={(event) => handleColorPickClick('fill', event)}
                     >
                       ⌖
@@ -1394,42 +1630,116 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                 </div>
               )}
               <div className="compose-art-options compose-flip-options" role="group" aria-label="Flip selected object">
-                <button type="button" className={selected.flipX ? 'is-active' : ''} aria-pressed={selected.flipX} onClick={() => updateSelected({ flipX: !selected.flipX })}>Flip Horizontal</button>
-                <button type="button" className={selected.flipY ? 'is-active' : ''} aria-pressed={selected.flipY} onClick={() => updateSelected({ flipY: !selected.flipY })}>Flip Vertical</button>
+                <button
+                  type="button"
+                  className={selected.flipX ? 'is-active' : ''}
+                  aria-pressed={selected.flipX}
+                  onClick={() => updateSelected({ flipX: !selected.flipX })}
+                >
+                  Flip Horizontal
+                </button>
+                <button
+                  type="button"
+                  className={selected.flipY ? 'is-active' : ''}
+                  aria-pressed={selected.flipY}
+                  onClick={() => updateSelected({ flipY: !selected.flipY })}
+                >
+                  Flip Vertical
+                </button>
               </div>
               <div className="compose-object-actions">
-                <button className="compose-object-action" type="button" onClick={() => updateSelected(resetComposeTransform(selected))}>Reset transform</button>
-                <button className="compose-object-action" type="button" onClick={() => updateSelected({ locked: !selected.locked })}>
+                <button
+                  className="compose-object-action"
+                  type="button"
+                  onClick={() => updateSelected(resetComposeTransform(selected))}
+                >
+                  Reset transform
+                </button>
+                <button
+                  className="compose-object-action"
+                  type="button"
+                  onClick={() => updateSelected({ locked: !selected.locked })}
+                >
                   {selected.locked ? 'Unlock object' : 'Lock object'}
                 </button>
-                <button className="compose-object-action" type="button" onClick={() => updateSelected({ visible: !selected.visible })}>
+                <button
+                  className="compose-object-action"
+                  type="button"
+                  onClick={() => updateSelected({ visible: !selected.visible })}
+                >
                   {selected.visible ? 'Hide object' : 'Show object'}
                 </button>
-                <button className="compose-duplicate" type="button" onClick={duplicateSelected}>Duplicate selected</button>
+                <button className="compose-duplicate" type="button" onClick={duplicateSelected}>
+                  Duplicate selected
+                </button>
               </div>
               <label className="compose-range">
-                <span>Opacity <output>{Math.round(selected.opacity * 100)}%</output></span>
-                <input aria-label="Selected object opacity" type="range" min="0" max="1" step="0.01" value={selected.opacity} onChange={(event) => updateSelected({ opacity: Number(event.currentTarget.value) })} />
+                <span>
+                  Opacity <output>{Math.round(selected.opacity * 100)}%</output>
+                </span>
+                <input
+                  aria-label="Selected object opacity"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={selected.opacity}
+                  onChange={(event) => updateSelected({ opacity: Number(event.currentTarget.value) })}
+                />
               </label>
               <label className="compose-range">
-                <span>Scale <output>{selected.scale.toFixed(2)}×</output></span>
-                <input type="range" min="0.4" max="12" step="0.05" value={selected.scale} onChange={(event) => updateSelected({ scale: Number(event.currentTarget.value) })} />
+                <span>
+                  Scale <output>{selected.scale.toFixed(2)}×</output>
+                </span>
+                <input
+                  type="range"
+                  min="0.4"
+                  max="12"
+                  step="0.05"
+                  value={selected.scale}
+                  onChange={(event) => updateSelected({ scale: Number(event.currentTarget.value) })}
+                />
               </label>
               <label className="compose-range">
-                <span>Rotation <output>{selected.rotation}°</output></span>
-                <input type="range" min="-180" max="180" step="1" value={selected.rotation} onChange={(event) => updateSelected({ rotation: Number(event.currentTarget.value) })} />
+                <span>
+                  Rotation <output>{selected.rotation}°</output>
+                </span>
+                <input
+                  type="range"
+                  min="-180"
+                  max="180"
+                  step="1"
+                  value={selected.rotation}
+                  onChange={(event) => updateSelected({ rotation: Number(event.currentTarget.value) })}
+                />
               </label>
               <div className="compose-layer-actions" role="group" aria-label="Layer order">
-                <button type="button" onClick={() => reorderSelected('back')}>Back</button>
-                <button type="button" onClick={() => reorderSelected('backward')}>Behind</button>
-                <button type="button" onClick={() => reorderSelected('forward')}>Forward</button>
-                <button type="button" onClick={() => reorderSelected('front')}>Front</button>
+                <button type="button" onClick={() => reorderSelected('back')}>
+                  Back
+                </button>
+                <button type="button" onClick={() => reorderSelected('backward')}>
+                  Behind
+                </button>
+                <button type="button" onClick={() => reorderSelected('forward')}>
+                  Forward
+                </button>
+                <button type="button" onClick={() => reorderSelected('front')}>
+                  Front
+                </button>
               </div>
-              <button className="compose-remove" type="button" onClick={() => { setPlacedObjects((current) => current.filter((item) => item.id !== selected.id)); setSelectedId(null) }}>Remove selected</button>
+              <button
+                className="compose-remove"
+                type="button"
+                onClick={() => {
+                  setPlacedObjects((current) => current.filter((item) => item.id !== selected.id))
+                  setSelectedId(null)
+                }}
+              >
+                Remove selected
+              </button>
             </>
           )}
         </section>
-
       </aside>
     </main>
   )

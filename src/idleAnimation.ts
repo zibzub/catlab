@@ -134,7 +134,12 @@ function rowsFor(cats: IdleGridCat[]) {
   return [...rows.entries()].sort(([first], [second]) => first - second)
 }
 
-function sequenceFor(cats: IdleGridCat[], pattern: SequencePattern, timing: IdleSpeedTiming, random: () => number): IdleStep[] {
+function sequenceFor(
+  cats: IdleGridCat[],
+  pattern: SequencePattern,
+  timing: IdleSpeedTiming,
+  random: () => number,
+): IdleStep[] {
   if (pattern === 'wave' || pattern === 'cascade') {
     const ordered = [...cats].sort((first, second) => first.row - second.row || first.column - second.column)
     const stagger = pattern === 'cascade' ? timing.cascadeStagger : timing.stagger
@@ -159,9 +164,10 @@ function sequenceFor(cats: IdleGridCat[], pattern: SequencePattern, timing: Idle
       cat,
       distance: Math.abs(cat.row - origin.row) + Math.abs(cat.column - origin.column),
     }))
-    .sort((first, second) => first.distance - second.distance
-      || first.cat.row - second.cat.row
-      || first.cat.column - second.cat.column)
+    .sort(
+      (first, second) =>
+        first.distance - second.distance || first.cat.row - second.cat.row || first.cat.column - second.cat.column,
+    )
   let previousStart = 0
   const distanceIndexes = new Map<number, number>()
   return grouped.map(({ cat, distance }) => {
@@ -189,7 +195,10 @@ function popcornCluster(cats: IdleGridCat[], random: () => number, previousKey: 
       }))
       .sort((first, second) => first.distance - second.distance || first.tie - second.tie)
     cluster = candidates.slice(0, targetSize).map(({ cat }) => cat)
-    clusterKey = cluster.map((cat) => cat.rescueOrder).sort((first, second) => first - second).join(',')
+    clusterKey = cluster
+      .map((cat) => cat.rescueOrder)
+      .sort((first, second) => first - second)
+      .join(',')
   }
   return { cluster, key: clusterKey }
 }
@@ -217,9 +226,7 @@ function nextSnakeCell(cats: IdleGridCat[], head: IdleGridCat, direction: SnakeD
 
   const rowDelta = direction === 'up' ? -1 : 1
   const targetRow = rows[currentRowIndex + rowDelta]
-  return targetRow === undefined
-    ? undefined
-    : cats.find((cat) => cat.row === targetRow && cat.column === head.column)
+  return targetRow === undefined ? undefined : cats.find((cat) => cat.row === targetRow && cat.column === head.column)
 }
 
 function turnedDirection(direction: SnakeDirection, amount: number) {
@@ -227,11 +234,18 @@ function turnedDirection(direction: SnakeDirection, amount: number) {
   return SNAKE_DIRECTIONS[(index + amount + SNAKE_DIRECTIONS.length) % SNAKE_DIRECTIONS.length]
 }
 
-function chooseSnakeDirection(cats: IdleGridCat[], head: IdleGridCat, direction: SnakeDirection, random: () => number, allowReverse = false) {
+function chooseSnakeDirection(
+  cats: IdleGridCat[],
+  head: IdleGridCat,
+  direction: SnakeDirection,
+  random: () => number,
+  allowReverse = false,
+) {
   const opposite = turnedDirection(direction, 2)
   const candidates = allowReverse ? SNAKE_DIRECTIONS : SNAKE_DIRECTIONS.filter((candidate) => candidate !== opposite)
   const roll = random()
-  const preferred = roll < 0.5 ? direction : roll < 0.75 ? turnedDirection(direction, -1) : turnedDirection(direction, 1)
+  const preferred =
+    roll < 0.5 ? direction : roll < 0.75 ? turnedDirection(direction, -1) : turnedDirection(direction, 1)
   const canMove = (candidate: SnakeDirection) => {
     const next = nextSnakeCell(cats, head, candidate)
     return next && next.rescueOrder !== head.rescueOrder
@@ -242,13 +256,15 @@ function chooseSnakeDirection(cats: IdleGridCat[], head: IdleGridCat, direction:
 
 function initialSnakeState(cats: IdleGridCat[], random: () => number) {
   const preferredDirection = SNAKE_DIRECTIONS[Math.floor(random() * SNAKE_DIRECTIONS.length)] ?? 'right'
-  const movableDirections = SNAKE_DIRECTIONS.filter((candidate) => cats.some((head) => {
-    const next = nextSnakeCell(cats, head, candidate)
-    return next && next.rescueOrder !== head.rescueOrder
-  }))
+  const movableDirections = SNAKE_DIRECTIONS.filter((candidate) =>
+    cats.some((head) => {
+      const next = nextSnakeCell(cats, head, candidate)
+      return next && next.rescueOrder !== head.rescueOrder
+    }),
+  )
   const direction = movableDirections.includes(preferredDirection)
     ? preferredDirection
-    : movableDirections[Math.floor(random() * movableDirections.length)] ?? preferredDirection
+    : (movableDirections[Math.floor(random() * movableDirections.length)] ?? preferredDirection)
   const opposite = turnedDirection(direction, 2)
   const rows = [...new Set(cats.map((cat) => cat.row))].sort((first, second) => first - second)
   const columns = rowColumns(cats)
@@ -257,20 +273,24 @@ function initialSnakeState(cats: IdleGridCat[], random: () => number) {
       const values = columns.get(head.row) ?? []
       const index = values.indexOf(head.column)
       const rowDistance = rows.indexOf(head.row)
-      const edgeDistance = direction === 'right'
-        ? index
-        : direction === 'left'
-          ? values.length - 1 - index
-          : direction === 'down'
-            ? rowDistance
-            : rows.length - 1 - rowDistance
+      const edgeDistance =
+        direction === 'right'
+          ? index
+          : direction === 'left'
+            ? values.length - 1 - index
+            : direction === 'down'
+              ? rowDistance
+              : rows.length - 1 - rowDistance
       return { head, tail: nextSnakeCell(cats, head, opposite), edgeDistance }
     })
     .filter(({ head, tail }) => tail && tail.rescueOrder !== head.rescueOrder)
-  const nearestEdgeDistance = candidates.reduce((nearest, candidate) => Math.min(nearest, candidate.edgeDistance), Number.POSITIVE_INFINITY)
+  const nearestEdgeDistance = candidates.reduce(
+    (nearest, candidate) => Math.min(nearest, candidate.edgeDistance),
+    Number.POSITIVE_INFINITY,
+  )
   const entryCandidates = candidates.filter(({ edgeDistance }) => edgeDistance === nearestEdgeDistance)
-  const head = (entryCandidates[Math.floor(random() * entryCandidates.length)]?.head
-    ?? cats[Math.floor(random() * cats.length)])
+  const head =
+    entryCandidates[Math.floor(random() * entryCandidates.length)]?.head ?? cats[Math.floor(random() * cats.length)]
   if (!head) return undefined
   const tail = nextSnakeCell(cats, head, turnedDirection(direction, 2)) ?? head
   return { body: [head, tail].slice(0, Math.min(2, cats.length)), direction }
@@ -283,9 +303,12 @@ function nextSnakeDirectionInterval(random: () => number) {
 export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnimationOptions) {
   const [activeOrders, setActiveOrders] = useState<ReadonlyMap<number, number>>(() => new Map())
   const [heldOrders, setHeldOrders] = useState<ReadonlySet<number>>(() => new Set())
-  const [pageVisible, setPageVisible] = useState(() => typeof document === 'undefined' || document.visibilityState === 'visible')
-  const [motionAllowed, setMotionAllowed] = useState(() => typeof window === 'undefined'
-    || !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === 'undefined' || document.visibilityState === 'visible',
+  )
+  const [motionAllowed, setMotionAllowed] = useState(
+    () => typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
   const timerRef = useRef<number | null>(null)
   const hopTimersRef = useRef(new Map<number, number>())
   const batchTimersRef = useRef(new Set<number>())
@@ -332,15 +355,18 @@ export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnim
       })
       const previousTimer = hopTimersRef.current.get(rescueOrder)
       if (previousTimer !== undefined) window.clearTimeout(previousTimer)
-      hopTimersRef.current.set(rescueOrder, window.setTimeout(() => {
-        hopTimersRef.current.delete(rescueOrder)
-        setActiveOrders((current) => {
-          if (current.get(rescueOrder) !== pulse) return current
-          const next = new Map(current)
-          next.delete(rescueOrder)
-          return next
-        })
-      }, IDLE_HOP_DURATION_MS))
+      hopTimersRef.current.set(
+        rescueOrder,
+        window.setTimeout(() => {
+          hopTimersRef.current.delete(rescueOrder)
+          setActiveOrders((current) => {
+            if (current.get(rescueOrder) !== pulse) return current
+            const next = new Map(current)
+            next.delete(rescueOrder)
+            return next
+          })
+        }, IDLE_HOP_DURATION_MS),
+      )
     }
     const triggerBatch = (orders: number[], stagger: number) => {
       const uniqueOrders = [...new Set(orders)]
@@ -383,7 +409,10 @@ export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnim
         if (cats.length > 1 && nextIndex === lastIndex) nextIndex = (nextIndex + 1) % cats.length
         lastIndex = nextIndex
         trigger(cats[nextIndex]?.rescueOrder ?? cats[0].rescueOrder)
-        timerRef.current = window.setTimeout(scheduleRandom, timing.randomBase + Math.floor(random() * timing.randomJitter))
+        timerRef.current = window.setTimeout(
+          scheduleRandom,
+          timing.randomBase + Math.floor(random() * timing.randomJitter),
+        )
       }
       scheduleRandom()
     } else if (pattern === 'popcorn') {
@@ -392,8 +421,14 @@ export function useIdleAnimation({ cats, pattern, speed, isScrolling }: IdleAnim
         if (cancelled) return
         const result = popcornCluster(cats, random, previousClusterKey)
         previousClusterKey = result.key
-        triggerBatch(result.cluster.map((cat) => cat.rescueOrder), 0)
-        timerRef.current = window.setTimeout(schedulePopcorn, timing.popcornBase + Math.floor(random() * timing.popcornJitter))
+        triggerBatch(
+          result.cluster.map((cat) => cat.rescueOrder),
+          0,
+        )
+        timerRef.current = window.setTimeout(
+          schedulePopcorn,
+          timing.popcornBase + Math.floor(random() * timing.popcornJitter),
+        )
       }
       schedulePopcorn()
     } else if (pattern === 'snake-game') {

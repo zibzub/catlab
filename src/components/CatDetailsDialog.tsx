@@ -27,7 +27,7 @@ const PREVIEW_SCALE = 8
 const TRAIT_FIELDS: Array<{ label: string; value: (cat: CatRecord) => string; className?: string }> = [
   { label: 'Cat ID', value: (cat) => cat.catId, className: 'cat-details-cat-id' },
   { label: 'Hue', value: formatMoonCatHue },
-  { label: 'Coat', value: (cat) => cat.pale ? 'pale' : 'normal' },
+  { label: 'Coat', value: (cat) => (cat.pale ? 'pale' : 'normal') },
   { label: 'Facing', value: (cat) => cat.facing },
   { label: 'Expression', value: (cat) => cat.expression },
   { label: 'Pose', value: (cat) => cat.pose },
@@ -100,9 +100,9 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
     : ''
   const links = cat
     ? {
-      chainStation: `https://mooncatrescue.com/mooncats/${cat.rescueOrder}`,
-      openSea: `https://opensea.io/item/ethereum/0xc3f733ca98e0dad0386979eb96fb1722a1a05e69/${cat.rescueOrder}`,
-    }
+        chainStation: `https://mooncatrescue.com/mooncats/${cat.rescueOrder}`,
+        openSea: `https://opensea.io/item/ethereum/0xc3f733ca98e0dad0386979eb96fb1722a1a05e69/${cat.rescueOrder}`,
+      }
     : null
   const previewStyle = useMemo<CSSProperties>(() => {
     if (!atlasCell || !cat) return {}
@@ -123,9 +123,7 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
       else classificationFooterRef.current?.style.removeProperty('font-size')
     }
     const frameId = window.requestAnimationFrame(fitCardText)
-    const observer = typeof ResizeObserver === 'function' && cardRef.current
-      ? new ResizeObserver(fitCardText)
-      : null
+    const observer = typeof ResizeObserver === 'function' && cardRef.current ? new ResizeObserver(fitCardText) : null
     if (observer && cardRef.current) observer.observe(cardRef.current)
     document.fonts?.ready?.then(fitCardText)
     return () => {
@@ -167,10 +165,8 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
     setExportBusy(true)
     setExportStatus('Rendering PNG…')
     try {
-      const loadedClassifications = classifications ?? await loadMoonCatClassifications().catch(() => null)
-      const footer = formatMoonCatClassificationFooter(
-        getMoonCatClassificationLabels(cat, loadedClassifications),
-      )
+      const loadedClassifications = classifications ?? (await loadMoonCatClassifications().catch(() => null))
+      const footer = formatMoonCatClassificationFooter(getMoonCatClassificationLabels(cat, loadedClassifications))
       await downloadDetailCardPng({
         cat,
         manifest,
@@ -212,14 +208,11 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
           data-genesis={coat.genesis ?? undefined}
           style={cardStyle}
         >
-          <img
-            className="cat-details-template"
-            src={assetPath('img/template_full.png')}
-            alt=""
-            aria-hidden="true"
-          />
+          <img className="cat-details-template" src={assetPath('img/template_full.png')} alt="" aria-hidden="true" />
           <header className="cat-details-title-line">
-            <h2 ref={titleRef} id="cat-details-title">{title}</h2>
+            <h2 ref={titleRef} id="cat-details-title">
+              {title}
+            </h2>
             <button
               ref={closeRef}
               className="cat-details-close"
@@ -266,7 +259,11 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
               ))}
             </dl>
           </section>
-          <div ref={classificationFooterRef} className="cat-details-classification-footer" hidden={!classificationFooter}>
+          <div
+            ref={classificationFooterRef}
+            className="cat-details-classification-footer"
+            hidden={!classificationFooter}
+          >
             {classificationFooter}
           </div>
           <footer className="cat-details-footer">
@@ -324,7 +321,11 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
                 <span>Save Card</span>
                 <span className="cat-details-action-icon cat-details-download-icon" aria-hidden="true" />
               </button>
-              <div className={`cat-details-actions-status${exportStatus && exportStatus !== 'Card saved.' ? ' is-error' : ''}`} role="status" aria-live="polite">
+              <div
+                className={`cat-details-actions-status${exportStatus && exportStatus !== 'Card saved.' ? ' is-error' : ''}`}
+                role="status"
+                aria-live="polite"
+              >
                 {exportStatus}
               </div>
             </div>

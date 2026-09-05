@@ -51,17 +51,10 @@ export function Palette({
   return (
     <>
       {mobileOpen && (
-        <button
-          className="palette-mobile-backdrop"
-          type="button"
-          aria-label="Close Palette"
-          onClick={onMobileClose}
-        />
+        <button className="palette-mobile-backdrop" type="button" aria-label="Close Palette" onClick={onMobileClose} />
       )}
       <aside
-        className={`palette-panel palette-panel--rings-${ringStyle}${
-          mobileOpen ? ' palette-panel--mobile-open' : ''
-        }`}
+        className={`palette-panel palette-panel--rings-${ringStyle}${mobileOpen ? ' palette-panel--mobile-open' : ''}`}
         aria-labelledby="palette-title"
       >
         <div className="palette-panel__content" id="palette-drawer-content">
@@ -72,12 +65,7 @@ export function Palette({
             <span className="palette-count" aria-live="polite">
               {cats.length}
             </span>
-            <button
-              className="palette-mobile-close"
-              type="button"
-              aria-label="Close Palette"
-              onClick={onMobileClose}
-            >
+            <button className="palette-mobile-close" type="button" aria-label="Close Palette" onClick={onMobileClose}>
               ×
             </button>
           </div>
@@ -99,7 +87,9 @@ export function Palette({
                   <p className="eyebrow">Local download</p>
                   <h3 id="palette-export-title">Export</h3>
                 </div>
-                <span className="palette-export__limit">{cats.length}/{MAX_EXPORT_CATS}</span>
+                <span className="palette-export__limit">
+                  {cats.length}/{MAX_EXPORT_CATS}
+                </span>
               </div>
               <div className="palette-export__controls">
                 <fieldset className="palette-export__group">
@@ -166,9 +156,7 @@ export function Palette({
                 </p>
               ) : (
                 <p className="palette-export__message">
-                  {cats.length === 1
-                    ? 'One image will download.'
-                    : `${cats.length} images will download as one ZIP.`}
+                  {cats.length === 1 ? 'One image will download.' : `${cats.length} images will download as one ZIP.`}
                 </p>
               )}
               <button

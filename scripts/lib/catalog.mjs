@@ -158,20 +158,13 @@ export function validateTraits(input) {
 }
 
 function sortedDictionary(records, field) {
-  return [...new Set(records.map((record) => record[field]))].sort((a, b) =>
-    a.localeCompare(b),
-  )
+  return [...new Set(records.map((record) => record[field]))].sort((a, b) => a.localeCompare(b))
 }
 
 export function encodeIndex(records) {
-  const dictionaries = Object.fromEntries(
-    DICTIONARY_FIELDS.map((field) => [field, sortedDictionary(records, field)]),
-  )
+  const dictionaries = Object.fromEntries(DICTIONARY_FIELDS.map((field) => [field, sortedDictionary(records, field)]))
   const dictionaryIndexes = Object.fromEntries(
-    DICTIONARY_FIELDS.map((field) => [
-      field,
-      new Map(dictionaries[field].map((value, index) => [value, index])),
-    ]),
+    DICTIONARY_FIELDS.map((field) => [field, new Map(dictionaries[field].map((value, index) => [value, index]))]),
   )
 
   const cats = records.map((record, index) => {

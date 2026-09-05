@@ -1,11 +1,5 @@
 import { isIdlePattern, isIdleSpeed } from './idleAnimation'
-import type {
-  GridSize,
-  GridViewMode,
-  IdlePattern,
-  IdleSpeed,
-  RingStyle,
-} from './types'
+import type { GridSize, GridViewMode, IdlePattern, IdleSpeed, RingStyle } from './types'
 
 export const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
 
@@ -37,18 +31,23 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
     const values = parsed as Record<string, unknown>
     const migratedIdlePattern = values.idlePattern === 'snake' ? 'worm' : values.idlePattern
-    const ringStyle = values.ringStyle === 'off' || values.ringStyle === 'ac' || values.ringStyle === 'outline'
-      ? values.ringStyle
-      : typeof values.showRings === 'boolean'
-        ? values.showRings ? 'outline' : 'off'
-        : undefined
+    const ringStyle =
+      values.ringStyle === 'off' || values.ringStyle === 'ac' || values.ringStyle === 'outline'
+        ? values.ringStyle
+        : typeof values.showRings === 'boolean'
+          ? values.showRings
+            ? 'outline'
+            : 'off'
+          : undefined
     return {
-      viewMode: values.viewMode === 'compact' || values.viewMode === 'detailed' || values.viewMode === 'list'
-        ? values.viewMode
-        : undefined,
-      gridSize: values.gridSize === 'small' || values.gridSize === 'medium' || values.gridSize === 'large'
-        ? values.gridSize
-        : undefined,
+      viewMode:
+        values.viewMode === 'compact' || values.viewMode === 'detailed' || values.viewMode === 'list'
+          ? values.viewMode
+          : undefined,
+      gridSize:
+        values.gridSize === 'small' || values.gridSize === 'medium' || values.gridSize === 'large'
+          ? values.gridSize
+          : undefined,
       ringStyle,
       showStars: typeof values.showStars === 'boolean' ? values.showStars : undefined,
       showVignette: typeof values.showVignette === 'boolean' ? values.showVignette : undefined,

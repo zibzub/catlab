@@ -66,13 +66,11 @@ export async function loadGeneratedData() {
     fetch(assetPath('data/atlas-manifest.json')),
   ])
   if (!indexResponse.ok || !manifestResponse.ok) {
-    throw new Error(
-      'Generated CatLab data is missing. Run npm run generate before starting the app.',
-    )
+    throw new Error('Generated CatLab data is missing. Run npm run generate before starting the app.')
   }
-  const [index, manifest] = (await Promise.all([
-    indexResponse.json(),
-    manifestResponse.json(),
-  ])) as [EncodedIndex, AtlasManifest]
+  const [index, manifest] = (await Promise.all([indexResponse.json(), manifestResponse.json()])) as [
+    EncodedIndex,
+    AtlasManifest,
+  ]
   return { cats: decodeCatalog(index), manifest }
 }

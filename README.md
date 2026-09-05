@@ -119,16 +119,16 @@ also use the optional native screen picker.
 
 These shortcuts apply when a layer is selected and focus is not in a form field.
 
-| Key | Action | Context |
-| --- | --- | --- |
-| `Delete` or `Backspace` | Remove the selected layer | Selected layer, not text editing |
-| `←` `→` `↑` `↓` | Move the selected layer by a small step | Selected layer |
-| `Shift` + arrow key | Move the selected layer by a larger step | Selected layer |
-| `Ctrl/Cmd` + `D` | Duplicate the selected layer | Selected layer, not text editing |
-| `Escape` | Cancel active eyedropper sampling | While sampling |
-| `Escape` | Finish inline text editing | While editing text on the canvas |
-| `Enter` | Confirm a Save or Export dialog | While a filename dialog is open |
-| `Escape` | Cancel an open Save, Open-confirmation, or Export dialog | While a dialog is open |
+| Key                     | Action                                                   | Context                          |
+| ----------------------- | -------------------------------------------------------- | -------------------------------- |
+| `Delete` or `Backspace` | Remove the selected layer                                | Selected layer, not text editing |
+| `←` `→` `↑` `↓`         | Move the selected layer by a small step                  | Selected layer                   |
+| `Shift` + arrow key     | Move the selected layer by a larger step                 | Selected layer                   |
+| `Ctrl/Cmd` + `D`        | Duplicate the selected layer                             | Selected layer, not text editing |
+| `Escape`                | Cancel active eyedropper sampling                        | While sampling                   |
+| `Escape`                | Finish inline text editing                               | While editing text on the canvas |
+| `Enter`                 | Confirm a Save or Export dialog                          | While a filename dialog is open  |
+| `Escape`                | Cancel an open Save, Open-confirmation, or Export dialog | While a dialog is open           |
 
 ## Save, Open, and Export
 
@@ -217,19 +217,19 @@ sibling repository after generation.
 
 ### Commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the Vite development server. |
-| `npm run generate -- --traits <path>` | Validate traits and generate the local catalog/index and atlases. |
-| `npm run generate:classifications -- --source <path>` | Generate the compact classification artifact from CatMoon filter data. |
-| `npm run validate:classifications` | Validate the classification artifact. |
-| `npm run validate:generated` | Validate generated catalog, atlas, classification, and live name artifacts. |
-| `npm test` | Run the fast Vitest unit and regression tests. |
-| `npm run test:browser` | Run the Playwright desktop/mobile Collection smoke tests. |
-| `npm run format:check` | Check source, configuration, and documentation formatting without changing files. |
-| `npm run format` | Format source, configuration, and documentation files with Prettier. |
-| `npm run check` | Run the TypeScript check. |
-| `npm run build` | Build the static app with Vite. |
+| Command                                               | Purpose                                                                           |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `npm run dev`                                         | Start the Vite development server.                                                |
+| `npm run generate -- --traits <path>`                 | Validate traits and generate the local catalog/index and atlases.                 |
+| `npm run generate:classifications -- --source <path>` | Generate the compact classification artifact from CatMoon filter data.            |
+| `npm run validate:classifications`                    | Validate the classification artifact.                                             |
+| `npm run validate:generated`                          | Validate generated catalog, atlas, classification, and live name artifacts.       |
+| `npm test`                                            | Run the fast Vitest unit and regression tests.                                    |
+| `npm run test:browser`                                | Run the Playwright desktop/mobile Collection smoke tests.                         |
+| `npm run format:check`                                | Check source, configuration, and documentation formatting without changing files. |
+| `npm run format`                                      | Format source, configuration, and documentation files with Prettier.              |
+| `npm run check`                                       | Run the TypeScript check.                                                         |
+| `npm run build`                                       | Build the static app with Vite.                                                   |
 
 The browser smoke tests require the Playwright Chromium binary. After
 `npm install`, install it once with `npx playwright install chromium`.

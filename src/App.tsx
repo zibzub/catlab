@@ -81,9 +81,13 @@ function AppHeader({
       </div>
       <div className="app-header__global-actions">
         {view === 'compose' ? (
-          <button className="header-tool" type="button" onClick={onCollection}>Collection</button>
+          <button className="header-tool" type="button" onClick={onCollection}>
+            Collection
+          </button>
         ) : (
-          <button className="header-tool" type="button" onClick={onCompose}>Compose</button>
+          <button className="header-tool" type="button" onClick={onCompose}>
+            Compose
+          </button>
         )}
         {view === 'compose' ? (
           <div className="header-selection header-selection--static">
@@ -154,15 +158,18 @@ export default function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(COLLECTION_DISPLAY_PREFS_KEY, serializeCollectionDisplayPreferences({
-        viewMode,
-        gridSize,
-        ringStyle,
-        showStars,
-        showVignette,
-        idlePattern,
-        idleSpeed,
-      }))
+      window.localStorage.setItem(
+        COLLECTION_DISPLAY_PREFS_KEY,
+        serializeCollectionDisplayPreferences({
+          viewMode,
+          gridSize,
+          ringStyle,
+          showStars,
+          showVignette,
+          idlePattern,
+          idleSpeed,
+        }),
+      )
     } catch {
       // Persistence is optional; keep the app usable when storage is unavailable.
     }
@@ -174,10 +181,12 @@ export default function App() {
       .then(([{ cats: loadedCats, manifest: loadedManifest }, loadedNames]) => {
         if (!active) return
         setNames(loadedNames)
-        setCats(loadedCats.map((cat) => ({
-          ...cat,
-          nameTimestamp: loadedNames[String(cat.rescueOrder)]?.timestamp ?? null,
-        })))
+        setCats(
+          loadedCats.map((cat) => ({
+            ...cat,
+            nameTimestamp: loadedNames[String(cat.rescueOrder)]?.timestamp ?? null,
+          })),
+        )
         setManifest(loadedManifest)
       })
       .catch((loadError: unknown) => {
@@ -207,25 +216,22 @@ export default function App() {
     () => buildFilterIndex(cats ?? [], names, classifications),
     [cats, classifications, names],
   )
-  const colorLabMatch = useMemo(
-    () => colorLabSample ? getMoonCatColorMatch(colorLabSample) : null,
-    [colorLabSample],
-  )
+  const colorLabMatch = useMemo(() => (colorLabSample ? getMoonCatColorMatch(colorLabSample) : null), [colorLabSample])
   const colorLabMatchingOrders = useMemo(() => {
     if (!colorLabMatch) return null
     return new Set(
-      findMoonCatsByExactHue(cats ?? [], colorLabMatch.hueInt, colorLabMatch.pale)
-        .map((cat) => cat.rescueOrder),
+      findMoonCatsByExactHue(cats ?? [], colorLabMatch.hueInt, colorLabMatch.pale).map((cat) => cat.rescueOrder),
     )
   }, [cats, colorLabMatch])
   const filteredCats = useMemo(
-    () => deriveMoonCatIndexResult({
-      cats: cats ?? [],
-      filterIndex,
-      filters,
-      colorMatchingOrders: colorLabMatchingOrders,
-      ownedOrders: walletFilter?.ids ?? null,
-    }),
+    () =>
+      deriveMoonCatIndexResult({
+        cats: cats ?? [],
+        filterIndex,
+        filters,
+        colorMatchingOrders: colorLabMatchingOrders,
+        ownedOrders: walletFilter?.ids ?? null,
+      }),
     [cats, colorLabMatchingOrders, filterIndex, filters, walletFilter],
   )
   const selectedCats = useMemo(
@@ -272,10 +278,13 @@ export default function App() {
     setCollectionScrollAnchor({ rescueOrder: anchorRescueOrder, token: collectionScrollAnchorTokenRef.current })
   }, [])
 
-  const changeViewMode = useCallback((mode: GridViewMode) => {
-    captureCollectionAnchor()
-    setViewMode(mode)
-  }, [captureCollectionAnchor])
+  const changeViewMode = useCallback(
+    (mode: GridViewMode) => {
+      captureCollectionAnchor()
+      setViewMode(mode)
+    },
+    [captureCollectionAnchor],
+  )
 
   const beginWalletLookup = useCallback(() => {
     const sequence = walletLookupSequenceRef.current + 1
@@ -285,19 +294,15 @@ export default function App() {
     return sequence
   }, [])
 
-  const performWalletLookup = useCallback(async (
-    input: string,
-    sequence: number,
-    source: WalletFilter['source'],
-  ) => {
+  const performWalletLookup = useCallback(async (input: string, sequence: number, source: WalletFilter['source']) => {
     try {
       const result = await lookupWalletCats(input)
       if (walletLookupSequenceRef.current !== sequence) return
       rememberWalletLookup(result)
       setWalletFilter({ ...result, source })
-      setWalletInput(source === 'connected'
-        ? result.resolvedName || result.address.toLowerCase() || result.input
-        : result.input)
+      setWalletInput(
+        source === 'connected' ? result.resolvedName || result.address.toLowerCase() || result.input : result.input,
+      )
       setWalletUrl(walletLookupUrlValue(result, source))
       return result
     } catch (lookupError: unknown) {
@@ -308,10 +313,13 @@ export default function App() {
     }
   }, [])
 
-  const lookupWallet = useCallback((input: string) => {
-    const sequence = beginWalletLookup()
-    return performWalletLookup(input, sequence, 'manual')
-  }, [beginWalletLookup, performWalletLookup])
+  const lookupWallet = useCallback(
+    (input: string) => {
+      const sequence = beginWalletLookup()
+      return performWalletLookup(input, sequence, 'manual')
+    },
+    [beginWalletLookup, performWalletLookup],
+  )
 
   const lookupConnectedWallet = useCallback(async () => {
     const sequence = beginWalletLookup()
@@ -389,11 +397,14 @@ export default function App() {
 
   const clearSelection = useCallback(() => setSelectedOrders(new Set()), [])
 
-  const chooseGridSize = useCallback((size: GridSize) => {
-    captureCollectionAnchor()
-    setGridSize(size)
-    setViewMode('compact')
-  }, [captureCollectionAnchor])
+  const chooseGridSize = useCallback(
+    (size: GridSize) => {
+      captureCollectionAnchor()
+      setGridSize(size)
+      setViewMode('compact')
+    },
+    [captureCollectionAnchor],
+  )
 
   const inspectCat = useCallback((cat: CatRecord, trigger: HTMLButtonElement) => {
     inspectTriggerRef.current = trigger
@@ -420,10 +431,7 @@ export default function App() {
     return (
       <div className="app-shell app-shell--state">
         <AppHeader catalogCount={0} selectedCount={0} view="collection" />
-        <LoadingState
-          message={error ?? 'Loading the local MoonCat index…'}
-          error={Boolean(error)}
-        />
+        <LoadingState message={error ?? 'Loading the local MoonCat index…'} error={Boolean(error)} />
       </div>
     )
   }
@@ -520,7 +528,9 @@ export default function App() {
               cats={filteredCats}
               manifest={manifest}
               names={names}
-              namedOrder={filters.naming === 'recentlyNamed' ? 'recent' : filters.naming === 'firstNamed' ? 'first' : null}
+              namedOrder={
+                filters.naming === 'recentlyNamed' ? 'recent' : filters.naming === 'firstNamed' ? 'first' : null
+              }
               scrollAnchor={collectionScrollAnchor}
               artMode={artMode}
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
@@ -567,11 +577,7 @@ export default function App() {
           }}
         />
       </main>
-      <CatDetailsDialog
-        cat={inspectedCat}
-        manifest={manifest}
-        onClose={closeInspectedCat}
-      />
+      <CatDetailsDialog cat={inspectedCat} manifest={manifest} onClose={closeInspectedCat} />
     </div>
   )
 }

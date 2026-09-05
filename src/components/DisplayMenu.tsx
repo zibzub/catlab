@@ -107,7 +107,9 @@ export function DisplayMenu({
                     title={artMode === 'faces' ? 'Ring styles are available for Full only' : undefined}
                     onClick={() => onRingStyleChange(style)}
                   >
-                    <span className="rings-toggle__icon" aria-hidden="true">{style === 'off' ? '×' : style === 'ac' ? '◉' : '◌'}</span>
+                    <span className="rings-toggle__icon" aria-hidden="true">
+                      {style === 'off' ? '×' : style === 'ac' ? '◉' : '◌'}
+                    </span>
                     {style === 'off' ? 'Off' : style === 'ac' ? 'AC' : 'Outline'}
                   </button>
                 ))}
@@ -149,7 +151,9 @@ export function DisplayMenu({
                 aria-pressed={showStars}
                 onClick={() => onStarsChange(!showStars)}
               >
-                <span className="rings-toggle__icon" aria-hidden="true">✦</span>
+                <span className="rings-toggle__icon" aria-hidden="true">
+                  ✦
+                </span>
                 Stars
               </button>
               <button
@@ -158,7 +162,9 @@ export function DisplayMenu({
                 aria-pressed={showVignette}
                 onClick={() => onVignetteChange(!showVignette)}
               >
-                <span className="rings-toggle__icon" aria-hidden="true">◌</span>
+                <span className="rings-toggle__icon" aria-hidden="true">
+                  ◌
+                </span>
                 Vignette
               </button>
             </div>

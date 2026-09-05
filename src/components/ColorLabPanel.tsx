@@ -69,27 +69,30 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
   const [imageReady, setImageReady] = useState(false)
   const [status, setStatus] = useState('Loading a sample image…')
 
-  const loadImageSource = useCallback(async (src: string, slot: ColorLabImageSlot) => {
-    const sequence = loadSequenceRef.current + 1
-    loadSequenceRef.current = sequence
-    setActiveImageSlot(slot)
-    setImageReady(false)
-    onSampleChange(null)
-    setStatus('Loading image…')
+  const loadImageSource = useCallback(
+    async (src: string, slot: ColorLabImageSlot) => {
+      const sequence = loadSequenceRef.current + 1
+      loadSequenceRef.current = sequence
+      setActiveImageSlot(slot)
+      setImageReady(false)
+      onSampleChange(null)
+      setStatus('Loading image…')
 
-    try {
-      const image = await loadColorLabImage(src)
-      if (sequence !== loadSequenceRef.current) return
-      const canvas = canvasRef.current
-      if (!canvas) throw new Error('The ColorLab canvas is unavailable.')
-      drawColorLabImage(canvas, image, MAX_COLORLAB_CANVAS_SIZE)
-      setImageReady(true)
-      setStatus('Click or tap the image to sample a color.')
-    } catch {
-      if (sequence !== loadSequenceRef.current) return
-      setStatus('That image could not be loaded. Choose another image.')
-    }
-  }, [onSampleChange])
+      try {
+        const image = await loadColorLabImage(src)
+        if (sequence !== loadSequenceRef.current) return
+        const canvas = canvasRef.current
+        if (!canvas) throw new Error('The ColorLab canvas is unavailable.')
+        drawColorLabImage(canvas, image, MAX_COLORLAB_CANVAS_SIZE)
+        setImageReady(true)
+        setStatus('Click or tap the image to sample a color.')
+      } catch {
+        if (sequence !== loadSequenceRef.current) return
+        setStatus('That image could not be loaded. Choose another image.')
+      }
+    },
+    [onSampleChange],
+  )
 
   useEffect(() => {
     void loadImageSource(COLORLAB_DEFAULTS[0].src, COLORLAB_DEFAULTS[0].slot)
@@ -98,9 +101,12 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
     }
   }, [loadImageSource])
 
-  useEffect(() => () => {
-    if (customImageUrlRef.current) URL.revokeObjectURL(customImageUrlRef.current)
-  }, [])
+  useEffect(
+    () => () => {
+      if (customImageUrlRef.current) URL.revokeObjectURL(customImageUrlRef.current)
+    },
+    [],
+  )
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -152,9 +158,7 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
     }
 
     const clickedSample = createColorLabSample(samplePixel(ctx, x, y))
-    let selectedSample: ColorLabSample | null = isUsableColorLabSample(clickedSample)
-      ? clickedSample
-      : null
+    let selectedSample: ColorLabSample | null = isUsableColorLabSample(clickedSample) ? clickedSample : null
 
     if (!selectedSample) {
       selectedSample = findValidNearbySample(ctx, canvas.width, canvas.height, x, y)
@@ -190,18 +194,15 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
   const hueLabel = sample ? getClosestMoonCatCoatHueLabel(sample.detection, sample.hue) : null
 
   return (
-    <section
-      className="colorlab-panel"
-      id="colorlab-panel"
-      aria-labelledby="colorlab-panel-title"
-      hidden={!open}
-    >
+    <section className="colorlab-panel" id="colorlab-panel" aria-labelledby="colorlab-panel-title" hidden={!open}>
       <div className="colorlab-panel__header">
         <div className="colorlab-panel__header-copy">
           <h2 id="colorlab-panel-title">ColorLab</h2>
           <p>
             Sample colors from an image
-            <span className="colorlab-panel__mobile-status" role="status">{status}</span>
+            <span className="colorlab-panel__mobile-status" role="status">
+              {status}
+            </span>
           </p>
         </div>
         <div className="colorlab-panel__header-meta">
@@ -212,7 +213,11 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
                 <span>{detectionLabel(sample)}</span>
                 <span>{matchingCount.toLocaleString()} matches</span>
               </span>
-              <span className="colorlab-panel__mobile-swatch" style={{ backgroundColor: sample.hex }} aria-hidden="true" />
+              <span
+                className="colorlab-panel__mobile-swatch"
+                style={{ backgroundColor: sample.hex }}
+                aria-hidden="true"
+              />
             </div>
           )}
           <div className="colorlab-panel__signal" aria-live="polite">
@@ -247,7 +252,13 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
                   aria-pressed={activeImageSlot === 'custom'}
                   onClick={handleCustomImageClick}
                 >
-                  {customImageUrl ? <img src={customImageUrl} alt="" /> : <span className="colorlab-source__plus" aria-hidden="true">+</span>}
+                  {customImageUrl ? (
+                    <img src={customImageUrl} alt="" />
+                  ) : (
+                    <span className="colorlab-source__plus" aria-hidden="true">
+                      +
+                    </span>
+                  )}
                   <span>{customImageUrl ? 'Uploaded' : 'Your image'}</span>
                 </button>
               </div>
@@ -255,7 +266,11 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} />
                 <span>Upload image</span>
               </label>
-              {sample && <button className="colorlab-sampler__clear" type="button" onClick={clearSample}>Clear sample</button>}
+              {sample && (
+                <button className="colorlab-sampler__clear" type="button" onClick={clearSample}>
+                  Clear sample
+                </button>
+              )}
             </div>
 
             <div className="colorlab-sampler__visual">
@@ -265,12 +280,16 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
                   className={`colorlab-canvas${imageReady ? ' is-ready' : ''}`}
                   onPointerDown={handleCanvasPointerDown}
                   onPointerUp={handleCanvasPointerUp}
-                  onPointerCancel={() => { pointerStartRef.current = null }}
+                  onPointerCancel={() => {
+                    pointerStartRef.current = null
+                  }}
                   aria-label="ColorLab image sampler"
                 />
                 {!imageReady && <div className="colorlab-canvas-placeholder">{status}</div>}
               </div>
-              <p className="colorlab-sampler__status" role="status">{status}</p>
+              <p className="colorlab-sampler__status" role="status">
+                {status}
+              </p>
             </div>
           </div>
         </div>
@@ -282,27 +301,60 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
           {sample ? (
             <>
               <div className="colorlab-result__swatch-row">
-                <div className="colorlab-result__swatch" style={{ backgroundColor: sample.hex }} aria-label={`Sampled color ${sample.hex}`} />
+                <div
+                  className="colorlab-result__swatch"
+                  style={{ backgroundColor: sample.hex }}
+                  aria-label={`Sampled color ${sample.hex}`}
+                />
                 <div>
                   <strong>{detectionLabel(sample)}</strong>
-                  <span>{match ? `${matchingCount.toLocaleString()} Collection matches` : 'No Collection matches for this sample'}</span>
+                  <span>
+                    {match
+                      ? `${matchingCount.toLocaleString()} Collection matches`
+                      : 'No Collection matches for this sample'}
+                  </span>
                 </div>
               </div>
               <dl className="colorlab-result__details">
-                <div><dt>RGB</dt><dd>{sample.rgb.r}, {sample.rgb.g}, {sample.rgb.b}</dd></div>
-                <div><dt>Hex</dt><dd>{sample.hex}</dd></div>
-                <div><dt>Hue</dt><dd>{formatHue(sample)}</dd></div>
-                <div><dt>Filter</dt><dd>{match ? `${match.pale === true ? 'Pale' : match.pale === false ? 'Normal' : 'All'} · exact hue` : 'Not applied'}</dd></div>
+                <div>
+                  <dt>RGB</dt>
+                  <dd>
+                    {sample.rgb.r}, {sample.rgb.g}, {sample.rgb.b}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Hex</dt>
+                  <dd>{sample.hex}</dd>
+                </div>
+                <div>
+                  <dt>Hue</dt>
+                  <dd>{formatHue(sample)}</dd>
+                </div>
+                <div>
+                  <dt>Filter</dt>
+                  <dd>
+                    {match
+                      ? `${match.pale === true ? 'Pale' : match.pale === false ? 'Normal' : 'All'} · exact hue`
+                      : 'Not applied'}
+                  </dd>
+                </div>
               </dl>
             </>
           ) : (
             <div className="colorlab-result__empty">
-              <span className="colorlab-result__empty-mark" aria-hidden="true">⌖</span>
+              <span className="colorlab-result__empty-mark" aria-hidden="true">
+                ⌖
+              </span>
               <p>Sample a color to see its Collection matches.</p>
             </div>
           )}
-          <p className="colorlab-result__hint">If trying to identify a specific MoonCat in the image, avoid eyes, accessories, outlines, shadows, and highlights.</p>
-          <p className="colorlab-result__status" role="status">{status}</p>
+          <p className="colorlab-result__hint">
+            If trying to identify a specific MoonCat in the image, avoid eyes, accessories, outlines, shadows, and
+            highlights.
+          </p>
+          <p className="colorlab-result__status" role="status">
+            {status}
+          </p>
         </aside>
       </div>
       <span className="sr-only">Minimum sample alpha is {MIN_SAMPLE_ALPHA}.</span>

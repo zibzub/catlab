@@ -17,11 +17,12 @@ export function deriveMoonCatIndexResult({
   colorMatchingOrders,
   ownedOrders,
 }: MoonCatIndexResultOptions): CatRecord[] {
-  const matchingCats = cats.filter((cat) => (
-    matchesFilters(cat, filters, filterIndex)
-    && (colorMatchingOrders === null || colorMatchingOrders.has(cat.rescueOrder))
-    && (ownedOrders === null || ownedOrders.has(cat.rescueOrder))
-  ))
+  const matchingCats = cats.filter(
+    (cat) =>
+      matchesFilters(cat, filters, filterIndex) &&
+      (colorMatchingOrders === null || colorMatchingOrders.has(cat.rescueOrder)) &&
+      (ownedOrders === null || ownedOrders.has(cat.rescueOrder)),
+  )
   if (filters.naming === 'recentlyNamed') return [...matchingCats].sort(compareRecentlyNamed)
   if (filters.naming === 'firstNamed') return [...matchingCats].sort(compareFirstNamed)
   return matchingCats

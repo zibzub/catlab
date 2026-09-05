@@ -120,7 +120,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function numberField(value: unknown, label: string, min: number, max: number, integer = false): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max || (integer && !Number.isInteger(value))) {
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value < min ||
+    value > max ||
+    (integer && !Number.isInteger(value))
+  ) {
     throw new Error(`Invalid ${label}.`)
   }
   return value
@@ -153,8 +159,12 @@ function colorField(value: unknown, label: string): string {
   return normalized
 }
 
-function transformFields(value: Record<string, unknown>, version: number): ComposeDocumentTransformV1 | ComposeDocumentTransformV2 {
-  if (typeof value.flipX !== 'boolean' || typeof value.flipY !== 'boolean') throw new Error('Invalid object flip state.')
+function transformFields(
+  value: Record<string, unknown>,
+  version: number,
+): ComposeDocumentTransformV1 | ComposeDocumentTransformV2 {
+  if (typeof value.flipX !== 'boolean' || typeof value.flipY !== 'boolean')
+    throw new Error('Invalid object flip state.')
   const transform = {
     x: numberField(value.x, 'object x position', 0, 1),
     y: numberField(value.y, 'object y position', 0, 1),
@@ -166,13 +176,18 @@ function transformFields(value: Record<string, unknown>, version: number): Compo
     z: numberField(value.z, 'object layer order', -1, 1_000_000, true),
   }
   if (version === COMPOSE_DOCUMENT_VERSION) {
-    if (typeof value.locked !== 'boolean' || typeof value.visible !== 'boolean') throw new Error('Invalid object visibility or lock state.')
+    if (typeof value.locked !== 'boolean' || typeof value.visible !== 'boolean')
+      throw new Error('Invalid object visibility or lock state.')
     return { ...transform, locked: value.locked, visible: value.visible }
   }
   return transform
 }
 
-function parseObject(value: unknown, index: number, version: number): ComposeDocumentObjectV1 | ComposeDocumentObjectV2 {
+function parseObject(
+  value: unknown,
+  index: number,
+  version: number,
+): ComposeDocumentObjectV1 | ComposeDocumentObjectV2 {
   if (!isRecord(value)) throw new Error(`Invalid object ${index + 1}.`)
   const transform = transformFields(value, version)
   const kind = value.kind
@@ -246,16 +261,18 @@ function parseBackground(value: unknown): ComposeDocumentBackground | null {
 }
 
 function runtimeId(kind: ComposePlacedObject['kind'], index: number): string {
-  const randomId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2)
+  const randomId =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2)
   return `compose-${kind}-${index}-${randomId}`
 }
 
 function restoreObject(value: ComposeDocumentObject, index: number): ComposePlacedObject {
-  const state = 'locked' in value && 'visible' in value
-    ? { locked: value.locked, visible: value.visible }
-    : defaultComposeObjectState()
+  const state =
+    'locked' in value && 'visible' in value
+      ? { locked: value.locked, visible: value.visible }
+      : defaultComposeObjectState()
   const transform = {
     id: runtimeId(value.kind, index),
     x: value.x,
@@ -269,8 +286,10 @@ function restoreObject(value: ComposeDocumentObject, index: number): ComposePlac
     ...state,
   }
 
-  if (value.kind === 'cat') return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
-  if (value.kind === 'rect') return { ...transform, kind: value.kind, width: value.width, height: value.height, fill: value.fill }
+  if (value.kind === 'cat')
+    return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
+  if (value.kind === 'rect')
+    return { ...transform, kind: value.kind, width: value.width, height: value.height, fill: value.fill }
   return {
     ...transform,
     kind: value.kind,
@@ -296,11 +315,12 @@ export function parseComposeDocument(value: unknown): LoadedComposeDocument {
 
   const documentObjects = value.objects.map((object, index) => parseObject(object, index, version))
   return {
-    background: background?.kind === 'embedded'
-      ? { url: background.dataUrl, width: background.width, height: background.height, name: background.name }
-      : background
-        ? { url: background.url, width: background.width, height: background.height, name: background.name }
-        : null,
+    background:
+      background?.kind === 'embedded'
+        ? { url: background.dataUrl, width: background.width, height: background.height, name: background.name }
+        : background
+          ? { url: background.url, width: background.width, height: background.height, name: background.name }
+          : null,
     placedObjects: documentObjects.map(restoreObject),
   }
 }
@@ -355,8 +375,10 @@ function serializeObject(value: ComposePlacedObject): ComposeDocumentObjectV2 {
     visible: value.visible,
   }
 
-  if (value.kind === 'cat') return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
-  if (value.kind === 'rect') return { ...transform, kind: value.kind, width: value.width, height: value.height, fill: value.fill }
+  if (value.kind === 'cat')
+    return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
+  if (value.kind === 'rect')
+    return { ...transform, kind: value.kind, width: value.width, height: value.height, fill: value.fill }
   return {
     ...transform,
     kind: value.kind,

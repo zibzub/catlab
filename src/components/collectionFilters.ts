@@ -57,11 +57,7 @@ export function activeFilterCount(filters: FilterState) {
   )
 }
 
-export function removeFilterValue(
-  filters: FilterState,
-  key: RemovableFilterKey,
-  value: string | number,
-) {
+export function removeFilterValue(filters: FilterState, key: RemovableFilterKey, value: string | number) {
   const next = cloneFilterState(filters)
   switch (key) {
     case 'classifications':
@@ -114,32 +110,38 @@ export function getActiveFilterChips(filters: FilterState): ActiveFilterChip[] {
   filters.rescueYears.forEach((value) => chips.push({ key: 'rescueYears', value, label: `Year ${value}` }))
   filters.hueNames.forEach((value) => chips.push({ key: 'hueNames', value, label: `Hue ${titleCase(value)}` }))
   if (filters.hueValueMin !== null || filters.hueValueMax !== null) {
-    const range = filters.hueValueMin !== null && filters.hueValueMax !== null
-      ? `${filters.hueValueMin}–${filters.hueValueMax}`
-      : filters.hueValueMin !== null
-        ? `≥${filters.hueValueMin}`
-        : `≤${filters.hueValueMax}`
+    const range =
+      filters.hueValueMin !== null && filters.hueValueMax !== null
+        ? `${filters.hueValueMin}–${filters.hueValueMax}`
+        : filters.hueValueMin !== null
+          ? `≥${filters.hueValueMin}`
+          : `≤${filters.hueValueMax}`
     chips.push({ key: 'hueValue', value: 'range', label: `Hue value ${range}` })
   }
-  filters.pale !== 'all' && chips.push({
-    key: 'pale',
-    value: filters.pale,
-    label: filters.pale === 'pale' ? 'Pale' : 'Normal',
-  })
+  filters.pale !== 'all' &&
+    chips.push({
+      key: 'pale',
+      value: filters.pale,
+      label: filters.pale === 'pale' ? 'Pale' : 'Normal',
+    })
   filters.patterns.forEach((value) => chips.push({ key: 'patterns', value, label: `Pattern ${titleCase(value)}` }))
   filters.poses.forEach((value) => chips.push({ key: 'poses', value, label: `Pose ${titleCase(value)}` }))
-  filters.expressions.forEach((value) => chips.push({ key: 'expressions', value, label: `Expression ${titleCase(value)}` }))
+  filters.expressions.forEach((value) =>
+    chips.push({ key: 'expressions', value, label: `Expression ${titleCase(value)}` }),
+  )
   filters.facings.forEach((value) => chips.push({ key: 'facings', value, label: `Facing ${titleCase(value)}` }))
-  filters.naming !== 'all' && chips.push({
-    key: 'naming',
-    value: filters.naming,
-    label: filters.naming === 'named'
-      ? 'Named'
-      : filters.naming === 'recentlyNamed'
-        ? 'Recently Named'
-        : filters.naming === 'firstNamed'
-          ? 'First Named'
-          : 'Unnamed',
-  })
+  filters.naming !== 'all' &&
+    chips.push({
+      key: 'naming',
+      value: filters.naming,
+      label:
+        filters.naming === 'named'
+          ? 'Named'
+          : filters.naming === 'recentlyNamed'
+            ? 'Recently Named'
+            : filters.naming === 'firstNamed'
+              ? 'First Named'
+              : 'Unnamed',
+    })
   return chips
 }

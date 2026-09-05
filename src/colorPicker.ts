@@ -10,10 +10,7 @@ interface EyeDropperWindow {
   EyeDropper?: EyeDropperConstructor
 }
 
-export type ColorPickResult =
-  | { status: 'picked'; color: string }
-  | { status: 'cancelled' }
-  | { status: 'unsupported' }
+export type ColorPickResult = { status: 'picked'; color: string } | { status: 'cancelled' } | { status: 'unsupported' }
 
 function eyeDropperConstructor() {
   if (typeof window === 'undefined') return null
@@ -28,7 +25,11 @@ export function normalizeCssHex(value: string) {
   const normalized = value.trim().toLowerCase()
   if (/^#[0-9a-f]{6}$/.test(normalized)) return normalized
   if (/^#[0-9a-f]{3}$/.test(normalized)) {
-    return `#${normalized.slice(1).split('').map((digit) => `${digit}${digit}`).join('')}`
+    return `#${normalized
+      .slice(1)
+      .split('')
+      .map((digit) => `${digit}${digit}`)
+      .join('')}`
   }
   return null
 }

@@ -20,10 +20,12 @@ describe('wallet URL and rescue-order helpers', () => {
   it('reads, updates, and clears wallet query state without disturbing other URL state', () => {
     expect(getWalletParamFromUrl('https://catlab.example/collection?wallet=%200xabc%20#cats')).toBe('0xabc')
     expect(getWalletParamFromUrl('not a URL')).toBe('')
-    expect(updateWalletUrl(' vitalik.eth ', 'https://catlab.example/collection?mode=list#cats'))
-      .toBe('/collection?mode=list&wallet=vitalik.eth#cats')
-    expect(updateWalletUrl('', 'https://catlab.example/collection?wallet=vitalik.eth&mode=list#cats'))
-      .toBe('/collection?mode=list#cats')
+    expect(updateWalletUrl(' vitalik.eth ', 'https://catlab.example/collection?mode=list#cats')).toBe(
+      '/collection?mode=list&wallet=vitalik.eth#cats',
+    )
+    expect(updateWalletUrl('', 'https://catlab.example/collection?wallet=vitalik.eth&mode=list#cats')).toBe(
+      '/collection?mode=list#cats',
+    )
   })
 
   it('normalizes valid ownership ids and rejects an invalid ids payload', () => {
@@ -34,9 +36,13 @@ describe('wallet URL and rescue-order helpers', () => {
   it('canonicalizes URL values and display labels for addresses and ENS lookups', () => {
     const result = { input: ADDRESS, address: ADDRESS, resolvedName: '', label: '', ids: new Set<number>() }
     expect(walletLookupUrlValue(result, 'manual')).toBe(ADDRESS.toLowerCase())
-    expect(walletLookupUrlValue({ ...result, input: 'vitalik.eth', resolvedName: 'Vitalik.ETH' }, 'manual')).toBe('vitalik.eth')
+    expect(walletLookupUrlValue({ ...result, input: 'vitalik.eth', resolvedName: 'Vitalik.ETH' }, 'manual')).toBe(
+      'vitalik.eth',
+    )
     expect(shortenWalletAddress(ADDRESS)).toBe('0xAbCd…ef01')
-    expect(walletHistoryDisplayLabel({ input: 'vitalik.eth', address: ADDRESS, resolvedName: 'name.eth' })).toBe('name.eth')
+    expect(walletHistoryDisplayLabel({ input: 'vitalik.eth', address: ADDRESS, resolvedName: 'name.eth' })).toBe(
+      'name.eth',
+    )
   })
 })
 
@@ -61,11 +67,16 @@ describe('wallet lookup history', () => {
 
 describe('wallet lookup response handling', () => {
   it('validates input and parses a successful API response at the network boundary', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      ids: [492, 492, -1, 25_440],
-      address: ADDRESS,
-      resolvedName: 'vitalik.eth',
-    }), { status: 200 }))
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ids: [492, 492, -1, 25_440],
+          address: ADDRESS,
+          resolvedName: 'vitalik.eth',
+        }),
+        { status: 200 },
+      ),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(lookupWalletCats(' Vitalik.ETH ')).resolves.toMatchObject({
@@ -84,7 +95,10 @@ describe('wallet lookup response handling', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ids: 'bad' }), { status: 200 })))
     await expect(lookupWalletCats('cat.eth')).rejects.toThrow('invalid ids list')
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'ENS is unavailable' }), { status: 500 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'ENS is unavailable' }), { status: 500 })),
+    )
     await expect(lookupWalletCats('cat.eth')).rejects.toThrow('ENS is unavailable')
   })
 })

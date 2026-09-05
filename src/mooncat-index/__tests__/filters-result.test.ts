@@ -4,7 +4,18 @@ import { deriveMoonCatIndexResult } from '../result'
 import type { CatRecord, FilterState } from '../../types'
 import type { MoonCatClassifications, MoonCatNames } from '../../mooncatDetails'
 
-const classificationKeys = ['week1', 'earlyRescues', 'garfield', 'cheshire', 'pinkpanther', 'alien', 'zombie', 'simba', 'golden', 'pikachu']
+const classificationKeys = [
+  'week1',
+  'earlyRescues',
+  'garfield',
+  'cheshire',
+  'pinkpanther',
+  'alien',
+  'zombie',
+  'simba',
+  'golden',
+  'pikachu',
+]
 
 function cat(overrides: Partial<CatRecord> & Pick<CatRecord, 'rescueOrder'>): CatRecord {
   const { rescueOrder, ...rest } = overrides
@@ -49,19 +60,27 @@ const classifications: MoonCatClassifications = {
   schemaVersion: 1,
   count: 25_440,
   maxId: 25_439,
-  categories: Object.fromEntries(classificationKeys.map((key) => [key, {
-    label: key,
-    group: 'test',
-    ids: key === 'garfield' ? [904] : [],
-  }])),
+  categories: Object.fromEntries(
+    classificationKeys.map((key) => [
+      key,
+      {
+        label: key,
+        group: 'test',
+        ids: key === 'garfield' ? [904] : [],
+      },
+    ]),
+  ),
 }
 
 const index = buildFilterIndex(cats, names, classifications)
 
-function result(currentFilters: Partial<FilterState> = {}, extras: {
-  colorMatchingOrders?: ReadonlySet<number> | null
-  ownedOrders?: ReadonlySet<number> | null
-} = {}) {
+function result(
+  currentFilters: Partial<FilterState> = {},
+  extras: {
+    colorMatchingOrders?: ReadonlySet<number> | null
+    ownedOrders?: ReadonlySet<number> | null
+  } = {},
+) {
   return deriveMoonCatIndexResult({
     cats,
     filterIndex: index,
@@ -107,10 +126,15 @@ describe('MoonCat index result derivation', () => {
     expect(result({}, { colorMatchingOrders: new Set([491, 492, 904]) })).toEqual([491, 492, 904])
     expect(result({}, { ownedOrders: new Set([492, 904]) })).toEqual([492, 904])
     expect(result({ classifications: ['day2'] }, { ownedOrders: new Set([492]) })).toEqual([492])
-    expect(result({ classifications: ['day2'] }, {
-      colorMatchingOrders: new Set([492, 903]),
-      ownedOrders: new Set([903]),
-    })).toEqual([903])
+    expect(
+      result(
+        { classifications: ['day2'] },
+        {
+          colorMatchingOrders: new Set([492, 903]),
+          ownedOrders: new Set([903]),
+        },
+      ),
+    ).toEqual([903])
   })
 
   it('sorts chronological modes while excluding unnamed records', () => {

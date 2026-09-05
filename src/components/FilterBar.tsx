@@ -138,15 +138,15 @@ export function FilterBar({
   const hasIdleAnimation = idlePattern !== 'off'
   const activeChipItems: ActiveChipItem[] = [
     ...(hasIdleAnimation
-      ? [{
-          id: 'idle',
-          label: `Idle: ${idlePatternLabels[idlePattern]} · ${idleSpeedLabels[idleSpeed]}`,
-          onRemove: () => onIdlePatternChange('off'),
-        }]
+      ? [
+          {
+            id: 'idle',
+            label: `Idle: ${idlePatternLabels[idlePattern]} · ${idleSpeedLabels[idleSpeed]}`,
+            onRemove: () => onIdlePatternChange('off'),
+          },
+        ]
       : []),
-    ...(walletFilter
-      ? [{ id: 'wallet', label: `Wallet ${walletFilter.label}`, onRemove: onClearWallet }]
-      : []),
+    ...(walletFilter ? [{ id: 'wallet', label: `Wallet ${walletFilter.label}`, onRemove: onClearWallet }] : []),
     ...chips.map((chip) => ({
       id: `${chip.key}-${String(chip.value)}`,
       label: chip.label,
@@ -168,7 +168,9 @@ export function FilterBar({
     if (!row || !chipsElement || activeChipItems.length === 0) return
 
     const measure = () => {
-      const widths = activeChipItems.map((item) => chipMeasureRefs.current.get(item.id)?.getBoundingClientRect().width ?? 0)
+      const widths = activeChipItems.map(
+        (item) => chipMeasureRefs.current.get(item.id)?.getBoundingClientRect().width ?? 0,
+      )
       const rowGap = Number.parseFloat(getComputedStyle(row).columnGap) || 0
       const chipGap = Number.parseFloat(getComputedStyle(chipsElement).columnGap) || 0
       const clearWidth = clearFiltersRef.current?.getBoundingClientRect().width ?? 0
@@ -190,7 +192,7 @@ export function FilterBar({
         }
       }
 
-      setVisibleChipCount((current) => current === nextVisibleCount ? current : nextVisibleCount)
+      setVisibleChipCount((current) => (current === nextVisibleCount ? current : nextVisibleCount))
     }
 
     measure()
@@ -251,7 +253,9 @@ export function FilterBar({
 
         <label className="search-control">
           <span className="sr-only">Search rescue ID or MoonCat name</span>
-          <span className="search-control__icon" aria-hidden="true">⌕</span>
+          <span className="search-control__icon" aria-hidden="true">
+            ⌕
+          </span>
           <input
             type="search"
             value={filters.query}
@@ -278,14 +282,24 @@ export function FilterBar({
           {showActiveTagRow && (
             <div className="active-filter-row" ref={activeRowRef} aria-label="Active filters">
               <div className="active-filter-row__chips" ref={chipsRef}>
-                {visibleActiveChips.map((item) => item.onRemove ? (
-                  <button key={item.id} className="active-filter-chip" type="button" onClick={item.onRemove} aria-label={`Remove ${item.label}`}>
-                    <span>{item.label}</span>
-                    <span aria-hidden="true">×</span>
-                  </button>
-                ) : (
-                  <span key={item.id} className="active-filter-indicator" aria-label={item.label}>{item.label}</span>
-                ))}
+                {visibleActiveChips.map((item) =>
+                  item.onRemove ? (
+                    <button
+                      key={item.id}
+                      className="active-filter-chip"
+                      type="button"
+                      onClick={item.onRemove}
+                      aria-label={`Remove ${item.label}`}
+                    >
+                      <span>{item.label}</span>
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  ) : (
+                    <span key={item.id} className="active-filter-indicator" aria-label={item.label}>
+                      {item.label}
+                    </span>
+                  ),
+                )}
               </div>
               {(hasChipOverflow || overflowOpen) && (
                 <div className="active-filter-overflow-anchor" ref={overflowAnchorRef}>
@@ -304,56 +318,93 @@ export function FilterBar({
                     </button>
                   )}
                   {overflowOpen && (
-                    <div className="active-filter-overflow-popover" id="active-filter-overflow-popover" role="dialog" aria-label="All active filters">
+                    <div
+                      className="active-filter-overflow-popover"
+                      id="active-filter-overflow-popover"
+                      role="dialog"
+                      aria-label="All active filters"
+                    >
                       <div className="active-filter-overflow-popover__header">
                         <span>Active</span>
-                        <button className="active-filter-overflow-popover__close" type="button" aria-label="Close active filters" onClick={() => setOverflowOpen(false)}>×</button>
+                        <button
+                          className="active-filter-overflow-popover__close"
+                          type="button"
+                          aria-label="Close active filters"
+                          onClick={() => setOverflowOpen(false)}
+                        >
+                          ×
+                        </button>
                       </div>
                       <div className="active-filter-overflow-popover__chips">
-                        {activeChipItems.length === 0 ? <span className="active-filter-overflow-popover__empty">No active filters</span> : activeChipItems.map((item) => item.onRemove ? (
-                          <button key={item.id} className="active-filter-chip" type="button" onClick={item.onRemove} aria-label={`Remove ${item.label}`}>
-                            <span>{item.label}</span>
-                            <span aria-hidden="true">×</span>
-                          </button>
+                        {activeChipItems.length === 0 ? (
+                          <span className="active-filter-overflow-popover__empty">No active filters</span>
                         ) : (
-                          <span key={item.id} className="active-filter-indicator" aria-label={item.label}>{item.label}</span>
-                        ))}
+                          activeChipItems.map((item) =>
+                            item.onRemove ? (
+                              <button
+                                key={item.id}
+                                className="active-filter-chip"
+                                type="button"
+                                onClick={item.onRemove}
+                                aria-label={`Remove ${item.label}`}
+                              >
+                                <span>{item.label}</span>
+                                <span aria-hidden="true">×</span>
+                              </button>
+                            ) : (
+                              <span key={item.id} className="active-filter-indicator" aria-label={item.label}>
+                                {item.label}
+                              </span>
+                            ),
+                          )
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
               )}
               {hasActiveFilters && (
-                <button ref={clearFiltersRef} className="active-filter-row__clear" type="button" onClick={onClearFilters}>Clear</button>
+                <button
+                  ref={clearFiltersRef}
+                  className="active-filter-row__clear"
+                  type="button"
+                  onClick={onClearFilters}
+                >
+                  Clear
+                </button>
               )}
               <div ref={chipMeasureRef} className="active-filter-row__measure" aria-hidden="true">
-                {activeChipItems.map((item) => item.onRemove ? (
-                  <button
-                    key={item.id}
-                    ref={(element) => {
-                      if (element) chipMeasureRefs.current.set(item.id, element)
-                      else chipMeasureRefs.current.delete(item.id)
-                    }}
-                    className="active-filter-chip"
-                    type="button"
-                    tabIndex={-1}
-                  >
-                    <span>{item.label}</span>
-                    <span aria-hidden="true">×</span>
-                  </button>
-                ) : (
-                  <span
-                    key={item.id}
-                    ref={(element) => {
-                      if (element) chipMeasureRefs.current.set(item.id, element)
-                      else chipMeasureRefs.current.delete(item.id)
-                    }}
-                    className="active-filter-indicator"
-                  >
-                    {item.label}
-                  </span>
-                ))}
-                <button ref={overflowMeasureRef} className="active-filter-overflow" type="button" tabIndex={-1}>+</button>
+                {activeChipItems.map((item) =>
+                  item.onRemove ? (
+                    <button
+                      key={item.id}
+                      ref={(element) => {
+                        if (element) chipMeasureRefs.current.set(item.id, element)
+                        else chipMeasureRefs.current.delete(item.id)
+                      }}
+                      className="active-filter-chip"
+                      type="button"
+                      tabIndex={-1}
+                    >
+                      <span>{item.label}</span>
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  ) : (
+                    <span
+                      key={item.id}
+                      ref={(element) => {
+                        if (element) chipMeasureRefs.current.set(item.id, element)
+                        else chipMeasureRefs.current.delete(item.id)
+                      }}
+                      className="active-filter-indicator"
+                    >
+                      {item.label}
+                    </span>
+                  ),
+                )}
+                <button ref={overflowMeasureRef} className="active-filter-overflow" type="button" tabIndex={-1}>
+                  +
+                </button>
               </div>
             </div>
           )}
@@ -361,113 +412,117 @@ export function FilterBar({
 
         <div className="collection-toolbar__actions">
           <div className="collection-toolbar__action-row collection-toolbar__action-row--primary">
-          <button
-            ref={filtersTriggerRef}
-            className={`collection-toolbar__button${filtersOpen || selectedFilterCount > 0 || colorLabActive ? ' is-active' : ''}`}
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls="filter-drawer"
-            aria-haspopup="dialog"
-            onClick={() => setFiltersOpen((current) => !current)}
-          >
-            <span className="collection-toolbar__button-icon" aria-hidden="true">≡</span>
-            <span>Filters</span>
-            {selectedFilterCount > 0 && (
-              <span className="collection-toolbar__count">{selectedFilterCount}</span>
-            )}
-          </button>
-          <button
-            className={`collection-toolbar__button${colorLabOpen ? ' is-active' : ''}`}
-            type="button"
-            aria-expanded={colorLabOpen}
-            aria-controls="colorlab-panel"
-            onClick={onColorLabToggle}
-          >
-            <span className="collection-toolbar__button-icon" aria-hidden="true">⌖</span>
-            <span>ColorLab</span>
-          </button>
-          <div className="art-mode-toggle" role="group" aria-label="Art mode">
             <button
+              ref={filtersTriggerRef}
+              className={`collection-toolbar__button${filtersOpen || selectedFilterCount > 0 || colorLabActive ? ' is-active' : ''}`}
               type="button"
-              className={artMode === 'bodies' ? 'is-active' : ''}
-              aria-label="Full body art"
-              title="Full body art"
-              aria-pressed={artMode === 'bodies'}
-              onClick={() => onArtModeChange('bodies')}
+              aria-expanded={filtersOpen}
+              aria-controls="filter-drawer"
+              aria-haspopup="dialog"
+              onClick={() => setFiltersOpen((current) => !current)}
             >
-              <span className="art-mode-icon art-mode-icon--full" aria-hidden="true" />
+              <span className="collection-toolbar__button-icon" aria-hidden="true">
+                ≡
+              </span>
+              <span>Filters</span>
+              {selectedFilterCount > 0 && <span className="collection-toolbar__count">{selectedFilterCount}</span>}
             </button>
             <button
+              className={`collection-toolbar__button${colorLabOpen ? ' is-active' : ''}`}
               type="button"
-              className={artMode === 'faces' ? 'is-active' : ''}
-              aria-label="Face art"
-              title="Face art"
-              aria-pressed={artMode === 'faces'}
-              onClick={() => onArtModeChange('faces')}
+              aria-expanded={colorLabOpen}
+              aria-controls="colorlab-panel"
+              onClick={onColorLabToggle}
             >
-              <span className="art-mode-icon art-mode-icon--face" aria-hidden="true" />
+              <span className="collection-toolbar__button-icon" aria-hidden="true">
+                ⌖
+              </span>
+              <span>ColorLab</span>
             </button>
-          </div>
+            <div className="art-mode-toggle" role="group" aria-label="Art mode">
+              <button
+                type="button"
+                className={artMode === 'bodies' ? 'is-active' : ''}
+                aria-label="Full body art"
+                title="Full body art"
+                aria-pressed={artMode === 'bodies'}
+                onClick={() => onArtModeChange('bodies')}
+              >
+                <span className="art-mode-icon art-mode-icon--full" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className={artMode === 'faces' ? 'is-active' : ''}
+                aria-label="Face art"
+                title="Face art"
+                aria-pressed={artMode === 'faces'}
+                onClick={() => onArtModeChange('faces')}
+              >
+                <span className="art-mode-icon art-mode-icon--face" aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div className="collection-toolbar__action-row collection-toolbar__action-row--secondary">
-          <div className="quick-layout-toggle" role="group" aria-label="Quick collection layout">
-            {(['small', 'medium', 'large'] as const).map((size) => {
-              const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
-              const label = size[0].toUpperCase() + size.slice(1)
-              return (
-                <button
-                  key={size}
-                  type="button"
-                  className={viewMode === 'compact' && gridSize === size ? 'is-active' : ''}
-                  aria-label={`${label} compact grid`}
-                  title={`${label} compact grid`}
-                  aria-pressed={viewMode === 'compact' && gridSize === size}
-                  onClick={() => onGridSizeChange(size)}
-                >
-                  <span className={`grid-size-icon grid-size-icon--${size}`} aria-hidden="true">
-                    {Array.from({ length: cellCount }, (_, index) => <span key={index} />)}
-                  </span>
-                </button>
-              )
-            })}
-            <button
-              type="button"
-              className={`quick-layout-toggle__details${viewMode === 'detailed' ? ' is-active' : ''}`}
-              aria-label="Details view"
-              title="Details view"
-              aria-pressed={viewMode === 'detailed'}
-              onClick={() => onViewModeChange('detailed')}
-            >
-              <span className="details-view-icon" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className={`quick-layout-toggle__list${viewMode === 'list' ? ' is-active' : ''}`}
-              aria-label="List view"
-              title="List view"
-              aria-pressed={viewMode === 'list'}
-              onClick={() => onViewModeChange('list')}
-            >
-              <span className="list-view-icon" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </span>
-            </button>
-          </div>
-          <DisplayMenu
-            artMode={artMode}
-            ringStyle={ringStyle}
-            showStars={showStars}
-            showVignette={showVignette}
-            idlePattern={idlePattern}
-            idleSpeed={idleSpeed}
-            onRingStyleChange={onRingStyleChange}
-            onStarsChange={onStarsChange}
-            onVignetteChange={onVignetteChange}
-            onIdlePatternChange={onIdlePatternChange}
-            onIdleSpeedChange={onIdleSpeedChange}
-          />
+            <div className="quick-layout-toggle" role="group" aria-label="Quick collection layout">
+              {(['small', 'medium', 'large'] as const).map((size) => {
+                const cellCount = size === 'small' ? 9 : size === 'medium' ? 6 : 4
+                const label = size[0].toUpperCase() + size.slice(1)
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    className={viewMode === 'compact' && gridSize === size ? 'is-active' : ''}
+                    aria-label={`${label} compact grid`}
+                    title={`${label} compact grid`}
+                    aria-pressed={viewMode === 'compact' && gridSize === size}
+                    onClick={() => onGridSizeChange(size)}
+                  >
+                    <span className={`grid-size-icon grid-size-icon--${size}`} aria-hidden="true">
+                      {Array.from({ length: cellCount }, (_, index) => (
+                        <span key={index} />
+                      ))}
+                    </span>
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                className={`quick-layout-toggle__details${viewMode === 'detailed' ? ' is-active' : ''}`}
+                aria-label="Details view"
+                title="Details view"
+                aria-pressed={viewMode === 'detailed'}
+                onClick={() => onViewModeChange('detailed')}
+              >
+                <span className="details-view-icon" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className={`quick-layout-toggle__list${viewMode === 'list' ? ' is-active' : ''}`}
+                aria-label="List view"
+                title="List view"
+                aria-pressed={viewMode === 'list'}
+                onClick={() => onViewModeChange('list')}
+              >
+                <span className="list-view-icon" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </button>
+            </div>
+            <DisplayMenu
+              artMode={artMode}
+              ringStyle={ringStyle}
+              showStars={showStars}
+              showVignette={showVignette}
+              idlePattern={idlePattern}
+              idleSpeed={idleSpeed}
+              onRingStyleChange={onRingStyleChange}
+              onStarsChange={onStarsChange}
+              onVignetteChange={onVignetteChange}
+              onIdlePatternChange={onIdlePatternChange}
+              onIdleSpeedChange={onIdleSpeedChange}
+            />
           </div>
         </div>
       </div>

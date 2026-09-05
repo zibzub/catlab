@@ -101,12 +101,18 @@ test.describe('@desktop Collection smoke', () => {
     await openCollection(page)
     const scroll = page.locator('.cat-grid-scroll')
     const tiles = page.locator('.cat-tile')
-    const initialOrders = await tiles.evaluateAll((elements) => elements.map((element) => Number(element.getAttribute('data-rescue-order'))))
+    const initialOrders = await tiles.evaluateAll((elements) =>
+      elements.map((element) => Number(element.getAttribute('data-rescue-order'))),
+    )
     await scroll.evaluate((element) => element.scrollTo({ top: element.scrollHeight * 0.55 }))
-    await expect.poll(async () => {
-      const orders = await tiles.evaluateAll((elements) => elements.map((element) => Number(element.getAttribute('data-rescue-order'))))
-      return Math.max(...orders)
-    }).toBeGreaterThan(Math.max(...initialOrders))
+    await expect
+      .poll(async () => {
+        const orders = await tiles.evaluateAll((elements) =>
+          elements.map((element) => Number(element.getAttribute('data-rescue-order'))),
+        )
+        return Math.max(...orders)
+      })
+      .toBeGreaterThan(Math.max(...initialOrders))
     expect(await tiles.count()).toBeLessThan(250)
 
     await scroll.evaluate((element) => element.scrollTo({ top: element.scrollHeight }))
@@ -182,7 +188,9 @@ test.describe('@mobile Collection smoke', () => {
     await page.getByRole('button', { name: 'Medium compact grid' }).click()
     await expect(page.locator('.cat-grid-row--compact').first()).toBeVisible()
     await page.locator('.cat-grid-scroll').evaluate((element) => element.scrollTo({ top: element.scrollHeight * 0.4 }))
-    await expect.poll(() => page.locator('.cat-grid-scroll').evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+    await expect
+      .poll(() => page.locator('.cat-grid-scroll').evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0)
     assertRuntime()
   })
 })

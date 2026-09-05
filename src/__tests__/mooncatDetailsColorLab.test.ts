@@ -38,27 +38,48 @@ function cat(overrides: Partial<CatRecord> & Pick<CatRecord, 'rescueOrder'>): Ca
   }
 }
 
-const categories = Object.fromEntries([
-  ['sub100', [0]], ['day1', [0, 491]], ['week1', [904]], ['earlyRescues', [904]],
-  ['garfield', [904]], ['cheshire', []], ['pinkpanther', []], ['alien', []],
-  ['zombie', []], ['simba', []], ['golden', []], ['pikachu', []],
-].map(([key, ids]) => [key, { label: key, group: 'test', ids }]))
+const categories = Object.fromEntries(
+  [
+    ['sub100', [0]],
+    ['day1', [0, 491]],
+    ['week1', [904]],
+    ['earlyRescues', [904]],
+    ['garfield', [904]],
+    ['cheshire', []],
+    ['pinkpanther', []],
+    ['alien', []],
+    ['zombie', []],
+    ['simba', []],
+    ['golden', []],
+    ['pikachu', []],
+  ].map(([key, ids]) => [key, { label: key, group: 'test', ids }]),
+)
 
 describe('MoonCat name and classification helpers', () => {
   it('validates name metadata and rejects invalid rescue-order entries', () => {
-    expect(validateMoonCatNames({ '0': { name: 'Alpha', timestamp: 1 } })).toEqual({ '0': { name: 'Alpha', timestamp: 1 } })
+    expect(validateMoonCatNames({ '0': { name: 'Alpha', timestamp: 1 } })).toEqual({
+      '0': { name: 'Alpha', timestamp: 1 },
+    })
     expect(validateMoonCatNames({ '25440': { name: 'Too far', timestamp: null } })).toBeNull()
     expect(validateMoonCatNames({ '1': { name: '', timestamp: null } })).toBeNull()
     expect(getMoonCatName({ '1': { name: 'Named', timestamp: null } }, 1)).toBe('Named')
   })
 
   it('classifies rescue periods, genesis, and character cats', () => {
-    const classifications = validateMoonCatClassifications({ schemaVersion: 1, count: 25_440, maxId: 25_439, categories })
+    const classifications = validateMoonCatClassifications({
+      schemaVersion: 1,
+      count: 25_440,
+      maxId: 25_439,
+      categories,
+    })
     expect(classifications).not.toBeNull()
     expect(getMoonCatClassificationLabels(cat({ rescueOrder: 491 }), classifications)).toEqual(['day 1'])
     expect(getMoonCatClassificationLabels(cat({ rescueOrder: 492 }), classifications)).toEqual(['day 2'])
     expect(getMoonCatClassificationLabels(cat({ rescueOrder: 904 }), classifications)).toEqual(['week 1', 'garfield'])
-    expect(getMoonCatClassificationLabels(cat({ rescueOrder: 10, genesis: true }), classifications)).toEqual(['day 1', 'genesis'])
+    expect(getMoonCatClassificationLabels(cat({ rescueOrder: 10, genesis: true }), classifications)).toEqual([
+      'day 1',
+      'genesis',
+    ])
     expect(formatMoonCatClassificationFooter(['pinkpanther', 'day 1'])).toBe('PINK PANTHER • DAY 1')
   })
 

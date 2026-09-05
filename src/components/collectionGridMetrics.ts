@@ -6,13 +6,14 @@ export const PAGE_SCROLL_RATIO = 0.92
 export function columnsForWidth(width: number, viewMode: GridViewMode, artMode: GridArtMode, gridSize: GridSize) {
   const isPhone = width <= 620
   if (artMode === 'faces') {
-    const targetTileWidth = viewMode === 'compact'
-      ? isPhone
-        ? { small: 56, medium: 68, large: 82 }[gridSize]
-        : { small: 70, medium: 84, large: 102 }[gridSize]
-      : isPhone
-        ? { small: 112, medium: 128, large: 148 }[gridSize]
-        : { small: 118, medium: 136, large: 158 }[gridSize]
+    const targetTileWidth =
+      viewMode === 'compact'
+        ? isPhone
+          ? { small: 56, medium: 68, large: 82 }[gridSize]
+          : { small: 70, medium: 84, large: 102 }[gridSize]
+        : isPhone
+          ? { small: 112, medium: 128, large: 148 }[gridSize]
+          : { small: 118, medium: 136, large: 158 }[gridSize]
     const maxColumns = viewMode === 'compact' ? 16 : 9
     const gap = isPhone ? 7 : 11
     const calculatedColumns = Math.floor((width + gap) / (targetTileWidth + gap))
@@ -26,9 +27,7 @@ export function columnsForWidth(width: number, viewMode: GridViewMode, artMode: 
       : isPhone
         ? { small: 120, medium: 142, large: 166 }[gridSize]
         : { small: 122, medium: 142, large: 166 }[gridSize]
-  const maxColumns = viewMode === 'compact'
-    ? isPhone || gridSize === 'large' ? 14 : 16
-    : 9
+  const maxColumns = viewMode === 'compact' ? (isPhone || gridSize === 'large' ? 14 : 16) : 9
   const gap = isPhone ? 7 : 11
   const calculatedColumns = Math.floor((width + gap) / (targetTileWidth + gap))
   const minimumColumns = viewMode === 'compact' && gridSize === 'medium' && isPhone && width > 0 ? 4 : 1

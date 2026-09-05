@@ -33,9 +33,7 @@ const FACE_ATLAS_DIR = path.join(DATA_DIR, 'face-atlases')
 const require = createRequire(import.meta.url)
 const mooncatModule = require('mooncatparser')
 const mooncatparser =
-  typeof mooncatModule === 'function'
-    ? mooncatModule
-    : mooncatModule.mooncatparser ?? mooncatModule.default
+  typeof mooncatModule === 'function' ? mooncatModule : (mooncatModule.mooncatparser ?? mooncatModule.default)
 
 async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, 'utf8'))
@@ -68,9 +66,7 @@ function assertAtlasPixels(atlasBuffers, index) {
         const matrixX = x - offsetX
         const matrixY = y - offsetY
         const expectedColor =
-          matrixX >= 0 && matrixX < width && matrixY >= 0 && matrixY < height
-            ? matrix[matrixX][matrixY]
-            : null
+          matrixX >= 0 && matrixX < width && matrixY >= 0 && matrixY < height ? matrix[matrixX][matrixY] : null
         const atlasX = cellColumn * CELL_WIDTH + x
         const atlasY = cellRow * CELL_HEIGHT + y
         const pixelOffset = (atlasY * ATLAS_WIDTH + atlasX) * 4

@@ -28,15 +28,10 @@ import {
 const require = createRequire(import.meta.url)
 const mooncatModule = require('mooncatparser')
 const mooncatparser =
-  typeof mooncatModule === 'function'
-    ? mooncatModule
-    : mooncatModule.mooncatparser ?? mooncatModule.default
+  typeof mooncatModule === 'function' ? mooncatModule : (mooncatModule.mooncatparser ?? mooncatModule.default)
 
 const ROOT = path.resolve(new URL('..', import.meta.url).pathname)
-const DEFAULT_TRAITS = path.resolve(
-  ROOT,
-  '../mckb/references/upstream/mooncatrescue/mooncat_traits.json',
-)
+const DEFAULT_TRAITS = path.resolve(ROOT, '../mckb/references/upstream/mooncatrescue/mooncat_traits.json')
 const DATA_DIR = path.join(ROOT, 'public/data')
 const ATLAS_DIR = path.join(DATA_DIR, 'atlases')
 const FACE_ATLAS_DIR = path.join(DATA_DIR, 'face-atlases')

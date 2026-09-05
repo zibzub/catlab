@@ -152,7 +152,9 @@ export function buildFilterIndex(
     namesByOrder,
     counts,
     options: {
-      rescueYears: Object.keys(counts.rescueYears).map(Number).sort((a, b) => a - b),
+      rescueYears: Object.keys(counts.rescueYears)
+        .map(Number)
+        .sort((a, b) => a - b),
       hueNames: Object.keys(counts.hueNames).sort((a, b) => a.localeCompare(b)),
       patterns: Object.keys(counts.patterns).sort((a, b) => a.localeCompare(b)),
       poses: Object.keys(counts.poses).sort((a, b) => a.localeCompare(b)),
@@ -171,7 +173,7 @@ export function matchesFilters(cat: CatRecord, filters: FilterState, index: Filt
   if (query) {
     const matchesQuery = /^\d+$/.test(query)
       ? String(cat.rescueOrder).includes(query)
-      : index.namesByOrder.get(cat.rescueOrder)?.includes(query) ?? false
+      : (index.namesByOrder.get(cat.rescueOrder)?.includes(query) ?? false)
     if (!matchesQuery) return false
   }
 
@@ -191,7 +193,11 @@ export function matchesFilters(cat: CatRecord, filters: FilterState, index: Filt
   if (!matchesAny(filters.poses, cat.pose)) return false
   if (!matchesAny(filters.expressions, cat.expression)) return false
   if (!matchesAny(filters.facings, cat.facing)) return false
-  if ((filters.naming === 'named' || filters.naming === 'recentlyNamed' || filters.naming === 'firstNamed') && !index.namedOrders.has(cat.rescueOrder)) return false
+  if (
+    (filters.naming === 'named' || filters.naming === 'recentlyNamed' || filters.naming === 'firstNamed') &&
+    !index.namedOrders.has(cat.rescueOrder)
+  )
+    return false
   if (filters.naming === 'unnamed' && index.namedOrders.has(cat.rescueOrder)) return false
   return true
 }

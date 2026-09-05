@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  isDay1RescueOrder,
-  isDay2RescueOrder,
-  isValidRescueOrder,
-  MAX_RESCUE_ORDER,
-  MOONCAT_COUNT,
-} from '../domain'
+import { isDay1RescueOrder, isDay2RescueOrder, isValidRescueOrder, MAX_RESCUE_ORDER, MOONCAT_COUNT } from '../domain'
 import { compareFirstNamed, compareRecentlyNamed } from '../sorts'
 import type { CatRecord } from '../../types'
 

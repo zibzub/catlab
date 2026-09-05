@@ -86,15 +86,13 @@ export function normalizeWalletRescueOrders(ids: unknown) {
     throw new Error('Wallet lookup returned an invalid ids list.')
   }
 
-  return Array.from(new Set(ids.filter((id): id is number => (
-    isValidRescueOrder(id)
-  )))).sort((first, second) => first - second)
+  return Array.from(new Set(ids.filter((id): id is number => isValidRescueOrder(id)))).sort(
+    (first, second) => first - second,
+  )
 }
 
 export function shortenWalletAddress(address: string) {
-  return ETHEREUM_ADDRESS_PATTERN.test(address)
-    ? `${address.slice(0, 6)}…${address.slice(-4)}`
-    : address
+  return ETHEREUM_ADDRESS_PATTERN.test(address) ? `${address.slice(0, 6)}…${address.slice(-4)}` : address
 }
 
 export function walletHistoryDisplayLabel(entry: WalletLookupHistoryEntry) {
@@ -109,9 +107,8 @@ function normalizeHistoryEntry(record: unknown): WalletLookupHistoryEntry | null
   const input = 'input' in record && typeof record.input === 'string' ? record.input.trim() : ''
   const addressValue = 'address' in record && typeof record.address === 'string' ? record.address.trim() : ''
   const address = ETHEREUM_ADDRESS_PATTERN.test(addressValue) ? addressValue.toLowerCase() : ''
-  const resolvedName = 'resolvedName' in record && typeof record.resolvedName === 'string'
-    ? record.resolvedName.trim().toLowerCase()
-    : ''
+  const resolvedName =
+    'resolvedName' in record && typeof record.resolvedName === 'string' ? record.resolvedName.trim().toLowerCase() : ''
   if (!input && !address && !resolvedName) return null
 
   return {
@@ -176,9 +173,7 @@ export function getInjectedWalletProvider() {
   return provider && typeof provider.request === 'function' ? provider : null
 }
 
-export async function requestConnectedWalletAddress(
-  provider: Eip1193Provider | null = getInjectedWalletProvider(),
-) {
+export async function requestConnectedWalletAddress(provider: Eip1193Provider | null = getInjectedWalletProvider()) {
   if (!provider) throw new Error('No browser wallet was detected.')
 
   let accounts: unknown
@@ -202,10 +197,10 @@ export async function requestConnectedWalletAddress(
 
 function validateLookupInput(input: string) {
   if (
-    input.length === 0
-    || input.length > MAX_INPUT_LENGTH
-    || !LOOKUP_INPUT_PATTERN.test(input)
-    || (/^0x/i.test(input) && !ETHEREUM_ADDRESS_PATTERN.test(input))
+    input.length === 0 ||
+    input.length > MAX_INPUT_LENGTH ||
+    !LOOKUP_INPUT_PATTERN.test(input) ||
+    (/^0x/i.test(input) && !ETHEREUM_ADDRESS_PATTERN.test(input))
   ) {
     throw new Error('Enter a valid Ethereum address or ENS name.')
   }
@@ -246,10 +241,10 @@ export async function lookupWalletCats(input: string): Promise<WalletLookupResul
   }
 
   if (!response.ok) {
-    const serverMessage = payload && typeof payload === 'object' && 'error' in payload
-      && typeof payload.error === 'string'
-      ? payload.error
-      : ''
+    const serverMessage =
+      payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+        ? payload.error
+        : ''
     throw new Error(serverMessage || responseError(response.status))
   }
 
@@ -258,12 +253,9 @@ export async function lookupWalletCats(input: string): Promise<WalletLookupResul
   }
 
   const ids = normalizeWalletRescueOrders(payload.ids)
-  const address = 'address' in payload && typeof payload.address === 'string'
-    ? payload.address.trim()
-    : ''
-  const resolvedName = 'resolvedName' in payload && typeof payload.resolvedName === 'string'
-    ? payload.resolvedName.trim()
-    : ''
+  const address = 'address' in payload && typeof payload.address === 'string' ? payload.address.trim() : ''
+  const resolvedName =
+    'resolvedName' in payload && typeof payload.resolvedName === 'string' ? payload.resolvedName.trim() : ''
 
   return {
     input: normalizedInput,

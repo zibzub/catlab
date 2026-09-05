@@ -95,7 +95,8 @@ export function loadComposeBackground(url: string) {
         resolve(image)
         return
       }
-      image.decode()
+      image
+        .decode()
         .then(() => {
           cleanup()
           resolve(image)
@@ -130,19 +131,22 @@ export async function renderComposition({
   stageWidth,
 }: ComposeExportOptions) {
   const dimensions = background ?? EMPTY_COMPOSITION
-  const pixelArea = dimensions.height > 0 && dimensions.width > MAX_COMPOSE_EXPORT_PIXELS / dimensions.height
-    ? Infinity
-    : dimensions.width * dimensions.height
+  const pixelArea =
+    dimensions.height > 0 && dimensions.width > MAX_COMPOSE_EXPORT_PIXELS / dimensions.height
+      ? Infinity
+      : dimensions.width * dimensions.height
   if (!Number.isFinite(pixelArea) || pixelArea > MAX_COMPOSE_EXPORT_PIXELS) {
     throw new Error('The composition is too large to export as PNG.')
   }
 
   await document.fonts.ready
-  const textFonts = [...new Set(
-    placedObjects
-      .filter((placed): placed is Extract<ComposePlacedObject, { kind: 'text' }> => placed.kind === 'text')
-      .map((placed) => placed.fontFamily),
-  )]
+  const textFonts = [
+    ...new Set(
+      placedObjects
+        .filter((placed): placed is Extract<ComposePlacedObject, { kind: 'text' }> => placed.kind === 'text')
+        .map((placed) => placed.fontFamily),
+    ),
+  ]
   await Promise.all(textFonts.map((fontFamily) => document.fonts.load(`16px ${fontFamily}`)))
 
   const canvas = document.createElement('canvas')

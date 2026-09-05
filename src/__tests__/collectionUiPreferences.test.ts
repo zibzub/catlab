@@ -1,26 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import {
-  parseCollectionDisplayPreferences,
-  serializeCollectionDisplayPreferences,
-} from '../collectionPreferences'
-import {
-  activeFilterCount,
-  getActiveFilterChips,
-  removeFilterValue,
-} from '../components/collectionFilters'
+import { parseCollectionDisplayPreferences, serializeCollectionDisplayPreferences } from '../collectionPreferences'
+import { activeFilterCount, getActiveFilterChips, removeFilterValue } from '../components/collectionFilters'
 import { createEmptyFilterState } from '../mooncat-index/filters'
 
 describe('collection display preference persistence', () => {
   it('parses valid preferences and migrates legacy values', () => {
-    expect(parseCollectionDisplayPreferences(JSON.stringify({
-      viewMode: 'list',
-      gridSize: 'small',
-      showRings: true,
-      showStars: false,
-      showVignette: true,
-      idlePattern: 'snake',
-      idleSpeed: 'fast',
-    }))).toEqual({
+    expect(
+      parseCollectionDisplayPreferences(
+        JSON.stringify({
+          viewMode: 'list',
+          gridSize: 'small',
+          showRings: true,
+          showStars: false,
+          showVignette: true,
+          idlePattern: 'snake',
+          idleSpeed: 'fast',
+        }),
+      ),
+    ).toEqual({
       viewMode: 'list',
       gridSize: 'small',
       ringStyle: 'outline',
@@ -34,10 +31,19 @@ describe('collection display preference persistence', () => {
   it('falls back safely for malformed values and serializes current state', () => {
     expect(parseCollectionDisplayPreferences('{bad json')).toEqual({})
     expect(parseCollectionDisplayPreferences(JSON.stringify({ viewMode: 'tiles', idlePattern: 'legacy' }))).toEqual({})
-    expect(serializeCollectionDisplayPreferences({
-      viewMode: 'compact', gridSize: 'medium', ringStyle: 'ac', showStars: true,
-      showVignette: false, idlePattern: 'wave', idleSpeed: 'slow',
-    })).toBe('{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","showStars":true,"showVignette":false,"idlePattern":"wave","idleSpeed":"slow"}')
+    expect(
+      serializeCollectionDisplayPreferences({
+        viewMode: 'compact',
+        gridSize: 'medium',
+        ringStyle: 'ac',
+        showStars: true,
+        showVignette: false,
+        idlePattern: 'wave',
+        idleSpeed: 'slow',
+      }),
+    ).toBe(
+      '{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","showStars":true,"showVignette":false,"idlePattern":"wave","idleSpeed":"slow"}',
+    )
   })
 })
 

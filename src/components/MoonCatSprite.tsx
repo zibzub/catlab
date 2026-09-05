@@ -17,29 +17,38 @@ export const MoonCatSprite = memo(function MoonCatSprite({
   artMode = 'bodies',
   gridSize = 'medium',
 }: MoonCatSpriteProps) {
-  const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, artMode === 'faces' && variant !== 'palette' ? 'faces' : 'bodies')
+  const atlasCell = getMoonCatAtlasCell(
+    manifest,
+    cat.rescueOrder,
+    artMode === 'faces' && variant !== 'palette' ? 'faces' : 'bodies',
+  )
   const { atlas } = atlasCell
-  const scale = variant === 'palette'
-    ? 3
-    : variant === 'list'
-      ? artMode === 'faces'
-        ? gridSize === 'small' ? 4 : 6
-        : gridSize === 'small' ? 2 : 3
-    : artMode === 'faces'
-      ? variant === 'compact'
-        ? { small: 4, medium: 5, large: 6 }[gridSize]
-        : { small: 5, medium: 6, large: 7 }[gridSize]
-      : gridSize === 'small'
-        ? variant === 'compact'
-          ? 3
-          : 4
-        : gridSize === 'large'
-          ? variant === 'compact'
-            ? 5
-            : 6
-          : variant === 'compact'
+  const scale =
+    variant === 'palette'
+      ? 3
+      : variant === 'list'
+        ? artMode === 'faces'
+          ? gridSize === 'small'
             ? 4
-            : 4
+            : 6
+          : gridSize === 'small'
+            ? 2
+            : 3
+        : artMode === 'faces'
+          ? variant === 'compact'
+            ? { small: 4, medium: 5, large: 6 }[gridSize]
+            : { small: 5, medium: 6, large: 7 }[gridSize]
+          : gridSize === 'small'
+            ? variant === 'compact'
+              ? 3
+              : 4
+            : gridSize === 'large'
+              ? variant === 'compact'
+                ? 5
+                : 6
+              : variant === 'compact'
+                ? 4
+                : 4
   const spriteBoxStyle = {
     width: atlasCell.cellWidth * scale,
     height: atlasCell.cellHeight * scale,

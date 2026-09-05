@@ -55,7 +55,11 @@ export function validateMoonCatNames(value: unknown): MoonCatNames | null {
     const rescueOrder = Number(id)
     if (String(rescueOrder) !== id || !isValidRescueOrder(rescueOrder) || !isObject(entry)) return null
     if (typeof entry.name !== 'string' || entry.name.length === 0) return null
-    if (entry.timestamp !== null && (typeof entry.timestamp !== 'number' || !Number.isFinite(entry.timestamp) || entry.timestamp < 0)) return null
+    if (
+      entry.timestamp !== null &&
+      (typeof entry.timestamp !== 'number' || !Number.isFinite(entry.timestamp) || entry.timestamp < 0)
+    )
+      return null
     names[id] = { name: entry.name, timestamp: entry.timestamp }
   }
   return names
@@ -83,7 +87,14 @@ export function validateMoonCatClassifications(value: unknown): MoonCatClassific
   if (!isObject(value) || value.schemaVersion !== 1) return null
   const count = value.count
   const maxId = value.maxId
-  if (typeof count !== 'number' || typeof maxId !== 'number' || !Number.isInteger(count) || !Number.isInteger(maxId) || count <= 0) return null
+  if (
+    typeof count !== 'number' ||
+    typeof maxId !== 'number' ||
+    !Number.isInteger(count) ||
+    !Number.isInteger(maxId) ||
+    count <= 0
+  )
+    return null
   if (!isObject(value.categories)) return null
 
   const categories: Record<string, MoonCatClassificationCategory> = {}
@@ -154,10 +165,7 @@ export function formatMoonCatHue(cat: CatRecord) {
   return classifyGenesisDetail(cat) ? 'genesis' : String(cat.hueInt)
 }
 
-export function getMoonCatClassificationLabels(
-  cat: CatRecord,
-  classifications: MoonCatClassifications | null,
-) {
+export function getMoonCatClassificationLabels(cat: CatRecord, classifications: MoonCatClassifications | null) {
   if (!classifications || cat.rescueOrder < 0 || cat.rescueOrder > classifications.maxId) return []
   const labels: string[] = []
   if (isDay1RescueOrder(cat.rescueOrder)) labels.push('day 1')
@@ -167,9 +175,9 @@ export function getMoonCatClassificationLabels(
   if (cat.genesis) {
     labels.push('genesis')
   } else {
-    const characterKey = CHARACTER_CLASSIFICATION_KEYS.find((key) => (
-      classifications.categories[key].ids.includes(cat.rescueOrder)
-    ))
+    const characterKey = CHARACTER_CLASSIFICATION_KEYS.find((key) =>
+      classifications.categories[key].ids.includes(cat.rescueOrder),
+    )
     if (characterKey) labels.push(characterKey)
   }
   return labels
@@ -177,7 +185,7 @@ export function getMoonCatClassificationLabels(
 
 export function formatMoonCatClassificationFooter(labels: string[]) {
   return labels
-    .map((label) => label.toLowerCase() === 'pinkpanther' ? 'PINK PANTHER' : label.toUpperCase())
+    .map((label) => (label.toLowerCase() === 'pinkpanther' ? 'PINK PANTHER' : label.toUpperCase()))
     .join(' • ')
 }
 

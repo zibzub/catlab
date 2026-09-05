@@ -1,9 +1,5 @@
 import { assetPath } from './data'
-import {
-  classifyGenesisDetail,
-  formatMoonCatHue,
-  getDetailAtlasCell,
-} from './mooncatDetails'
+import { classifyGenesisDetail, formatMoonCatHue, getDetailAtlasCell } from './mooncatDetails'
 import type { DetailAtlasCell } from './mooncatDetails'
 import type { AtlasManifest, CatRecord } from './types'
 
@@ -67,11 +63,8 @@ function fitTextToWidth(context: CanvasRenderingContext2D, text: string, width: 
 }
 
 function measureSpacedText(context: CanvasRenderingContext2D, text: string, letterSpacing: number) {
-  const glyphWidth = [...text].reduce(
-    (total, character) => total + context.measureText(character).width,
-    0,
-  )
-  return glyphWidth + (Math.max(0, [...text].length - 1) * letterSpacing)
+  const glyphWidth = [...text].reduce((total, character) => total + context.measureText(character).width, 0)
+  return glyphWidth + Math.max(0, [...text].length - 1) * letterSpacing
 }
 
 function drawCenteredText(
@@ -90,7 +83,7 @@ function drawCenteredText(
   context.textAlign = 'center'
   context.textBaseline = 'middle'
   const rendered = fitTextToWidth(context, text, width)
-  context.fillText(rendered, x + (width / 2), y + (height / 2))
+  context.fillText(rendered, x + width / 2, y + height / 2)
   context.restore()
 }
 
@@ -116,8 +109,8 @@ function drawCenteredSpacedText(
     rendered = `${rendered.slice(0, -2)}…`
   }
 
-  let cursorX = x + ((width - measureSpacedText(context, rendered, letterSpacing)) / 2)
-  const centerY = y + (height / 2)
+  let cursorX = x + (width - measureSpacedText(context, rendered, letterSpacing)) / 2
+  const centerY = y + height / 2
   for (const character of rendered) {
     context.fillText(character, cursorX, centerY)
     cursorX += context.measureText(character).width + letterSpacing
@@ -129,9 +122,7 @@ function mixHexColors(foreground: string, background: string, foregroundWeight: 
   const parseHex = (value: string) => {
     const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(value || '').trim())
     if (!match) return null
-    const hex = match[1].length === 3
-      ? [...match[1]].map((digit) => `${digit}${digit}`).join('')
-      : match[1]
+    const hex = match[1].length === 3 ? [...match[1]].map((digit) => `${digit}${digit}`).join('') : match[1]
     return [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16))
   }
 
@@ -140,18 +131,22 @@ function mixHexColors(foreground: string, background: string, foregroundWeight: 
   if (!foregroundRgb || !backgroundRgb) return background
 
   const weight = Math.min(1, Math.max(0, Number(foregroundWeight) || 0))
-  const mixed = foregroundRgb.map((channel, index) => (
-    Math.round((channel * weight) + (backgroundRgb[index] * (1 - weight)))
-  ))
+  const mixed = foregroundRgb.map((channel, index) =>
+    Math.round(channel * weight + backgroundRgb[index] * (1 - weight)),
+  )
   return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
 }
 
-function drawTraitGrid(context: CanvasRenderingContext2D, cat: CatRecord, detailsRect: {
-  x: number
-  y: number
-  width: number
-  height: number
-}) {
+function drawTraitGrid(
+  context: CanvasRenderingContext2D,
+  cat: CatRecord,
+  detailsRect: {
+    x: number
+    y: number
+    width: number
+    height: number
+  },
+) {
   const layout = DETAIL_CARD_EXPORT_LAYOUT
   const traits = [
     ['Cat ID', cat.catId],
@@ -162,8 +157,8 @@ function drawTraitGrid(context: CanvasRenderingContext2D, cat: CatRecord, detail
     ['Pose', cat.pose],
   ]
   const contentX = detailsRect.x + layout.detailsPadding
-  const contentWidth = detailsRect.width - (layout.detailsPadding * 2)
-  const labelWidth = ((contentWidth - layout.traitColumnGap) * 0.4)
+  const contentWidth = detailsRect.width - layout.detailsPadding * 2
+  const labelWidth = (contentWidth - layout.traitColumnGap) * 0.4
   const valueX = contentX + labelWidth + layout.traitColumnGap
   const lineHeight = layout.traitFontSize * layout.traitLineHeight
   const statusHeight = 13 * 1.35
@@ -175,7 +170,7 @@ function drawTraitGrid(context: CanvasRenderingContext2D, cat: CatRecord, detail
   context.clip()
   context.textBaseline = 'top'
   traits.forEach(([label, value], row) => {
-    const y = firstRowY + (row * (lineHeight + layout.traitGap))
+    const y = firstRowY + row * (lineHeight + layout.traitGap)
     context.fillStyle = 'rgba(16, 33, 38, 0.66)'
     context.font = `700 ${layout.traitFontSize}px "Pixel Operator", monospace`
     context.fillText(fitTextToWidth(context, label, labelWidth), contentX, y)
@@ -197,15 +192,27 @@ function createGenesisFoilGradient(
     coatRail.x + coatRail.width,
     coatRail.y,
   )
-  const stops: Array<[number, string]> = genesis === 'black'
-    ? [
-      [0, '#101218'], [0.28, '#252a35'], [0.44, '#11131a'], [0.49, '#737a8b'],
-      [0.53, '#645675'], [0.58, '#222632'], [0.8, '#0b0d12'], [1, '#171921'],
-    ]
-    : [
-      [0, '#ddd6ca'], [0.26, '#fffdf7'], [0.44, '#bfefff'], [0.5, '#ffd0e8'],
-      [0.56, '#fff0a8'], [0.66, '#fffdf7'], [1, '#e8e1d6'],
-    ]
+  const stops: Array<[number, string]> =
+    genesis === 'black'
+      ? [
+          [0, '#101218'],
+          [0.28, '#252a35'],
+          [0.44, '#11131a'],
+          [0.49, '#737a8b'],
+          [0.53, '#645675'],
+          [0.58, '#222632'],
+          [0.8, '#0b0d12'],
+          [1, '#171921'],
+        ]
+      : [
+          [0, '#ddd6ca'],
+          [0.26, '#fffdf7'],
+          [0.44, '#bfefff'],
+          [0.5, '#ffd0e8'],
+          [0.56, '#fff0a8'],
+          [0.66, '#fffdf7'],
+          [1, '#e8e1d6'],
+        ]
   stops.forEach(([offset, color]) => gradient.addColorStop(offset, color))
   return gradient
 }
@@ -249,9 +256,7 @@ export function renderDetailCardCanvas({
   context.imageSmoothingEnabled = false
 
   const genesis = classifyGenesisDetail(cat)
-  context.fillStyle = genesis
-    ? createGenesisFoilGradient(context, coatRail, genesis)
-    : (coatColor || '#ff69b4')
+  context.fillStyle = genesis ? createGenesisFoilGradient(context, coatRail, genesis) : coatColor || '#ff69b4'
   context.fillRect(coatRail.x, coatRail.y, coatRail.width, coatRail.height)
   context.fillStyle = '#000'
   context.fillRect(image.x, image.y, image.width, image.height)
@@ -261,8 +266,8 @@ export function renderDetailCardCanvas({
     atlasSource.y,
     atlasSource.width,
     atlasSource.height,
-    image.x + ((image.width - layout.preview.width) / 2),
-    image.y + ((image.height - layout.preview.height) / 2),
+    image.x + (image.width - layout.preview.width) / 2,
+    image.y + (image.height - layout.preview.height) / 2,
     layout.preview.width,
     layout.preview.height,
   )
@@ -338,7 +343,13 @@ export async function downloadDetailCardPng({
   templateUrl?: string
 }) {
   const source = getDetailAtlasCell(cat, manifest)
-  if (!documentRef?.createElement || !documentRef.body || !urlRef?.createObjectURL || !urlRef?.revokeObjectURL || !source) {
+  if (
+    !documentRef?.createElement ||
+    !documentRef.body ||
+    !urlRef?.createObjectURL ||
+    !urlRef?.revokeObjectURL ||
+    !source
+  ) {
     throw new Error('PNG export is unavailable.')
   }
   const [templateImage, atlasImage] = await Promise.all([
@@ -357,7 +368,10 @@ export async function downloadDetailCardPng({
     classificationFooter,
   })
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((result) => result ? resolve(result) : reject(new Error('Could not encode the card PNG.')), 'image/png')
+    canvas.toBlob(
+      (result) => (result ? resolve(result) : reject(new Error('Could not encode the card PNG.'))),
+      'image/png',
+    )
   })
   const objectUrl = urlRef.createObjectURL(blob)
   const anchor = documentRef.createElement('a')
