@@ -8,8 +8,12 @@ import { FilterBar } from './components/FilterBar'
 import { removeFilterValue, type RemovableFilterKey } from './components/collectionFilters'
 import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
+import {
+  COLLECTION_DISPLAY_PREFS_KEY,
+  loadCollectionDisplayPreferences,
+  serializeCollectionDisplayPreferences,
+} from './collectionPreferences'
 import { loadGeneratedData } from './data'
-import { isIdlePattern, isIdleSpeed } from './idleAnimation'
 import { buildFilterIndex, createEmptyFilterState } from './mooncat-index/filters'
 import { deriveMoonCatIndexResult } from './mooncat-index/result'
 import {
@@ -41,49 +45,6 @@ import type {
   IdleSpeed,
   RingStyle,
 } from './types'
-
-const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
-
-interface CollectionDisplayPreferences {
-  viewMode?: GridViewMode
-  gridSize?: GridSize
-  ringStyle?: RingStyle
-  showRings?: boolean
-  showStars?: boolean
-  showVignette?: boolean
-  idlePattern?: IdlePattern
-  idleSpeed?: IdleSpeed
-}
-
-function loadCollectionDisplayPreferences(): CollectionDisplayPreferences {
-  if (typeof window === 'undefined') return {}
-  try {
-    const raw = window.localStorage.getItem(COLLECTION_DISPLAY_PREFS_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    const migratedIdlePattern = parsed.idlePattern === 'snake' ? 'worm' : parsed.idlePattern
-    const ringStyle = parsed.ringStyle === 'off' || parsed.ringStyle === 'ac' || parsed.ringStyle === 'outline'
-      ? parsed.ringStyle
-      : typeof parsed.showRings === 'boolean'
-        ? parsed.showRings ? 'outline' : 'off'
-        : undefined
-    return {
-      viewMode: parsed.viewMode === 'compact' || parsed.viewMode === 'detailed' || parsed.viewMode === 'list'
-        ? parsed.viewMode
-        : undefined,
-      gridSize: parsed.gridSize === 'small' || parsed.gridSize === 'medium' || parsed.gridSize === 'large'
-        ? parsed.gridSize
-        : undefined,
-      ringStyle,
-      showStars: typeof parsed.showStars === 'boolean' ? parsed.showStars : undefined,
-      showVignette: typeof parsed.showVignette === 'boolean' ? parsed.showVignette : undefined,
-      idlePattern: isIdlePattern(migratedIdlePattern) ? migratedIdlePattern : undefined,
-      idleSpeed: isIdleSpeed(parsed.idleSpeed) ? parsed.idleSpeed : undefined,
-    }
-  } catch {
-    return {}
-  }
-}
 
 function AppHeader({
   catalogCount,
@@ -193,7 +154,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(COLLECTION_DISPLAY_PREFS_KEY, JSON.stringify({
+      window.localStorage.setItem(COLLECTION_DISPLAY_PREFS_KEY, serializeCollectionDisplayPreferences({
         viewMode,
         gridSize,
         ringStyle,

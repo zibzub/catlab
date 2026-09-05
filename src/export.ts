@@ -14,6 +14,24 @@ export const EXPORT_SCALES: Record<ExportSize, number> = {
   large: 32,
 }
 
+export function exportMimeType(format: ExportFormat) {
+  return format === 'png' ? 'image/png' : 'image/webp'
+}
+
+export function exportFilename(rescueOrder: number, artMode: GridArtMode, format: ExportFormat) {
+  return artMode === 'faces' ? `${rescueOrder}-face.${format}` : `${rescueOrder}.${format}`
+}
+
+export function exportArchiveFilename(artMode: GridArtMode, count: number) {
+  const artLabel = artMode === 'faces' ? 'faces' : 'bodies'
+  return `catlab-${artLabel}-${count}-cats.zip`
+}
+
+export function validateExportSelectionCount(count: number) {
+  if (count === 0) throw new Error('Select at least one MoonCat to export.')
+  if (count > MAX_EXPORT_CATS) throw new Error(`Select ${MAX_EXPORT_CATS} or fewer MoonCats to export.`)
+}
+
 interface ExportOptions {
   artMode: GridArtMode
   format: ExportFormat
@@ -82,14 +100,11 @@ function renderCat(cat: CatRecord, manifest: AtlasManifest, options: ExportOptio
       canvas.width,
       canvas.height,
     )
-    const mimeType = options.format === 'png' ? 'image/png' : 'image/webp'
+    const mimeType = exportMimeType(options.format)
     // Canvas does not expose a portable lossless-WebP switch; quality 1 is the
     // highest-fidelity browser encoding available for the optional WebP path.
     const blob = await imageBlob(canvas, mimeType, options.format === 'webp' ? 1 : undefined)
-    const extension = options.format
-    const filename = options.artMode === 'faces'
-      ? `${cat.rescueOrder}-face.${extension}`
-      : `${cat.rescueOrder}.${extension}`
+    const filename = exportFilename(cat.rescueOrder, options.artMode, options.format)
     return { blob, filename }
   })
 }
@@ -108,10 +123,7 @@ export async function exportSelectedCats(
   manifest: AtlasManifest,
   options: ExportOptions,
 ) {
-  if (cats.length === 0) throw new Error('Select at least one MoonCat to export.')
-  if (cats.length > MAX_EXPORT_CATS) {
-    throw new Error(`Select ${MAX_EXPORT_CATS} or fewer MoonCats to export.`)
-  }
+  validateExportSelectionCount(cats.length)
 
   const files = await Promise.all(cats.map((cat) => renderCat(cat, manifest, options)))
   if (files.length === 1) {
@@ -122,7 +134,6 @@ export async function exportSelectedCats(
   const zip = new JSZip()
   for (const file of files) zip.file(file.filename, file.blob)
   const archive = await zip.generateAsync({ type: 'blob', compression: 'STORE' })
-  const artLabel = options.artMode === 'faces' ? 'faces' : 'bodies'
-  triggerDownload(archive, `catlab-${artLabel}-${files.length}-cats.zip`)
+  triggerDownload(archive, exportArchiveFilename(options.artMode, files.length))
   return { kind: 'zip' as const, count: files.length }
 }
