@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "build": "vite build",
     "test": "vitest run",
     "test:browser": "playwright test",
@@ -30,6 +32,7 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.2",
+    "prettier": "^3.9.6",
     "sharp": "^0.35.4",
     "typescript": "^5.9.2",
     "vite": "^7.1.3",

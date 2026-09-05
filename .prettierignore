@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+.chatgpt/
+docs/audits/
+public/
+package-lock.json
+AUDIT.md
+RESULT.md

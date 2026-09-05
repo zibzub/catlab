@@ -226,11 +226,15 @@ sibling repository after generation.
 | `npm run validate:generated` | Validate generated catalog, atlas, classification, and live name artifacts. |
 | `npm test` | Run the fast Vitest unit and regression tests. |
 | `npm run test:browser` | Run the Playwright desktop/mobile Collection smoke tests. |
+| `npm run format:check` | Check source, configuration, and documentation formatting without changing files. |
+| `npm run format` | Format source, configuration, and documentation files with Prettier. |
 | `npm run check` | Run the TypeScript check. |
 | `npm run build` | Build the static app with Vite. |
 
 The browser smoke tests require the Playwright Chromium binary. After
 `npm install`, install it once with `npx playwright install chromium`.
+Vitest is the fast default test path; run the separate Playwright suite when
+browser-level desktop or mobile Collection behavior needs validation.
 
 For structured QA scenarios, see [TESTING.md](./TESTING.md).
 
