@@ -5,7 +5,9 @@ test-results/
 playwright-report/
 .chatgpt/
 docs/audits/
-public/
+public/img/
+public/icons/
+public/fonts/
 package-lock.json
 AUDIT.md
 RESULT.md
