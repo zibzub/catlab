@@ -11,6 +11,12 @@ export interface ComposeTransform {
   flipY: boolean
 }
 
+export const MAX_COMPOSE_LAYERS = 40
+
+export function canAddComposeLayer(currentCount: number) {
+  return currentCount < MAX_COMPOSE_LAYERS
+}
+
 export type ComposeClipboardSnapshot<T extends { id: string; z: number }> = T extends unknown
   ? Omit<T, 'id' | 'z'>
   : never

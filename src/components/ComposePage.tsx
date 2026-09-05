@@ -20,11 +20,13 @@ import {
 import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
 import {
   canTransformComposeObject,
+  canAddComposeLayer,
   cloneComposeObjectFromSnapshot,
   createComposeClipboardSnapshot,
   createComposeObjectId,
   defaultComposeObjectState,
   getComposePastePosition,
+  MAX_COMPOSE_LAYERS,
   moveComposeLayer,
   moveComposeLayerToIndex,
   offsetComposePosition,
@@ -380,6 +382,7 @@ export function ComposePage({
   }, [exportDialogOpen])
 
   const selected = placedObjects.find((item) => item.id === selectedId) ?? null
+  const layerLimitReached = !canAddComposeLayer(placedObjects.length)
   const catalogCatsByOrder = useMemo(() => new Map(catalogCats.map((cat) => [cat.rescueOrder, cat])), [catalogCats])
   const selectedCat = selected?.kind === 'cat' ? (catalogCatsByOrder.get(selected.rescueOrder) ?? null) : null
   const colorPickerSupported = supportsColorPicker()
@@ -526,6 +529,7 @@ export function ComposePage({
   }
 
   function addCat(cat: CatRecord) {
+    if (!canAddComposeLayer(placedObjectsRef.current.length)) return
     cancelStageSampling()
     const id = createComposeObjectId(String(cat.rescueOrder))
     setPlacedObjects((current) => [
@@ -550,6 +554,7 @@ export function ComposePage({
   }
 
   function addText() {
+    if (!canAddComposeLayer(placedObjectsRef.current.length)) return
     cancelStageSampling()
     const id = createComposeObjectId('text')
     setPlacedObjects((current) => [
@@ -578,6 +583,7 @@ export function ComposePage({
   }
 
   function addRectangle() {
+    if (!canAddComposeLayer(placedObjectsRef.current.length)) return
     cancelStageSampling()
     const id = createComposeObjectId('rect')
     setPlacedObjects((current) => {
@@ -611,7 +617,7 @@ export function ComposePage({
   }
 
   function pasteCopied() {
-    if (!composeClipboard) return
+    if (!composeClipboard || !canAddComposeLayer(placedObjectsRef.current.length)) return
     const id = createComposeObjectId(
       `${composeClipboard.kind}-paste`,
       new Set(placedObjectsRef.current.map((object) => object.id)),
@@ -626,7 +632,7 @@ export function ComposePage({
   }
 
   function duplicateSelected() {
-    if (!selectedId) return
+    if (!selectedId || !canAddComposeLayer(placedObjectsRef.current.length)) return
     const id = createComposeObjectId(`${selectedId}-copy`, new Set(placedObjectsRef.current.map((object) => object.id)))
 
     setPlacedObjects((current) => {
@@ -979,10 +985,13 @@ export function ComposePage({
             </button>
           </div>
         </div>
-        {(exportError || documentError) && (
+        {(exportError || documentError || layerLimitReached) && (
           <div className="compose-action-status">
-            <p className="compose-message compose-message--error" role="alert">
-              {documentError ?? exportError}
+            <p
+              className={`compose-message${documentError || exportError ? ' compose-message--error' : ''}`}
+              role={documentError || exportError ? 'alert' : 'status'}
+            >
+              {documentError ?? exportError ?? `Maximum ${MAX_COMPOSE_LAYERS} layers`}
             </p>
           </div>
         )}
@@ -1179,15 +1188,23 @@ export function ComposePage({
               className="compose-tool"
               type="button"
               onClick={addRectangle}
+              disabled={layerLimitReached}
               aria-label="Add rectangle"
-              title="Add rectangle"
+              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Add rectangle'}
             >
               <span className="compose-tool__icon" aria-hidden="true">
                 □
               </span>
               <span className="compose-tool__label">Rectangle</span>
             </button>
-            <button className="compose-tool" type="button" onClick={addText} aria-label="Add text" title="Add text">
+            <button
+              className="compose-tool"
+              type="button"
+              onClick={addText}
+              disabled={layerLimitReached}
+              aria-label="Add text"
+              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Add text'}
+            >
               <span className="compose-tool__icon" aria-hidden="true">
                 T
               </span>
@@ -1460,8 +1477,11 @@ export function ComposePage({
                     className="compose-source"
                     key={cat.rescueOrder}
                     type="button"
+                    disabled={layerLimitReached}
                     onClick={() => addCat(cat)}
-                    title={`Add MoonCat ${cat.rescueOrder}`}
+                    title={
+                      layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : `Add MoonCat ${cat.rescueOrder}`
+                    }
                   >
                     <span
                       className="compose-source__sprite"
@@ -1743,7 +1763,13 @@ export function ComposePage({
                 >
                   {selected.visible ? 'Hide object' : 'Show object'}
                 </button>
-                <button className="compose-duplicate" type="button" onClick={duplicateSelected}>
+                <button
+                  className="compose-duplicate"
+                  type="button"
+                  onClick={duplicateSelected}
+                  disabled={layerLimitReached}
+                  title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Duplicate selected'}
+                >
                   Duplicate selected
                 </button>
                 <button className="compose-object-action" type="button" onClick={copySelected}>
@@ -1753,7 +1779,8 @@ export function ComposePage({
                   className="compose-object-action"
                   type="button"
                   onClick={pasteCopied}
-                  disabled={!composeClipboard}
+                  disabled={!composeClipboard || layerLimitReached}
+                  title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Paste copied'}
                 >
                   Paste copied
                 </button>

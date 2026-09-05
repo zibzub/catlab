@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canAddComposeLayer,
   canTransformComposeObject,
   cloneComposeObjectFromSnapshot,
   createComposeClipboardSnapshot,
@@ -12,6 +13,12 @@ import {
 } from '../composeModel'
 
 describe('Compose object model', () => {
+  it('enforces the editor layer limit without mutating anything', () => {
+    expect(canAddComposeLayer(39)).toBe(true)
+    expect(canAddComposeLayer(40)).toBe(false)
+    expect(canAddComposeLayer(41)).toBe(false)
+  })
+
   it('resets only the common transform fields', () => {
     const object = {
       kind: 'rect' as const,
