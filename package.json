@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
+    "test:browser": "playwright test",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck",
     "generate": "node scripts/generate-assets.mjs",
@@ -24,6 +25,7 @@
     "react-moveable": "^0.56.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.15.21",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
