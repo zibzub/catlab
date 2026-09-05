@@ -22,6 +22,7 @@ import {
   canTransformComposeObject,
   defaultComposeObjectState,
   moveComposeLayer,
+  moveComposeLayerToIndex,
   resetComposeTransform,
   type ComposeLayerMove,
 } from '../composeModel'
@@ -220,12 +221,16 @@ export function ComposePage({
     function handleKeyDown(event: KeyboardEvent) {
       if (editingTextId) return
       const target = event.target
-      if (
-        target instanceof HTMLElement &&
-        ((target.matches('button, input, textarea, select') && !target.matches('.compose-cat')) ||
-          target.isContentEditable)
-      ) {
-        return
+      if (target instanceof HTMLElement) {
+        const button = target.closest('button')
+        const isLayerSelection = button?.matches('.compose-layer-row__select')
+        if (
+          target.isContentEditable ||
+          target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]') ||
+          (button && !target.closest('.compose-cat') && !isLayerSelection)
+        ) {
+          return
+        }
       }
 
       if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'd') {
@@ -236,8 +241,7 @@ export function ComposePage({
 
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault()
-        setPlacedObjects((current) => current.filter((item) => item.id !== selectedId))
-        setSelectedId(null)
+        removeSelected()
         return
       }
 
@@ -598,6 +602,12 @@ export function ComposePage({
   function updateSelected(update: Partial<ComposePlacedObject>) {
     if (!selectedId) return
     updateObject(selectedId, update)
+  }
+
+  function removeSelected() {
+    if (!selectedId) return
+    setPlacedObjects((current) => current.filter((item) => item.id !== selectedId))
+    setSelectedId(null)
   }
 
   function updateObject(id: string, update: Partial<ComposePlacedObject>) {
@@ -1459,6 +1469,9 @@ export function ComposePage({
             setSelectedId(id)
           }}
           onUpdate={updateObject}
+          onReorder={(id, targetIndex) =>
+            setPlacedObjects((current) => moveComposeLayerToIndex(current, id, targetIndex))
+          }
         />
 
         <section className="compose-card compose-selected" aria-labelledby="compose-selected-title">
@@ -1737,14 +1750,7 @@ export function ComposePage({
                   Front
                 </button>
               </div>
-              <button
-                className="compose-remove"
-                type="button"
-                onClick={() => {
-                  setPlacedObjects((current) => current.filter((item) => item.id !== selected.id))
-                  setSelectedId(null)
-                }}
-              >
+              <button className="compose-remove" type="button" onClick={removeSelected}>
                 Remove selected
               </button>
             </>

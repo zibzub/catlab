@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { canTransformComposeObject, moveComposeLayer, orderComposeLayers, resetComposeTransform } from '../composeModel'
+import {
+  canTransformComposeObject,
+  moveComposeLayer,
+  moveComposeLayerToIndex,
+  orderComposeLayers,
+  resetComposeTransform,
+} from '../composeModel'
 
 describe('Compose object model', () => {
   it('resets only the common transform fields', () => {
@@ -64,5 +70,36 @@ describe('Compose object model', () => {
     expect(moved[2]).toMatchObject({ kind: 'rect', locked: true, visible: false, width: 0.4 })
     expect(objects.map((object) => object.id)).toEqual(['back', 'middle', 'front'])
     expect(moveComposeLayer(moved, 'middle', 'back').map((object) => object.id)).toEqual(['middle', 'front', 'back'])
+  })
+
+  it('moves a layer to a front-to-back index without mutating input', () => {
+    const objects = [
+      { id: 'back', z: 0, kind: 'rect', locked: true, visible: false, width: 0.4 },
+      { id: 'middle', z: 1, kind: 'text', locked: false, visible: true, text: 'Layer' },
+      { id: 'front', z: 2, kind: 'cat', locked: false, visible: true, rescueOrder: 42 },
+    ]
+
+    const frontToMiddle = moveComposeLayerToIndex(objects, 'front', 1)
+    expect(orderComposeLayers(frontToMiddle).map((object) => object.id)).toEqual(['middle', 'front', 'back'])
+    expect(frontToMiddle.map((object) => object.z).sort()).toEqual([0, 1, 2])
+
+    const backToFront = moveComposeLayerToIndex(objects, 'back', 0)
+    expect(orderComposeLayers(backToFront).map((object) => object.id)).toEqual(['back', 'front', 'middle'])
+
+    const middleToBack = moveComposeLayerToIndex(objects, 'middle', 2)
+    expect(orderComposeLayers(middleToBack).map((object) => object.id)).toEqual(['front', 'back', 'middle'])
+    expect(middleToBack.find((object) => object.id === 'middle')).toMatchObject({
+      kind: 'text',
+      locked: false,
+      visible: true,
+      text: 'Layer',
+    })
+
+    expect(moveComposeLayerToIndex(objects, 'middle', 1)).toBe(objects)
+    expect(objects.map((object) => [object.id, object.z])).toEqual([
+      ['back', 0],
+      ['middle', 1],
+      ['front', 2],
+    ])
   })
 })

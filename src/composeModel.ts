@@ -39,15 +39,27 @@ export function orderComposeLayers<T extends { z: number }>(objects: T[]): T[] {
     .map(({ object }) => object)
 }
 
+function orderComposeLayersBackToFront<T extends { z: number }>(objects: T[]): T[] {
+  return objects
+    .map((object, index) => ({ object, index }))
+    .sort((a, b) => a.object.z - b.object.z || a.index - b.index)
+    .map(({ object }) => object)
+}
+
+function moveOrderedComposeLayer<T>(objects: T[], sourceIndex: number, targetIndex: number): T[] {
+  if (sourceIndex === targetIndex) return objects
+  const movedObjects = [...objects]
+  const [moved] = movedObjects.splice(sourceIndex, 1)
+  movedObjects.splice(targetIndex, 0, moved)
+  return movedObjects
+}
+
 export function moveComposeLayer<T extends { id: string; z: number }>(
   objects: T[],
   id: string,
   direction: ComposeLayerMove,
 ): T[] {
-  const ordered = objects
-    .map((object, index) => ({ object, index }))
-    .sort((a, b) => a.object.z - b.object.z || a.index - b.index)
-    .map(({ object }) => object)
+  const ordered = orderComposeLayersBackToFront(objects)
   const index = ordered.findIndex((object) => object.id === id)
   if (index < 0) return objects
 
@@ -58,7 +70,25 @@ export function moveComposeLayer<T extends { id: string; z: number }>(
   if (direction === 'back') target = 0
   if (target === index) return objects
 
-  const [moved] = ordered.splice(index, 1)
-  ordered.splice(target, 0, moved)
-  return ordered.map((object, z) => ({ ...object, z }))
+  return moveOrderedComposeLayer(ordered, index, target).map((object, z) => ({ ...object, z }))
+}
+
+/** Move a layer to a front-to-back list position (0 is frontmost). */
+export function moveComposeLayerToIndex<T extends { id: string; z: number }>(
+  objects: T[],
+  id: string,
+  targetIndex: number,
+): T[] {
+  const ordered = orderComposeLayers(objects)
+  const sourceIndex = ordered.findIndex((object) => object.id === id)
+  if (sourceIndex < 0) return objects
+
+  const clampedIndex = Math.max(0, Math.min(targetIndex, ordered.length - 1))
+  if (sourceIndex === clampedIndex) return objects
+
+  const movedObjects = moveOrderedComposeLayer(ordered, sourceIndex, clampedIndex)
+  return movedObjects
+    .slice()
+    .reverse()
+    .map((object, z) => ({ ...object, z }))
 }

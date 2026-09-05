@@ -2904,6 +2904,7 @@ h1 {
 }
 
 .compose-layer-list {
+  position: relative;
   display: flex;
   max-height: 320px;
   flex-direction: column;
@@ -2917,6 +2918,50 @@ h1 {
   min-width: 0;
   align-items: stretch;
   gap: 4px;
+}
+
+.compose-layer-row.is-dragging {
+  opacity: 0.52;
+}
+
+.compose-layer-row__drag {
+  display: grid;
+  width: 20px;
+  flex: 0 0 20px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--faint);
+  background: transparent;
+  cursor: grab;
+  font-size: 0.9rem;
+  line-height: 1;
+  touch-action: none;
+}
+
+.compose-layer-row__drag:active {
+  cursor: grabbing;
+}
+
+.compose-layer-row__drag:hover,
+.compose-layer-row__drag:focus-visible {
+  border-color: var(--control-border);
+  color: var(--ink);
+  background: var(--control-surface-deep);
+}
+
+.compose-layer-drop-indicator {
+  position: absolute;
+  right: 4px;
+  left: 4px;
+  height: 3px;
+  margin-top: -1px;
+  border-radius: 2px;
+  background: var(--accent-bright);
+  box-shadow: 0 0 6px rgba(153, 154, 255, 0.72);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .compose-layer-row__select {
@@ -3411,6 +3456,22 @@ h1 {
   .compose-controls {
     display: flex;
     padding: 14px 14px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .compose-layers {
+    order: 1;
+  }
+
+  .compose-selected {
+    order: 2;
+  }
+
+  .compose-sources {
+    order: 3;
+  }
+
+  .compose-background {
+    order: 4;
   }
 
   .compose-card {
@@ -6568,6 +6629,18 @@ h1 {
 .compose-layer-row__select {
   border-radius: var(--console-radius-small);
   color: var(--console-muted);
+}
+
+.compose-layer-row__drag {
+  border-radius: var(--console-radius-small);
+  color: var(--console-faint);
+}
+
+.compose-layer-row__drag:hover,
+.compose-layer-row__drag:focus-visible {
+  border-color: var(--console-divider-strong);
+  color: var(--console-ink);
+  background: var(--console-surface-hover);
 }
 
 .compose-layer-row__select:hover,
