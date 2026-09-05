@@ -1,4 +1,5 @@
 import { matchesFilters, type FilterIndex } from './filters'
+import { compareFirstNamed, compareRecentlyNamed } from './sorts'
 import type { CatRecord, FilterState } from '../types'
 
 export interface MoonCatIndexResultOptions {
@@ -7,17 +8,6 @@ export interface MoonCatIndexResultOptions {
   filters: FilterState
   colorMatchingOrders: ReadonlySet<number> | null
   ownedOrders: ReadonlySet<number> | null
-}
-
-function sortNamed(cats: CatRecord[], direction: 'asc' | 'desc') {
-  return [...cats].sort((first, second) => {
-    if (first.nameTimestamp === null && second.nameTimestamp !== null) return 1
-    if (first.nameTimestamp !== null && second.nameTimestamp === null) return -1
-    if (first.nameTimestamp !== null && second.nameTimestamp !== null && first.nameTimestamp !== second.nameTimestamp) {
-      return (second.nameTimestamp - first.nameTimestamp) * (direction === 'desc' ? 1 : -1)
-    }
-    return first.rescueOrder - second.rescueOrder
-  })
 }
 
 export function deriveMoonCatIndexResult({
@@ -32,7 +22,7 @@ export function deriveMoonCatIndexResult({
     && (colorMatchingOrders === null || colorMatchingOrders.has(cat.rescueOrder))
     && (ownedOrders === null || ownedOrders.has(cat.rescueOrder))
   ))
-  if (filters.naming === 'recentlyNamed') return sortNamed(matchingCats, 'desc')
-  if (filters.naming === 'firstNamed') return sortNamed(matchingCats, 'asc')
+  if (filters.naming === 'recentlyNamed') return [...matchingCats].sort(compareRecentlyNamed)
+  if (filters.naming === 'firstNamed') return [...matchingCats].sort(compareFirstNamed)
   return matchingCats
 }
