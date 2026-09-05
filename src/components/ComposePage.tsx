@@ -4,7 +4,7 @@ import { requestScreenColor, supportsColorPicker } from '../colorPicker'
 import { sampleCanvasColor } from '../colorLab'
 import { loadComposeBackground, renderComposition, type ComposeBackground, type ComposePlacedObject, type ComposePlacedRect } from '../composeExport'
 import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
-import { assetPath } from '../data'
+import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
 interface ComposePageProps {
@@ -81,11 +81,6 @@ const ComposeObjectToggleAble: Able<ComposeObjectToggleProps> = {
       },
     }, options.label)]
   },
-}
-
-function atlasSheetPath(atlas: AtlasManifest['atlas'] | AtlasManifest['faceAtlas'], sheet: number) {
-  const filename = atlas.pattern.replace('{sheet:03}', String(sheet).padStart(3, '0'))
-  return assetPath(`${atlas.directory}/${filename}`)
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -1051,18 +1046,14 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                 if (item.kind === 'cat') {
                   const cat = catalogCatsByOrder.get(item.rescueOrder)
                   if (!cat) return null
-                  const atlas = item.artMode === 'faces' ? manifest.faceAtlas : manifest.atlas
-                  const cell = cat.rescueOrder % atlas.catsPerAtlas
-                  const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
-                  const column = cell % atlas.columns
-                  const row = Math.floor(cell / atlas.columns)
+                  const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, item.artMode)
                   const artScale = ART_SCALE[item.artMode]
                   const spriteStyle = {
-                    width: atlas.cellWidth * artScale,
-                    height: atlas.cellHeight * artScale,
-                    backgroundImage: `url(${atlasSheetPath(atlas, sheet)})`,
-                    backgroundPosition: `-${column * atlas.cellWidth * artScale}px -${row * atlas.cellHeight * artScale}px`,
-                    backgroundSize: `${atlas.width * artScale}px ${atlas.height * artScale}px`,
+                    width: atlasCell.cellWidth * artScale,
+                    height: atlasCell.cellHeight * artScale,
+                    backgroundImage: `url(${atlasCell.assetUrl})`,
+                    backgroundPosition: `-${atlasCell.x * artScale}px -${atlasCell.y * artScale}px`,
+                    backgroundSize: `${atlasCell.atlas.width * artScale}px ${atlasCell.atlas.height * artScale}px`,
                     opacity: item.opacity,
                     left: `${item.x * 100}%`,
                     top: `${item.y * 100}%`,
@@ -1238,11 +1229,7 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
           ) : (
             <div className="compose-source-list">
               {sourceCats.map((cat) => {
-                const atlas = manifest.atlas
-                const cell = cat.rescueOrder % atlas.catsPerAtlas
-                const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
-                const column = cell % atlas.columns
-                const row = Math.floor(cell / atlas.columns)
+                const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, 'bodies')
                 const sourceScale = 2
                 return (
                   <button
@@ -1255,9 +1242,9 @@ export function ComposePage({ sourceCats, catalogCats, manifest, placedObjects, 
                     <span
                       className="compose-source__sprite"
                       style={{
-                        backgroundImage: `url(${atlasSheetPath(atlas, sheet)})`,
-                        backgroundPosition: `-${column * atlas.cellWidth * sourceScale}px -${row * atlas.cellHeight * sourceScale}px`,
-                        backgroundSize: `${atlas.width * sourceScale}px ${atlas.height * sourceScale}px`,
+                        backgroundImage: `url(${atlasCell.assetUrl})`,
+                        backgroundPosition: `-${atlasCell.x * sourceScale}px -${atlasCell.y * sourceScale}px`,
+                        backgroundSize: `${atlasCell.atlas.width * sourceScale}px ${atlasCell.atlas.height * sourceScale}px`,
                       }}
                       aria-hidden="true"
                     />

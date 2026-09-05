@@ -1,6 +1,6 @@
 import JSZip from 'jszip'
-import { assetPath } from './data'
 import { getAlphaBounds } from './composeCatCrop'
+import { getMoonCatAtlasCell } from './mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from './types'
 
 export const MAX_EXPORT_CATS = 10
@@ -20,14 +20,7 @@ interface ExportOptions {
   size: ExportSize
 }
 
-type AtlasSource = AtlasManifest['atlas'] | AtlasManifest['faceAtlas']
-
 const atlasImages = new Map<string, Promise<HTMLImageElement>>()
-
-function atlasSheetPath(atlas: AtlasSource, sheet: number) {
-  const filename = atlas.pattern.replace('{sheet:03}', String(sheet).padStart(3, '0'))
-  return assetPath(`${atlas.directory}/${filename}`)
-}
 
 function loadAtlasImage(url: string) {
   const cached = atlasImages.get(url)
@@ -57,23 +50,19 @@ function imageBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number
 }
 
 function renderCat(cat: CatRecord, manifest: AtlasManifest, options: ExportOptions) {
-  const atlas = options.artMode === 'faces' ? manifest.faceAtlas : manifest.atlas
+  const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, options.artMode)
   const scale = EXPORT_SCALES[options.size]
-  const cell = cat.rescueOrder % atlas.catsPerAtlas
-  const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
-  const column = cell % atlas.columns
-  const row = Math.floor(cell / atlas.columns)
 
-  return loadAtlasImage(atlasSheetPath(atlas, sheet)).then(async (image) => {
-    const sourceX = column * atlas.cellWidth
-    const sourceY = row * atlas.cellHeight
+  return loadAtlasImage(atlasCell.assetUrl).then(async (image) => {
+    const sourceX = atlasCell.x
+    const sourceY = atlasCell.y
     const bounds = getAlphaBounds({
       image,
-      cacheKey: atlasSheetPath(atlas, sheet),
+      cacheKey: atlasCell.assetUrl,
       sourceX,
       sourceY,
-      width: atlas.cellWidth,
-      height: atlas.cellHeight,
+      width: atlasCell.cellWidth,
+      height: atlasCell.cellHeight,
     })
     const canvas = document.createElement('canvas')
     canvas.width = bounds.width * scale

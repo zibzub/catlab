@@ -1,11 +1,6 @@
 import { memo, type CSSProperties } from 'react'
-import { assetPath } from '../data'
+import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode, GridSize, GridViewMode } from '../types'
-
-function atlasSheetPath(atlas: AtlasManifest['atlas'], sheet: number) {
-  const filename = atlas.pattern.replace('{sheet:03}', String(sheet).padStart(3, '0'))
-  return `${atlas.directory}/${filename}`
-}
 
 interface MoonCatSpriteProps {
   cat: CatRecord
@@ -22,11 +17,8 @@ export const MoonCatSprite = memo(function MoonCatSprite({
   artMode = 'bodies',
   gridSize = 'medium',
 }: MoonCatSpriteProps) {
-  const atlas = artMode === 'faces' && variant !== 'palette' ? manifest.faceAtlas : manifest.atlas
-  const cell = cat.rescueOrder % atlas.catsPerAtlas
-  const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
-  const column = cell % atlas.columns
-  const row = Math.floor(cell / atlas.columns)
+  const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, artMode === 'faces' && variant !== 'palette' ? 'faces' : 'bodies')
+  const { atlas } = atlasCell
   const scale = variant === 'palette'
     ? 3
     : variant === 'list'
@@ -49,14 +41,14 @@ export const MoonCatSprite = memo(function MoonCatSprite({
             ? 4
             : 4
   const spriteBoxStyle = {
-    width: atlas.cellWidth * scale,
-    height: atlas.cellHeight * scale,
+    width: atlasCell.cellWidth * scale,
+    height: atlasCell.cellHeight * scale,
   } satisfies CSSProperties
   const spriteCellStyle = {
-    width: atlas.cellWidth,
-    height: atlas.cellHeight,
-    backgroundImage: `url(${assetPath(atlasSheetPath(atlas, sheet))})`,
-    backgroundPosition: `-${column * atlas.cellWidth}px -${row * atlas.cellHeight}px`,
+    width: atlasCell.cellWidth,
+    height: atlasCell.cellHeight,
+    backgroundImage: `url(${atlasCell.assetUrl})`,
+    backgroundPosition: `-${atlasCell.x}px -${atlasCell.y}px`,
     backgroundSize: `${atlas.width}px ${atlas.height}px`,
     transform: `scale(${scale})`,
     transformOrigin: 'top left',

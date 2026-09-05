@@ -1,4 +1,5 @@
 import { assetPath } from './data'
+import { getMoonCatAtlasCell } from './mooncat-index/atlas'
 import { isDay1RescueOrder, isDay2RescueOrder, isValidRescueOrder } from './mooncat-index/domain'
 import type { AtlasManifest, CatRecord } from './types'
 
@@ -219,10 +220,6 @@ export function fitSingleLineText(
   return fittedFontSize
 }
 
-function atlasSheetFilename(atlas: AtlasManifest['atlas'], sheet: number) {
-  return atlas.pattern.replace('{sheet:03}', String(sheet).padStart(3, '0'))
-}
-
 export interface DetailAtlasCell {
   url: string
   sheet: number
@@ -233,18 +230,14 @@ export interface DetailAtlasCell {
 }
 
 export function getDetailAtlasCell(cat: CatRecord, manifest: AtlasManifest): DetailAtlasCell | null {
-  const atlas = manifest.atlas
   if (!Number.isInteger(cat.rescueOrder) || cat.rescueOrder < 0 || cat.rescueOrder >= manifest.count) return null
-  const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
-  const cell = cat.rescueOrder % atlas.catsPerAtlas
-  const column = cell % atlas.columns
-  const row = Math.floor(cell / atlas.columns)
+  const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, 'bodies')
   return {
-    url: assetPath(`${atlas.directory}/${atlasSheetFilename(atlas, sheet)}`),
-    sheet,
-    x: column * atlas.cellWidth,
-    y: row * atlas.cellHeight,
-    width: atlas.cellWidth,
-    height: atlas.cellHeight,
+    url: atlasCell.assetUrl,
+    sheet: atlasCell.sheetIndex,
+    x: atlasCell.x,
+    y: atlasCell.y,
+    width: atlasCell.cellWidth,
+    height: atlasCell.cellHeight,
   }
 }

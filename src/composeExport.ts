@@ -1,5 +1,5 @@
-import { assetPath } from './data'
 import { getAlphaBounds, getIsolatedSprite } from './composeCatCrop'
+import { getMoonCatAtlasCell } from './mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from './types'
 
 interface ComposePlacedTransform {
@@ -62,11 +62,6 @@ const COMPOSE_ART_SCALE: Record<GridArtMode, number> = {
 }
 
 const atlasImages = new Map<string, Promise<HTMLImageElement>>()
-
-function atlasSheetPath(atlas: AtlasManifest['atlas'] | AtlasManifest['faceAtlas'], sheet: number) {
-  const filename = atlas.pattern.replace('{sheet:03}', String(sheet).padStart(3, '0'))
-  return assetPath(`${atlas.directory}/${filename}`)
-}
 
 function loadImage(url: string) {
   const cached = atlasImages.get(url)
@@ -177,32 +172,28 @@ export async function renderComposition({
         context.restore()
         continue
       }
-      const atlas = placed.artMode === 'faces' ? manifest.faceAtlas : manifest.atlas
-      const cell = cat.rescueOrder % atlas.catsPerAtlas
-      const sheet = Math.floor(cat.rescueOrder / atlas.catsPerAtlas)
-      const column = cell % atlas.columns
-      const row = Math.floor(cell / atlas.columns)
-      const image = await loadImage(atlasSheetPath(atlas, sheet))
-      const sourceX = column * atlas.cellWidth
-      const sourceY = row * atlas.cellHeight
+      const atlasCell = getMoonCatAtlasCell(manifest, cat.rescueOrder, placed.artMode)
+      const image = await loadImage(atlasCell.assetUrl)
+      const sourceX = atlasCell.x
+      const sourceY = atlasCell.y
       const bounds = getAlphaBounds({
         image,
-        cacheKey: atlasSheetPath(atlas, sheet),
+        cacheKey: atlasCell.assetUrl,
         sourceX,
         sourceY,
-        width: atlas.cellWidth,
-        height: atlas.cellHeight,
+        width: atlasCell.cellWidth,
+        height: atlasCell.cellHeight,
       })
       const catScale = COMPOSE_ART_SCALE[placed.artMode] * outputScale * placed.scale
       const width = bounds.width * catScale
       const height = bounds.height * catScale
-      const offsetX = (bounds.x + bounds.width / 2 - atlas.cellWidth / 2) * catScale
-      const offsetY = (bounds.y + bounds.height / 2 - atlas.cellHeight / 2) * catScale
+      const offsetX = (bounds.x + bounds.width / 2 - atlasCell.cellWidth / 2) * catScale
+      const offsetY = (bounds.y + bounds.height / 2 - atlasCell.cellHeight / 2) * catScale
 
       context.scale(placed.flipX ? -1 : 1, placed.flipY ? -1 : 1)
       const isolatedSprite = getIsolatedSprite({
         image,
-        cacheKey: atlasSheetPath(atlas, sheet),
+        cacheKey: atlasCell.assetUrl,
         sourceX,
         sourceY,
         bounds,
