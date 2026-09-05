@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { activeFilterCount, getActiveFilterChips, type FilterIndex, type RemovableFilterKey } from './collectionFilters'
+import { activeFilterCount, getActiveFilterChips, type RemovableFilterKey } from './collectionFilters'
 import { DisplayMenu } from './DisplayMenu'
 import { FilterDrawer } from './FilterDrawer'
 import type { WalletFilter } from '../walletLookup'
+import type { FilterIndex } from '../mooncat-index/filters'
 import type {
   CollectionInteractionMode,
   FilterState,

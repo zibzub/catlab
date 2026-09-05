@@ -5,16 +5,12 @@ import { CatList } from './components/CatList'
 import { ColorLabPanel } from './components/ColorLabPanel'
 import { ComposePage } from './components/ComposePage'
 import { FilterBar } from './components/FilterBar'
-import {
-  buildFilterIndex,
-  createEmptyFilterState,
-  removeFilterValue,
-  type RemovableFilterKey,
-} from './components/collectionFilters'
+import { removeFilterValue, type RemovableFilterKey } from './components/collectionFilters'
 import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import { loadGeneratedData } from './data'
 import { isIdlePattern, isIdleSpeed } from './idleAnimation'
+import { buildFilterIndex, createEmptyFilterState } from './mooncat-index/filters'
 import { deriveMoonCatIndexResult } from './mooncat-index/result'
 import {
   getWalletParamFromUrl,

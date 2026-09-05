@@ -2,10 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   activeFilterCount,
   CLASSIFICATION_FILTER_OPTIONS,
-  cloneFilterState,
-  createEmptyFilterState,
-  type FilterIndex,
 } from './collectionFilters'
+import { cloneFilterState, createEmptyFilterState, type FilterIndex } from '../mooncat-index/filters'
 import type { FilterState } from '../types'
 import {
   getInjectedWalletProvider,

@@ -1,4 +1,4 @@
-import { matchesFilters, type FilterIndex } from '../components/collectionFilters'
+import { matchesFilters, type FilterIndex } from './filters'
 import type { CatRecord, FilterState } from '../types'
 
 export interface MoonCatIndexResultOptions {
