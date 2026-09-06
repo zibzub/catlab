@@ -8,9 +8,13 @@ interface ComposeLayersPanelProps {
   objects: ComposePlacedObject[]
   manifest: AtlasManifest
   selectedId: string | null
+  selectedObject: ComposePlacedObject | null
   onSelect: (id: string) => void
   onUpdate: (id: string, update: Partial<ComposePlacedObject>) => void
   onReorder: (id: string, targetIndex: number) => void
+  onOpacityChange: (opacity: number) => void
+  onBeginTransaction: () => void
+  onCommitTransaction: () => void
 }
 
 export function getComposeLayerLabel(object: ComposePlacedObject) {
@@ -98,9 +102,13 @@ export function ComposeLayersPanel({
   objects,
   manifest,
   selectedId,
+  selectedObject,
   onSelect,
   onUpdate,
   onReorder,
+  onOpacityChange,
+  onBeginTransaction,
+  onCommitTransaction,
 }: ComposeLayersPanelProps) {
   const [open, setOpen] = useState(true)
   const [draggingId, setDraggingId] = useState<string | null>(null)
@@ -312,6 +320,27 @@ export function ComposeLayersPanel({
         </span>
         <span className="compose-count">{objects.length}</span>
       </summary>
+      <label className="compose-range compose-layers__opacity">
+        <span>
+          Opacity <output>{selectedObject ? `${Math.round(selectedObject.opacity * 100)}%` : '—'}</output>
+        </span>
+        <input
+          aria-label="Selected object opacity"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={selectedObject?.opacity ?? 1}
+          disabled={!selectedObject}
+          onFocus={onBeginTransaction}
+          onKeyDown={onBeginTransaction}
+          onPointerDown={onBeginTransaction}
+          onPointerUp={onCommitTransaction}
+          onKeyUp={onCommitTransaction}
+          onBlur={onCommitTransaction}
+          onChange={(event) => onOpacityChange(Number(event.currentTarget.value))}
+        />
+      </label>
       {orderedObjects.length === 0 ? (
         <p className="compose-help">Add an object to see it here.</p>
       ) : (

@@ -2993,6 +2993,15 @@ h1 {
   font-weight: 600;
 }
 
+.compose-layers__opacity {
+  margin: 0 0 9px;
+}
+
+.compose-layers__opacity input:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
 .compose-layer-list {
   position: relative;
   display: flex;

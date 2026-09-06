@@ -1758,6 +1758,7 @@ export function ComposePage({
           objects={placedObjects}
           manifest={manifest}
           selectedId={selectedId}
+          selectedObject={selected}
           onSelect={(id) => {
             setEditingTextId(null)
             setSelectedId(id)
@@ -1766,6 +1767,9 @@ export function ComposePage({
           onReorder={(id, targetIndex) =>
             applyPlacedObjects((current) => moveComposeLayerToIndex(current, id, targetIndex))
           }
+          onOpacityChange={(opacity) => updateSelected({ opacity })}
+          onBeginTransaction={onBeginTransaction}
+          onCommitTransaction={onCommitTransaction}
         />
 
         <section className="compose-card compose-selected" aria-labelledby="compose-selected-title">
@@ -2028,26 +2032,6 @@ export function ComposePage({
                   Paste copied
                 </button>
               </div>
-              <label className="compose-range">
-                <span>
-                  Opacity <output>{Math.round(selected.opacity * 100)}%</output>
-                </span>
-                <input
-                  aria-label="Selected object opacity"
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={selected.opacity}
-                  onFocus={onBeginTransaction}
-                  onKeyDown={onBeginTransaction}
-                  onPointerDown={onBeginTransaction}
-                  onPointerUp={onCommitTransaction}
-                  onKeyUp={onCommitTransaction}
-                  onBlur={onCommitTransaction}
-                  onChange={(event) => updateSelected({ opacity: Number(event.currentTarget.value) })}
-                />
-              </label>
               <label className="compose-range">
                 <span>
                   Scale <output>{selected.scale.toFixed(2)}×</output>
