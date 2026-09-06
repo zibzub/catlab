@@ -21,9 +21,16 @@ import {
   type ComposeBackground,
   type ComposePlacedCat,
   type ComposePlacedObject,
-  type ComposePlacedRect,
 } from '../composeExport'
 import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocument } from '../composeDocument'
+import {
+  getComposeRectanglePlacement,
+  getComposeStagePoint,
+  isComposePlacementDrag,
+  type ComposeClientPoint,
+  type ComposeRectanglePlacement,
+  type ComposeStagePoint,
+} from '../composePlacement'
 import {
   canTransformComposeObject,
   canAddComposeLayer,
@@ -94,6 +101,19 @@ const COMPOSE_TEXT_FONTS = [
   { label: 'Roboto (Helvetica-like)', value: 'Roboto, Arial, sans-serif' },
 ] as const
 type ComposeColorTarget = 'fill' | 'stroke'
+type ComposeTool = 'select' | 'rectangle' | 'text' | 'eyedropper'
+
+interface RectangleGesture {
+  pointerId: number
+  startClient: ComposeClientPoint
+  startPoint: ComposeStagePoint
+  currentPoint: ComposeStagePoint
+  isDrag: boolean
+}
+
+interface RectangleDraft extends RectangleGesture {
+  placement: ComposeRectanglePlacement
+}
 
 interface ComposeObjectToggleOptions {
   label: string
@@ -211,10 +231,15 @@ export function ComposePage({
     direction: [number, number]
     stageSize: { width: number; height: number }
   } | null>(null)
+  const rectangleGestureRef = useRef<RectangleGesture | null>(null)
+  const suppressStageClickRef = useRef(false)
+  const suppressStageClickFrameRef = useRef<number | null>(null)
   const placedObjectsRef = useRef(placedObjects)
   const pasteCountRef = useRef(0)
   placedObjectsRef.current = placedObjects
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [activeTool, setActiveTool] = useState<ComposeTool>('select')
+  const [rectangleDraft, setRectangleDraft] = useState<RectangleDraft | null>(null)
   const [composeClipboard, setComposeClipboard] = useState<ComposeClipboardSnapshot<ComposePlacedObject> | null>(null)
   const [editingTextId, setEditingTextId] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
@@ -310,6 +335,7 @@ export function ComposePage({
           event.preventDefault()
           arrowKeysRef.current.clear()
           arrowTransactionRef.current = false
+          cancelActiveComposeTool()
           onUndo()
           return
         }
@@ -317,6 +343,7 @@ export function ComposePage({
           event.preventDefault()
           arrowKeysRef.current.clear()
           arrowTransactionRef.current = false
+          cancelActiveComposeTool()
           onRedo()
           return
         }
@@ -414,21 +441,24 @@ export function ComposePage({
   }, [onCommitTransaction])
 
   useEffect(() => {
-    if (!stageSamplingTarget) return
+    if (activeTool !== 'rectangle' && activeTool !== 'eyedropper') return
 
-    function handleSamplingKeyDown(event: KeyboardEvent) {
+    function handleToolEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')
+      ) {
+        return
+      }
       event.preventDefault()
-      samplingSequenceRef.current += 1
-      samplingCanvasRef.current = null
-      setStageSamplingTarget(null)
-      setStageSamplingMessage(null)
-      setColorPickerBusy(false)
+      cancelActiveComposeTool()
     }
 
-    document.addEventListener('keydown', handleSamplingKeyDown)
-    return () => document.removeEventListener('keydown', handleSamplingKeyDown)
-  }, [stageSamplingTarget])
+    document.addEventListener('keydown', handleToolEscape)
+    return () => document.removeEventListener('keydown', handleToolEscape)
+  }, [activeTool])
 
   useEffect(() => {
     if (!editingTextId) return
@@ -518,6 +548,10 @@ export function ComposePage({
   } as CSSProperties
 
   useEffect(() => {
+    if (activeTool === 'rectangle' && layerLimitReached) cancelActiveComposeTool()
+  }, [activeTool, layerLimitReached])
+
+  useEffect(() => {
     if (!historyNavigationToken) return
     const frame = window.requestAnimationFrame(() => {
       if (selected && canTransformComposeObject(selected) && !editingTextId) {
@@ -526,6 +560,23 @@ export function ComposePage({
     })
     return () => window.cancelAnimationFrame(frame)
   }, [historyNavigationToken])
+
+  function clearRectanglePlacement() {
+    const gesture = rectangleGestureRef.current
+    rectangleGestureRef.current = null
+    if (gesture) releaseRectanglePointer(gesture.pointerId)
+    setRectangleDraft(null)
+    const frame = suppressStageClickFrameRef.current
+    if (frame !== null) window.cancelAnimationFrame(frame)
+    suppressStageClickFrameRef.current = null
+    suppressStageClickRef.current = false
+  }
+
+  function cancelActiveComposeTool() {
+    clearRectanglePlacement()
+    cancelStageSampling()
+    setActiveTool('select')
+  }
 
   function cancelStageSampling() {
     samplingSequenceRef.current += 1
@@ -574,6 +625,9 @@ export function ComposePage({
     if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
     if (target === 'stroke' && selected.kind !== 'text') return
 
+    finishTextEditingBeforeToolChange()
+    clearRectanglePlacement()
+    setActiveTool('eyedropper')
     const sequence = samplingSequenceRef.current + 1
     samplingSequenceRef.current = sequence
     setStageSamplingTarget(target)
@@ -588,6 +642,7 @@ export function ComposePage({
       if (samplingSequenceRef.current !== sequence) return
       samplingCanvasRef.current = null
       setStageSamplingTarget(null)
+      setActiveTool('select')
       setStageSamplingMessage(error instanceof Error ? error.message : 'The composition could not be sampled.')
     } finally {
       if (samplingSequenceRef.current === sequence) setColorPickerBusy(false)
@@ -613,21 +668,150 @@ export function ComposePage({
     setStageSamplingTarget(null)
     setColorPickerBusy(false)
     if (sample.alpha === 0) {
+      setActiveTool('select')
       setStageSamplingMessage('That point is transparent. No color was changed.')
       return
     }
 
     updateSelected(target === 'fill' ? { fill: sample.hex } : { stroke: sample.hex }, true)
+    setActiveTool('select')
     setStageSamplingMessage(null)
   }
 
+  function stagePointForEvent(event: ComposeClientPoint) {
+    const bounds = stageContentRef.current?.getBoundingClientRect()
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) return null
+    return getComposeStagePoint(event, bounds)
+  }
+
+  function releaseRectanglePointer(pointerId: number) {
+    const stage = stageRef.current
+    if (stage?.hasPointerCapture(pointerId)) stage.releasePointerCapture(pointerId)
+  }
+
+  function scheduleStageClickSuppression() {
+    suppressStageClickRef.current = true
+    const frame = suppressStageClickFrameRef.current
+    if (frame !== null) window.cancelAnimationFrame(frame)
+    suppressStageClickFrameRef.current = window.requestAnimationFrame(() => {
+      suppressStageClickRef.current = false
+      suppressStageClickFrameRef.current = null
+    })
+  }
+
+  function finishRectanglePlacement(event: React.PointerEvent<HTMLDivElement>) {
+    const gesture = rectangleGestureRef.current
+    if (!gesture) return
+    if (gesture.pointerId !== event.pointerId) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    const endPoint = stagePointForEvent(event)
+    if (!endPoint) {
+      clearRectanglePlacement()
+      scheduleStageClickSuppression()
+      setActiveTool('select')
+      return
+    }
+
+    const isDrag = gesture.isDrag || isComposePlacementDrag(gesture.startClient, event)
+    const placement = getComposeRectanglePlacement(gesture.startPoint, endPoint, isDrag)
+    clearRectanglePlacement()
+    scheduleStageClickSuppression()
+    setActiveTool('select')
+
+    if (!canAddComposeLayer(placedObjectsRef.current.length)) return
+
+    const id = createComposeObjectId('rect')
+    applyPlacedObjects((current) => [
+      ...current,
+      {
+        id,
+        kind: 'rect',
+        ...placement,
+        fill: '#ffffff',
+        scale: 1,
+        rotation: 0,
+        opacity: 1,
+        flipX: false,
+        flipY: false,
+        z: nextLayer(current),
+        ...defaultComposeObjectState(),
+      },
+    ])
+    setSelectedId(id)
+  }
+
+  function cancelRectangleGesture() {
+    clearRectanglePlacement()
+    setActiveTool('select')
+  }
+
   function handleStagePointerDownCapture(event: React.PointerEvent<HTMLDivElement>) {
+    if (activeTool === 'rectangle') {
+      if (event.button !== 0 || rectangleGestureRef.current) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
+      const startPoint = stagePointForEvent(event)
+      if (!startPoint) return
+      event.preventDefault()
+      event.stopPropagation()
+      const gesture: RectangleGesture = {
+        pointerId: event.pointerId,
+        startClient: { clientX: event.clientX, clientY: event.clientY },
+        startPoint,
+        currentPoint: startPoint,
+        isDrag: false,
+      }
+      rectangleGestureRef.current = gesture
+      setRectangleDraft(null)
+      event.currentTarget.setPointerCapture(event.pointerId)
+      return
+    }
+
     if (!stageSamplingTarget) return
     event.preventDefault()
     event.stopPropagation()
   }
 
+  function handleStagePointerMoveCapture(event: React.PointerEvent<HTMLDivElement>) {
+    const gesture = rectangleGestureRef.current
+    if (!gesture) return
+    if (gesture.pointerId !== event.pointerId) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+    const currentPoint = stagePointForEvent(event)
+    if (!currentPoint) return
+    const isDrag = gesture.isDrag || isComposePlacementDrag(gesture.startClient, event)
+    const nextGesture = { ...gesture, currentPoint, isDrag }
+    rectangleGestureRef.current = nextGesture
+    setRectangleDraft(
+      isDrag
+        ? {
+            ...nextGesture,
+            placement: getComposeRectanglePlacement(gesture.startPoint, currentPoint, true),
+          }
+        : null,
+    )
+  }
+
   function handleStagePointerUpCapture(event: React.PointerEvent<HTMLDivElement>) {
+    if (rectangleGestureRef.current) {
+      finishRectanglePlacement(event)
+      return
+    }
     if (!stageSamplingTarget) return
     event.preventDefault()
     event.stopPropagation()
@@ -638,11 +822,41 @@ export function ComposePage({
     sampleStageAtPoint(event.clientX, event.clientY)
   }
 
+  function handleStagePointerCancelCapture(event: React.PointerEvent<HTMLDivElement>) {
+    const gesture = rectangleGestureRef.current
+    if (!gesture) return
+    if (gesture.pointerId !== event.pointerId) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    cancelRectangleGesture()
+  }
+
+  function handleStageLostPointerCapture(event: React.PointerEvent<HTMLDivElement>) {
+    const gesture = rectangleGestureRef.current
+    if (!gesture || gesture.pointerId !== event.pointerId) return
+    cancelRectangleGesture()
+  }
+
+  function handleStageClickCapture(event: React.MouseEvent<HTMLDivElement>) {
+    if (suppressStageClickRef.current) {
+      event.preventDefault()
+      event.stopPropagation()
+      suppressStageClickRef.current = false
+      const frame = suppressStageClickFrameRef.current
+      if (frame !== null) window.cancelAnimationFrame(frame)
+      suppressStageClickFrameRef.current = null
+    }
+  }
+
   async function pickNativeSelectedColor(target: ComposeColorTarget) {
     if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
     if (target === 'stroke' && selected.kind !== 'text') return
 
-    cancelStageSampling()
+    cancelActiveComposeTool()
     setColorPickerBusy(true)
     try {
       const result = await requestScreenColor()
@@ -655,7 +869,7 @@ export function ComposePage({
 
   function handleColorPickClick(target: ComposeColorTarget, event: React.MouseEvent<HTMLButtonElement>) {
     if (stageSamplingTarget) {
-      cancelStageSampling()
+      cancelActiveComposeTool()
       return
     }
     if (event.shiftKey && colorPickerSupported) void pickNativeSelectedColor(target)
@@ -664,7 +878,7 @@ export function ComposePage({
 
   function addCat(cat: CatRecord) {
     if (!canAddComposeLayer(placedObjectsRef.current.length)) return
-    cancelStageSampling()
+    cancelActiveComposeTool()
     const id = createComposeObjectId(String(cat.rescueOrder))
     applyPlacedObjects((current) => {
       const newCat: ComposePlacedCat = {
@@ -690,7 +904,8 @@ export function ComposePage({
 
   function addText() {
     if (!canAddComposeLayer(placedObjectsRef.current.length)) return
-    cancelStageSampling()
+    finishTextEditingBeforeToolChange()
+    cancelActiveComposeTool()
     const id = createComposeObjectId('text')
     applyPlacedObjects((current) => [
       ...current,
@@ -717,30 +932,21 @@ export function ComposePage({
     setSelectedId(id)
   }
 
-  function addRectangle() {
-    if (!canAddComposeLayer(placedObjectsRef.current.length)) return
+  function activateSelectTool() {
+    finishTextEditingBeforeToolChange()
+    cancelActiveComposeTool()
+  }
+
+  function toggleRectangleTool() {
+    if (layerLimitReached) return
+    finishTextEditingBeforeToolChange()
+    if (activeTool === 'rectangle') {
+      cancelActiveComposeTool()
+      return
+    }
+    clearRectanglePlacement()
     cancelStageSampling()
-    const id = createComposeObjectId('rect')
-    applyPlacedObjects((current) => {
-      const rectangle: ComposePlacedRect = {
-        id,
-        kind: 'rect',
-        width: 0.28,
-        height: 0.2,
-        fill: '#ffffff',
-        x: 0.5,
-        y: 0.5,
-        scale: 1,
-        rotation: 0,
-        opacity: 1,
-        flipX: false,
-        flipY: false,
-        z: nextLayer(current),
-        ...defaultComposeObjectState(),
-      }
-      return [...current, rectangle]
-    })
-    setSelectedId(id)
+    setActiveTool('rectangle')
   }
 
   function copySelected() {
@@ -816,6 +1022,10 @@ export function ComposePage({
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
   }
 
+  function finishTextEditingBeforeToolChange() {
+    if (editingTextId) finishTextEditing()
+  }
+
   function handleBackground(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0]
     if (!file) return
@@ -869,6 +1079,7 @@ export function ComposePage({
 
   function openClearDialog() {
     if (placedObjects.length === 0) return
+    cancelActiveComposeTool()
     setClearDialogOpen(true)
   }
 
@@ -882,7 +1093,7 @@ export function ComposePage({
   }
 
   function clearLayers() {
-    cancelStageSampling()
+    cancelActiveComposeTool()
     applyPlacedObjects([])
     setSelectedId(null)
     setComposeClipboard(null)
@@ -896,7 +1107,7 @@ export function ComposePage({
   }
 
   function commitOpenedDocument(candidate: PendingOpenDocument) {
-    cancelStageSampling()
+    cancelActiveComposeTool()
     setEditingTextId(null)
     setSelectedId(null)
     replacePlacedObjects(candidate.document.placedObjects)
@@ -1388,51 +1599,53 @@ export function ComposePage({
         </dialog>
 
         <div className="compose-canvas-area">
-          <nav className="compose-tool-rail" aria-label="Canvas tools">
+          <div className="compose-tool-rail" role="toolbar" aria-label="Canvas tools">
             <button
-              className="compose-tool is-active"
+              className={`compose-tool${activeTool === 'select' ? ' is-active' : ''}`}
               type="button"
               aria-label="Select and move"
-              aria-pressed="true"
+              aria-pressed={activeTool === 'select'}
               title="Select and move"
-              onClick={cancelStageSampling}
+              onClick={activateSelectTool}
             >
               <span className="compose-tool__icon">
                 <CatLabIcon name="pointer-2" />
               </span>
-              <span className="compose-tool__label">Select / Move</span>
+              <span className="sr-only">Select / Move</span>
             </button>
             <button
-              className="compose-tool"
+              className={`compose-tool${activeTool === 'rectangle' ? ' is-active' : ''}`}
               type="button"
-              onClick={addRectangle}
+              onClick={toggleRectangleTool}
               disabled={layerLimitReached}
-              aria-label="Add rectangle"
-              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Add rectangle'}
+              aria-pressed={activeTool === 'rectangle'}
+              aria-label="Rectangle tool"
+              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Draw a rectangle'}
             >
               <span className="compose-tool__icon">
                 <CatLabIcon name="rectangle" />
               </span>
-              <span className="compose-tool__label">Rectangle</span>
+              <span className="sr-only">Rectangle</span>
             </button>
             <button
-              className="compose-tool"
+              className={`compose-tool${activeTool === 'text' ? ' is-active' : ''}`}
               type="button"
               onClick={addText}
               disabled={layerLimitReached}
-              aria-label="Add text"
+              aria-pressed={activeTool === 'text'}
+              aria-label="Text tool"
               title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Add text'}
             >
               <span className="compose-tool__icon">
                 <CatLabIcon name="text-size" />
               </span>
-              <span className="compose-tool__label">Text</span>
+              <span className="sr-only">Text</span>
             </button>
             <button
-              className={`compose-tool${stageSamplingTarget ? ' is-active' : ''}`}
+              className={`compose-tool${activeTool === 'eyedropper' ? ' is-active' : ''}`}
               type="button"
               disabled={!selectedDefaultColorTarget || colorPickerBusy}
-              aria-pressed={Boolean(stageSamplingTarget)}
+              aria-pressed={activeTool === 'eyedropper'}
               aria-label={
                 colorPickerSupported
                   ? selectedDefaultColorTarget
@@ -1458,18 +1671,22 @@ export function ComposePage({
               <span className="compose-tool__icon">
                 {colorPickerBusy ? '…' : stageSamplingTarget ? '×' : <CatLabIcon name="color-picker" />}
               </span>
-              <span className="compose-tool__label">
+              <span className="sr-only">
                 {colorPickerBusy ? 'Preparing…' : stageSamplingTarget ? 'Cancel sample' : 'Eyedropper'}
               </span>
             </button>
-          </nav>
+          </div>
           <div className="compose-stage-wrap">
             <div
-              className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}${stageSamplingTarget ? ' compose-stage--sampling' : ''}`}
+              className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}${stageSamplingTarget ? ' compose-stage--sampling' : ''}${activeTool === 'rectangle' ? ' compose-stage--rectangle-tool' : ''}`}
               ref={stageRef}
               style={stageStyle}
               onPointerDownCapture={handleStagePointerDownCapture}
+              onPointerMoveCapture={handleStagePointerMoveCapture}
               onPointerUpCapture={handleStagePointerUpCapture}
+              onPointerCancelCapture={handleStagePointerCancelCapture}
+              onLostPointerCapture={handleStageLostPointerCapture}
+              onClickCapture={handleStageClickCapture}
             >
               <div className="compose-stage__content" ref={stageContentRef}>
                 {background ? (
@@ -1630,6 +1847,18 @@ export function ComposePage({
                     )
                   })}
               </div>
+              {rectangleDraft && (
+                <div
+                  className="compose-stage__rectangle-draft"
+                  aria-hidden="true"
+                  style={{
+                    left: `${rectangleDraft.placement.x * 100}%`,
+                    top: `${rectangleDraft.placement.y * 100}%`,
+                    width: `${rectangleDraft.placement.width * 100}%`,
+                    height: `${rectangleDraft.placement.height * 100}%`,
+                  }}
+                />
+              )}
               {stageSamplingMessage && (
                 <div className="compose-stage__sampling-status" role="status">
                   {stageSamplingMessage}
@@ -1640,7 +1869,11 @@ export function ComposePage({
                 key={`${selectedId ?? 'none'}-${selected?.locked ? 'locked' : 'free'}-${selected?.visible ? 'visible' : 'hidden'}`}
                 ables={[ComposeObjectToggleAble]}
                 target={
-                  selectedId && selected && canTransformComposeObject(selected) && !editingTextId
+                  activeTool === 'select' &&
+                  selectedId &&
+                  selected &&
+                  canTransformComposeObject(selected) &&
+                  !editingTextId
                     ? `[data-compose-id="${selectedId}"]`
                     : null
                 }
