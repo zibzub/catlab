@@ -2,6 +2,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import type { ComposePlacedObject } from '../composeExport'
 import { MAX_COMPOSE_LAYERS, resetComposeTransform, type ComposeLayerMove } from '../composeModel'
 import type { CatRecord } from '../types'
+import { CatLabIcon } from './CatLabIcon'
 
 type ComposeColorTarget = 'fill' | 'stroke'
 
@@ -152,7 +153,7 @@ export function ComposePropertiesPanel({
                         }
                         onClick={(event) => onColorPick('fill', event)}
                       >
-                        ⌖
+                        <CatLabIcon name="color-picker" />
                       </button>
                     </div>
                     <div className="compose-color-control">
@@ -178,7 +179,7 @@ export function ComposePropertiesPanel({
                         }
                         onClick={(event) => onColorPick('stroke', event)}
                       >
-                        ⌖
+                        <CatLabIcon name="color-picker" />
                       </button>
                     </div>
                   </div>
@@ -251,7 +252,7 @@ export function ComposePropertiesPanel({
                     }
                     onClick={(event) => onColorPick('fill', event)}
                   >
-                    ⌖
+                    <CatLabIcon name="color-picker" />
                   </button>
                 </div>
               </div>
@@ -262,7 +263,11 @@ export function ComposePropertiesPanel({
             {selected.kind !== 'rect' && (
               <label className="compose-range">
                 <span>
-                  Scale <output>{selected.scale.toFixed(2)}×</output>
+                  <span className="compose-range__label">
+                    <CatLabIcon name="resize" />
+                    Scale
+                  </span>
+                  <output>{selected.scale.toFixed(2)}×</output>
                 </span>
                 <input
                   type="range"
@@ -282,7 +287,11 @@ export function ComposePropertiesPanel({
             )}
             <label className="compose-range">
               <span>
-                Rotation <output>{selected.rotation}°</output>
+                <span className="compose-range__label">
+                  <CatLabIcon name="rotate" />
+                  Rotation
+                </span>
+                <output>{selected.rotation}°</output>
               </span>
               <input
                 type="range"
@@ -306,7 +315,8 @@ export function ComposePropertiesPanel({
                 aria-pressed={selected.flipX}
                 onClick={() => onUpdate({ flipX: !selected.flipX }, true)}
               >
-                Flip Horizontal
+                <CatLabIcon name="flip-horizontal" />
+                <span>Flip Horizontal</span>
               </button>
               <button
                 type="button"
@@ -314,7 +324,8 @@ export function ComposePropertiesPanel({
                 aria-pressed={selected.flipY}
                 onClick={() => onUpdate({ flipY: !selected.flipY }, true)}
               >
-                Flip Vertical
+                <CatLabIcon name="flip-vertical" />
+                <span>Flip Vertical</span>
               </button>
             </div>
             <button
@@ -322,7 +333,8 @@ export function ComposePropertiesPanel({
               type="button"
               onClick={() => onUpdate(resetComposeTransform(selected), true)}
             >
-              Reset transform
+              <CatLabIcon name="restore" />
+              <span>Reset transform</span>
             </button>
           </PropertiesSection>
 

@@ -3,6 +3,7 @@ import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import { orderComposeLayers } from '../composeModel'
 import type { ComposePlacedObject } from '../composeExport'
 import type { AtlasManifest } from '../types'
+import { CatLabIcon } from './CatLabIcon'
 
 interface ComposeLayersPanelProps {
   objects: ComposePlacedObject[]
@@ -30,41 +31,6 @@ export function getComposeLayerDescription(object: ComposePlacedObject) {
   if (object.kind === 'rect') return object.fill
   const excerpt = object.text.trim().replace(/\s+/g, ' ')
   return excerpt || 'Empty text'
-}
-
-function ComposeLayerIcon({ kind }: { kind: 'eye' | 'eye-off' | 'lock' | 'unlock' }) {
-  const paths = {
-    eye: (
-      <>
-        <path d="M2.5 12s3.4-5 9.5-5 9.5 5 9.5 5-3.4 5-9.5 5-9.5-5-9.5-5Z" />
-        <circle cx="12" cy="12" r="2.25" />
-      </>
-    ),
-    'eye-off': (
-      <>
-        <path d="m3 3 18 18" />
-        <path d="M10.6 6.98A10.8 10.8 0 0 1 12 7c6.1 0 9.5 5 9.5 5a16 16 0 0 1-3.2 3.2M6.2 6.2C3.8 7.8 2.5 12 2.5 12s3.4 5 9.5 5c1.35 0 2.55-.28 3.6-.7" />
-      </>
-    ),
-    lock: (
-      <>
-        <rect x="5.5" y="10" width="13" height="10" rx="1.7" />
-        <path d="M8.5 10V7a3.5 3.5 0 0 1 7 0v3" />
-      </>
-    ),
-    unlock: (
-      <>
-        <rect x="5.5" y="10" width="13" height="10" rx="1.7" />
-        <path d="M8.5 10V7a3.5 3.5 0 0 1 6.1-2.4" />
-      </>
-    ),
-  }[kind]
-
-  return (
-    <svg className="compose-layer-row__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      {paths}
-    </svg>
-  )
 }
 
 function LayerPreview({ object, manifest }: { object: ComposePlacedObject; manifest: AtlasManifest }) {
@@ -288,7 +254,7 @@ export function ComposeLayersPanel({
               onUpdate(object.id, { visible: !object.visible })
             }}
           >
-            <ComposeLayerIcon kind={object.visible ? 'eye' : 'eye-off'} />
+            <CatLabIcon name={object.visible ? 'eye' : 'eye-off'} className="compose-layer-row__icon" />
           </button>
           <button
             className="compose-layer-row__control"
@@ -300,7 +266,7 @@ export function ComposeLayersPanel({
               onUpdate(object.id, { locked: !object.locked })
             }}
           >
-            <ComposeLayerIcon kind={object.locked ? 'lock' : 'unlock'} />
+            <CatLabIcon name={object.locked ? 'lock' : 'lock-open'} className="compose-layer-row__icon" />
           </button>
         </span>
       </div>
@@ -315,7 +281,10 @@ export function ComposeLayersPanel({
     >
       <summary className="compose-card__header compose-layers__summary">
         <span>
-          <h2>Layers</h2>
+          <h2>
+            <CatLabIcon name="box-multiple" className="compose-panel-title__icon" />
+            <span>Layers</span>
+          </h2>
           <small>Front to back</small>
         </span>
         <span className="compose-count">{objects.length}</span>

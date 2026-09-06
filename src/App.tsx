@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { CatDetailsDialog } from './components/CatDetailsDialog'
+import { CatLabIcon } from './components/CatLabIcon'
 import { CatGrid } from './components/CatGrid'
 import { CatList } from './components/CatList'
 import { ColorLabPanel } from './components/ColorLabPanel'
@@ -83,15 +84,18 @@ function AppHeader({
       <div className="app-header__global-actions">
         {view === 'compose' ? (
           <button className="header-tool" type="button" onClick={onCollection}>
-            Collection
+            <CatLabIcon name="face" className="header-mode-icon header-mode-icon--collect" />
+            Collect
           </button>
         ) : (
           <button className="header-tool" type="button" onClick={onCompose}>
+            <CatLabIcon name="photo-edit" className="header-mode-icon header-mode-icon--compose" />
             Compose
           </button>
         )}
         {view === 'compose' ? (
           <div className="header-selection header-selection--static">
+            <CatLabIcon name="palette" className="header-palette-icon" />
             <span>Palette</span>
             <strong>{selectedCount}</strong>
           </div>
@@ -103,6 +107,7 @@ function AppHeader({
             aria-controls="palette-drawer-content"
             onClick={onPaletteOpen}
           >
+            <CatLabIcon name="palette" className="header-palette-icon" />
             <span>Palette</span>
             <strong>{selectedCount}</strong>
           </button>

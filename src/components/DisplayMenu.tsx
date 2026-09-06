@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GridArtMode, IdlePattern, IdleSpeed, RingStyle } from '../types'
+import { CatLabIcon } from './CatLabIcon'
 
 interface DisplayMenuProps {
   artMode: GridArtMode
@@ -73,7 +74,7 @@ export function DisplayMenu({
         title="Display effects"
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="display-effects-icon" aria-hidden="true" />
+        <CatLabIcon name="device-desktop" size={18} className="display-effects-icon" />
       </button>
       {open && (
         <div

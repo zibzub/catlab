@@ -13,6 +13,7 @@ import {
   samplePixel,
   type ColorLabSample,
 } from '../colorLab'
+import { CatLabIcon } from './CatLabIcon'
 
 type ColorLabImageSlot = 'sample-1' | 'sample-2' | 'custom'
 
@@ -342,8 +343,8 @@ export function ColorLabPanel({ open, sample, matchingCount, onSampleChange }: C
             </>
           ) : (
             <div className="colorlab-result__empty">
-              <span className="colorlab-result__empty-mark" aria-hidden="true">
-                ⌖
+              <span className="colorlab-result__empty-mark">
+                <CatLabIcon name="color-picker" size={18} />
               </span>
               <p>Sample a color to see its Collection matches.</p>
             </div>

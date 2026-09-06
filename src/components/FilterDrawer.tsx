@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { activeFilterCount, CLASSIFICATION_FILTER_OPTIONS } from './collectionFilters'
+import { CatLabIcon } from './CatLabIcon'
 import { createEmptyFilterState, type FilterIndex } from '../mooncat-index/filters'
 import type { FilterState } from '../types'
 import {
@@ -330,7 +331,7 @@ export function FilterDrawer({
                   }
                   onClick={connectedWalletActive ? onDisconnectWallet : onUseConnectedWallet}
                 >
-                  {!connectedWalletActive && <span className="wallet-icon" aria-hidden="true" />}
+                  {!connectedWalletActive && <CatLabIcon name="wallet" size={16} className="wallet-icon" />}
                   <span>{connectedWalletActive ? 'Disconnect' : 'Connect'}</span>
                 </button>
               </form>

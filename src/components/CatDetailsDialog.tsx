@@ -15,6 +15,7 @@ import {
 } from '../mooncatDetails'
 import { downloadDetailCardPng } from '../detailCardExport'
 import type { AtlasManifest, CatRecord } from '../types'
+import { CatLabIcon } from './CatLabIcon'
 
 interface CatDetailsDialogProps {
   cat: CatRecord | null
@@ -241,7 +242,7 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
             <div className="cat-details-preview-frame">
               <div className="cat-details-preview" aria-label="MoonCat atlas preview" style={previewStyle} />
             </div>
-            <span className="cat-details-image-hint cat-details-download-icon" aria-hidden="true" />
+            <CatLabIcon name="download" size={18} className="cat-details-image-hint cat-details-download-icon" />
           </div>
           <div ref={attributeStripRef} className="cat-details-attribute-strip" aria-live="polite">
             <span>{cat.rescueYear} RESCUE</span>
@@ -270,7 +271,7 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
             <div className="cat-details-links" aria-label="MoonCat links">
               <a href={links.chainStation} target="_blank" rel="noopener noreferrer">
                 <span>ChainStation</span>
-                <span className="cat-details-action-icon cat-details-external-icon" aria-hidden="true" />
+                <CatLabIcon name="external-link" size={15} className="cat-details-action-icon" />
               </a>
               <a
                 href={links.openSea}
@@ -279,7 +280,7 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
                 title="OpenSea applies to acclimated MoonCats and may not resolve every cat."
               >
                 <span>OpenSea</span>
-                <span className="cat-details-action-icon cat-details-external-icon" aria-hidden="true" />
+                <CatLabIcon name="external-link" size={15} className="cat-details-action-icon" />
               </a>
             </div>
           </footer>
@@ -305,7 +306,7 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
                 onClick={() => closeActions()}
               >
                 <span>ChainStation</span>
-                <span className="cat-details-action-icon cat-details-external-icon" aria-hidden="true" />
+                <CatLabIcon name="external-link" size={15} className="cat-details-action-icon" />
               </a>
               <a
                 href={links.openSea}
@@ -315,11 +316,11 @@ export function CatDetailsDialog({ cat, manifest, onClose }: CatDetailsDialogPro
                 onClick={() => closeActions()}
               >
                 <span>OpenSea</span>
-                <span className="cat-details-action-icon cat-details-external-icon" aria-hidden="true" />
+                <CatLabIcon name="external-link" size={15} className="cat-details-action-icon" />
               </a>
               <button type="button" disabled={exportBusy} onClick={saveCard}>
                 <span>Save Card</span>
-                <span className="cat-details-action-icon cat-details-download-icon" aria-hidden="true" />
+                <CatLabIcon name="download" size={15} className="cat-details-action-icon cat-details-download-icon" />
               </button>
               <div
                 className={`cat-details-actions-status${exportStatus && exportStatus !== 'Card saved.' ? ' is-error' : ''}`}

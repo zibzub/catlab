@@ -47,6 +47,7 @@ import { reconcileComposeSelection, type ComposeObjectsUpdate } from '../compose
 import { ComposeLayersPanel } from './ComposeLayersPanel'
 import { ComposePropertiesPanel } from './ComposePropertiesPanel'
 import { ComposeToolbar } from './ComposeToolbar'
+import { CatLabIcon } from './CatLabIcon'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -1138,7 +1139,8 @@ export function ComposePage({
             <p>Build a simple scene from your Palette. Everything stays in this browser.</p>
           </div>
           <button className="compose-back" type="button" onClick={onBack}>
-            ← Collection
+            <CatLabIcon name="face" className="compose-back__icon" />
+            <span>Collect</span>
           </button>
         </div>
 
@@ -1395,8 +1397,8 @@ export function ComposePage({
               title="Select and move"
               onClick={cancelStageSampling}
             >
-              <span className="compose-tool__icon" aria-hidden="true">
-                ↖
+              <span className="compose-tool__icon">
+                <CatLabIcon name="pointer-2" />
               </span>
               <span className="compose-tool__label">Select / Move</span>
             </button>
@@ -1408,8 +1410,8 @@ export function ComposePage({
               aria-label="Add rectangle"
               title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Add rectangle'}
             >
-              <span className="compose-tool__icon" aria-hidden="true">
-                □
+              <span className="compose-tool__icon">
+                <CatLabIcon name="rectangle" />
               </span>
               <span className="compose-tool__label">Rectangle</span>
             </button>
@@ -1421,8 +1423,8 @@ export function ComposePage({
               aria-label="Add text"
               title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Add text'}
             >
-              <span className="compose-tool__icon" aria-hidden="true">
-                T
+              <span className="compose-tool__icon">
+                <CatLabIcon name="text-size" />
               </span>
               <span className="compose-tool__label">Text</span>
             </button>
@@ -1453,8 +1455,8 @@ export function ComposePage({
                 if (selectedDefaultColorTarget) handleColorPickClick(selectedDefaultColorTarget, event)
               }}
             >
-              <span className="compose-tool__icon" aria-hidden="true">
-                {colorPickerBusy ? '…' : stageSamplingTarget ? '×' : '⌖'}
+              <span className="compose-tool__icon">
+                {colorPickerBusy ? '…' : stageSamplingTarget ? '×' : <CatLabIcon name="color-picker" />}
               </span>
               <span className="compose-tool__label">
                 {colorPickerBusy ? 'Preparing…' : stageSamplingTarget ? 'Cancel sample' : 'Eyedropper'}
@@ -1685,7 +1687,10 @@ export function ComposePage({
         <section className="compose-card compose-sources" aria-labelledby="compose-sources-title">
           <div className="compose-card__header">
             <div>
-              <h2 id="compose-sources-title">Selected cats</h2>
+              <h2 id="compose-sources-title">
+                <CatLabIcon name="palette" className="compose-panel-title__icon" />
+                <span>Selected cats</span>
+              </h2>
             </div>
             <span className="compose-count">{sourceCats.length}</span>
           </div>
@@ -1728,7 +1733,10 @@ export function ComposePage({
         <section className="compose-card compose-background" aria-labelledby="compose-background-title">
           <div className="compose-card__header">
             <div>
-              <h2 id="compose-background-title">Background</h2>
+              <h2 id="compose-background-title">
+                <CatLabIcon name="photo" className="compose-panel-title__icon" />
+                <span>Background</span>
+              </h2>
             </div>
             {background && (
               <span className="compose-file-name" title={background.name}>

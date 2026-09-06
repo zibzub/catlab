@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { activeFilterCount, getActiveFilterChips, type RemovableFilterKey } from './collectionFilters'
 import { DisplayMenu } from './DisplayMenu'
 import { FilterDrawer } from './FilterDrawer'
+import { CatLabIcon } from './CatLabIcon'
 import type { WalletFilter } from '../walletLookup'
 import type { FilterIndex } from '../mooncat-index/filters'
 import type {
@@ -434,9 +435,7 @@ export function FilterBar({
               aria-controls="colorlab-panel"
               onClick={onColorLabToggle}
             >
-              <span className="collection-toolbar__button-icon" aria-hidden="true">
-                ⌖
-              </span>
+              <CatLabIcon name="focus-2" className="collection-toolbar__button-icon" />
               <span>ColorLab</span>
             </button>
             <div className="art-mode-toggle" role="group" aria-label="Art mode">
