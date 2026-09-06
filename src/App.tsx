@@ -144,6 +144,7 @@ export default function App() {
   const inspectTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
   const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
+  const [composeHistoryNavigationToken, setComposeHistoryNavigationToken] = useState(0)
   const [composeHistory, dispatchComposeHistory] = useReducer(composeHistoryReducer, undefined, () =>
     createComposeHistory(),
   )
@@ -158,9 +159,11 @@ export default function App() {
     dispatchComposeHistory({ type: 'replace', placedObjects })
   }, [])
   const undoCompose = useCallback(() => {
+    setComposeHistoryNavigationToken((current) => current + 1)
     dispatchComposeHistory({ type: 'undo' })
   }, [])
   const redoCompose = useCallback(() => {
+    setComposeHistoryNavigationToken((current) => current + 1)
     dispatchComposeHistory({ type: 'redo' })
   }, [])
   const beginComposeTransaction = useCallback(() => {
@@ -485,6 +488,7 @@ export default function App() {
           canRedo={composeHistory.future.length > 0}
           onUndo={undoCompose}
           onRedo={redoCompose}
+          historyNavigationToken={composeHistoryNavigationToken}
           onBeginTransaction={beginComposeTransaction}
           onCommitTransaction={commitComposeTransaction}
           onClearTransaction={clearComposeTransaction}

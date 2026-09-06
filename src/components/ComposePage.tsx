@@ -60,6 +60,7 @@ interface ComposePageProps {
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
+  historyNavigationToken: number
   onBeginTransaction: () => void
   onCommitTransaction: () => void
   onClearTransaction: () => void
@@ -175,6 +176,7 @@ export function ComposePage({
   canRedo,
   onUndo,
   onRedo,
+  historyNavigationToken,
   onBeginTransaction,
   onCommitTransaction,
   onClearTransaction,
@@ -494,6 +496,16 @@ export function ComposePage({
   const stageStyle = {
     '--compose-ratio': stageRatio,
   } as CSSProperties
+
+  useEffect(() => {
+    if (!historyNavigationToken) return
+    const frame = window.requestAnimationFrame(() => {
+      if (selected && canTransformComposeObject(selected) && !editingTextId) {
+        moveableRef.current?.updateRect()
+      }
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [historyNavigationToken])
 
   function cancelStageSampling() {
     samplingSequenceRef.current += 1
