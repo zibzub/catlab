@@ -34,6 +34,12 @@ import {
 } from './mooncatDetails'
 import type { ComposeBackground, ComposePlacedObject } from './composeExport'
 import { composeHistoryReducer, createComposeHistory, type ComposeObjectsUpdate } from './composeHistory'
+import {
+  DEFAULT_COMPOSE_EDITOR_COLORS,
+  resetComposeEditorColors,
+  swapComposeEditorColors,
+  type ComposeEditorColors,
+} from './composeColors'
 import type {
   AtlasManifest,
   CatRecord,
@@ -149,6 +155,9 @@ export default function App() {
   const inspectTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
   const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
+  const [composeEditorColors, setComposeEditorColors] = useState<ComposeEditorColors>(() => ({
+    ...DEFAULT_COMPOSE_EDITOR_COLORS,
+  }))
   const [composeHistoryNavigationToken, setComposeHistoryNavigationToken] = useState(0)
   const [composeHistory, dispatchComposeHistory] = useReducer(composeHistoryReducer, undefined, () =>
     createComposeHistory(),
@@ -497,6 +506,11 @@ export default function App() {
           onBeginTransaction={beginComposeTransaction}
           onCommitTransaction={commitComposeTransaction}
           onClearTransaction={clearComposeTransaction}
+          editorColors={composeEditorColors}
+          onForegroundColorChange={(foreground) => setComposeEditorColors((current) => ({ ...current, foreground }))}
+          onBackgroundColorChange={(background) => setComposeEditorColors((current) => ({ ...current, background }))}
+          onSwapEditorColors={() => setComposeEditorColors((current) => swapComposeEditorColors(current))}
+          onResetEditorColors={() => setComposeEditorColors(resetComposeEditorColors())}
           background={composeBackground}
           onBackgroundChange={updateComposeBackground}
           onBack={() => setAppView('collection')}

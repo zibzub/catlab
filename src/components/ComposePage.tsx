@@ -54,7 +54,9 @@ import { reconcileComposeSelection, type ComposeObjectsUpdate } from '../compose
 import { ComposeLayersPanel } from './ComposeLayersPanel'
 import { ComposePropertiesPanel } from './ComposePropertiesPanel'
 import { ComposeToolbar } from './ComposeToolbar'
+import { ComposeColorSwatches } from './ComposeColorSwatches'
 import { CatLabIcon } from './CatLabIcon'
+import { getComposeCreationColors, type ComposeEditorColors } from '../composeColors'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -74,6 +76,11 @@ interface ComposePageProps {
   onBeginTransaction: () => void
   onCommitTransaction: () => void
   onClearTransaction: () => void
+  editorColors: ComposeEditorColors
+  onForegroundColorChange: (color: string) => void
+  onBackgroundColorChange: (color: string) => void
+  onSwapEditorColors: () => void
+  onResetEditorColors: () => void
   background: ComposeBackground | null
   onBackgroundChange: (background: ComposeBackground | null) => void
   onBack: () => void
@@ -210,6 +217,11 @@ export function ComposePage({
   onBeginTransaction,
   onCommitTransaction,
   onClearTransaction,
+  editorColors,
+  onForegroundColorChange,
+  onBackgroundColorChange,
+  onSwapEditorColors,
+  onResetEditorColors,
   background,
   onBackgroundChange,
   onBack,
@@ -751,7 +763,7 @@ export function ComposePage({
         id,
         kind: 'rect',
         ...placement,
-        fill: '#ffffff',
+        ...getComposeCreationColors('rect', editorColors),
         scale: 1,
         rotation: 0,
         opacity: 1,
@@ -999,8 +1011,7 @@ export function ComposePage({
         id,
         kind: 'text',
         text: 'Text',
-        fill: '#ffffff',
-        stroke: '#000000',
+        ...getComposeCreationColors('text', editorColors),
         strokeWidth: 2,
         fontSize: 56,
         fontFamily: COMPOSE_TEXT_FONT,
@@ -1703,82 +1714,92 @@ export function ComposePage({
         </dialog>
 
         <div className="compose-canvas-area">
-          <div className="compose-tool-rail" role="toolbar" aria-label="Canvas tools">
-            <button
-              className={`compose-tool${activeTool === 'select' ? ' is-active' : ''}`}
-              type="button"
-              aria-label="Select and move"
-              aria-pressed={activeTool === 'select'}
-              title="Select and move"
-              onClick={activateSelectTool}
-            >
-              <span className="compose-tool__icon">
-                <CatLabIcon name="pointer-2" />
-              </span>
-              <span className="sr-only">Select / Move</span>
-            </button>
-            <button
-              className={`compose-tool${activeTool === 'rectangle' ? ' is-active' : ''}`}
-              type="button"
-              onClick={toggleRectangleTool}
-              disabled={layerLimitReached}
-              aria-pressed={activeTool === 'rectangle'}
-              aria-label="Rectangle tool"
-              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Draw a rectangle'}
-            >
-              <span className="compose-tool__icon">
-                <CatLabIcon name="rectangle" />
-              </span>
-              <span className="sr-only">Rectangle</span>
-            </button>
-            <button
-              className={`compose-tool${activeTool === 'text' ? ' is-active' : ''}`}
-              type="button"
-              onClick={toggleTextTool}
-              disabled={layerLimitReached}
-              aria-pressed={activeTool === 'text'}
-              aria-label="Text tool"
-              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Place text'}
-            >
-              <span className="compose-tool__icon">
-                <CatLabIcon name="text-size" />
-              </span>
-              <span className="sr-only">Text</span>
-            </button>
-            <button
-              className={`compose-tool${activeTool === 'eyedropper' ? ' is-active' : ''}`}
-              type="button"
-              disabled={!selectedDefaultColorTarget || colorPickerBusy}
-              aria-pressed={activeTool === 'eyedropper'}
-              aria-label={
-                colorPickerSupported
-                  ? selectedDefaultColorTarget
-                    ? 'Sample color for selected layer fill'
-                    : 'Select a rectangle or text layer to sample a color'
-                  : selectedDefaultColorTarget
-                    ? 'Sample color for selected layer fill'
-                    : 'Select a rectangle or text layer to sample a color'
-              }
-              title={
-                colorPickerSupported
-                  ? selectedDefaultColorTarget
-                    ? 'Sample selected layer fill (Shift-click for screen picker)'
-                    : 'Select a rectangle or text layer first'
-                  : selectedDefaultColorTarget
-                    ? 'Sample selected layer fill'
-                    : 'Select a rectangle or text layer first'
-              }
-              onClick={(event) => {
-                if (selectedDefaultColorTarget) handleColorPickClick(selectedDefaultColorTarget, event)
-              }}
-            >
-              <span className="compose-tool__icon">
-                {colorPickerBusy ? '…' : stageSamplingTarget ? '×' : <CatLabIcon name="color-picker" />}
-              </span>
-              <span className="sr-only">
-                {colorPickerBusy ? 'Preparing…' : stageSamplingTarget ? 'Cancel sample' : 'Eyedropper'}
-              </span>
-            </button>
+          <div className="compose-tool-rail">
+            <div className="compose-tool-rail__tools" role="toolbar" aria-label="Canvas tools">
+              <button
+                className={`compose-tool${activeTool === 'select' ? ' is-active' : ''}`}
+                type="button"
+                aria-label="Select and move"
+                aria-pressed={activeTool === 'select'}
+                title="Select and move"
+                onClick={activateSelectTool}
+              >
+                <span className="compose-tool__icon">
+                  <CatLabIcon name="pointer-2" />
+                </span>
+                <span className="sr-only">Select / Move</span>
+              </button>
+              <button
+                className={`compose-tool${activeTool === 'rectangle' ? ' is-active' : ''}`}
+                type="button"
+                onClick={toggleRectangleTool}
+                disabled={layerLimitReached}
+                aria-pressed={activeTool === 'rectangle'}
+                aria-label="Rectangle tool"
+                title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Draw a rectangle'}
+              >
+                <span className="compose-tool__icon">
+                  <CatLabIcon name="rectangle" />
+                </span>
+                <span className="sr-only">Rectangle</span>
+              </button>
+              <button
+                className={`compose-tool${activeTool === 'text' ? ' is-active' : ''}`}
+                type="button"
+                onClick={toggleTextTool}
+                disabled={layerLimitReached}
+                aria-pressed={activeTool === 'text'}
+                aria-label="Text tool"
+                title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Place text'}
+              >
+                <span className="compose-tool__icon">
+                  <CatLabIcon name="text-size" />
+                </span>
+                <span className="sr-only">Text</span>
+              </button>
+              <button
+                className={`compose-tool${activeTool === 'eyedropper' ? ' is-active' : ''}`}
+                type="button"
+                disabled={!selectedDefaultColorTarget || colorPickerBusy}
+                aria-pressed={activeTool === 'eyedropper'}
+                aria-label={
+                  colorPickerSupported
+                    ? selectedDefaultColorTarget
+                      ? 'Sample color for selected layer fill'
+                      : 'Select a rectangle or text layer to sample a color'
+                    : selectedDefaultColorTarget
+                      ? 'Sample color for selected layer fill'
+                      : 'Select a rectangle or text layer to sample a color'
+                }
+                title={
+                  colorPickerSupported
+                    ? selectedDefaultColorTarget
+                      ? 'Sample selected layer fill (Shift-click for screen picker)'
+                      : 'Select a rectangle or text layer first'
+                    : selectedDefaultColorTarget
+                      ? 'Sample selected layer fill'
+                      : 'Select a rectangle or text layer first'
+                }
+                onClick={(event) => {
+                  if (selectedDefaultColorTarget) handleColorPickClick(selectedDefaultColorTarget, event)
+                }}
+              >
+                <span className="compose-tool__icon">
+                  {colorPickerBusy ? '…' : stageSamplingTarget ? '×' : <CatLabIcon name="color-picker" />}
+                </span>
+                <span className="sr-only">
+                  {colorPickerBusy ? 'Preparing…' : stageSamplingTarget ? 'Cancel sample' : 'Eyedropper'}
+                </span>
+              </button>
+            </div>
+            <ComposeColorSwatches
+              foreground={editorColors.foreground}
+              background={editorColors.background}
+              onForegroundChange={onForegroundColorChange}
+              onBackgroundChange={onBackgroundColorChange}
+              onSwap={onSwapEditorColors}
+              onReset={onResetEditorColors}
+            />
           </div>
           <div className="compose-stage-wrap">
             <div

@@ -2442,6 +2442,12 @@ h1 {
   padding: 0;
 }
 
+.compose-tool-rail__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 .compose-tool {
   display: grid;
   width: 42px;
@@ -2492,6 +2498,107 @@ h1 {
 .compose-tool__icon .catlab-icon {
   width: 20px;
   height: 20px;
+}
+
+.compose-color-swatches {
+  display: flex;
+  width: 54px;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 54px;
+  margin-top: 4px;
+}
+
+.compose-color-swatches__stack {
+  position: relative;
+  width: 38px;
+  height: 38px;
+}
+
+.compose-color-swatch {
+  position: absolute;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(218, 222, 255, 0.58);
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.32);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.compose-color-swatch--background {
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+}
+
+.compose-color-swatch--foreground {
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+
+.compose-color-swatch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.compose-color-swatch > span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.compose-color-swatch:focus-within {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.compose-color-swatches__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.compose-color-swatches__action {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 3px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.compose-color-swatches__action .catlab-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.compose-color-swatches__action:hover {
+  color: var(--ink);
+  background: var(--control-surface);
+}
+
+.compose-color-swatches__action:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 1px;
 }
 
 .compose-stage-wrap {
@@ -3589,8 +3696,20 @@ h1 {
   .compose-tool-rail {
     align-self: stretch;
     flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
-    overflow-x: auto;
+    gap: 6px 10px;
+    overflow: visible;
+  }
+
+  .compose-tool-rail__tools {
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: center;
+    overflow: visible;
   }
 
   .compose-tool {
@@ -3599,6 +3718,25 @@ h1 {
     min-height: 44px;
     flex: 0 0 44px;
     padding: 0;
+  }
+
+  .compose-color-swatches {
+    width: auto;
+    height: 42px;
+    flex-direction: row;
+    gap: 3px;
+    flex-basis: auto;
+    margin-top: 0;
+  }
+
+  .compose-color-swatches__action {
+    width: 20px;
+    height: 20px;
+  }
+
+  .compose-color-swatches__action .catlab-icon {
+    width: 13px;
+    height: 13px;
   }
 
   .compose-controls {
