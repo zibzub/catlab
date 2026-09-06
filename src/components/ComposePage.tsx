@@ -115,6 +115,13 @@ interface RectangleDraft extends RectangleGesture {
   placement: ComposeRectanglePlacement
 }
 
+interface TextGesture {
+  pointerId: number
+  startClient: ComposeClientPoint
+  startPoint: ComposeStagePoint
+  isDrag: boolean
+}
+
 interface ComposeObjectToggleOptions {
   label: string
   nextLabel: string
@@ -232,6 +239,8 @@ export function ComposePage({
     stageSize: { width: number; height: number }
   } | null>(null)
   const rectangleGestureRef = useRef<RectangleGesture | null>(null)
+  const textGestureRef = useRef<TextGesture | null>(null)
+  const selectAllInlineTextRef = useRef(false)
   const suppressStageClickRef = useRef(false)
   const suppressStageClickFrameRef = useRef<number | null>(null)
   const placedObjectsRef = useRef(placedObjects)
@@ -441,7 +450,7 @@ export function ComposePage({
   }, [onCommitTransaction])
 
   useEffect(() => {
-    if (activeTool !== 'rectangle' && activeTool !== 'eyedropper') return
+    if (activeTool !== 'rectangle' && activeTool !== 'text' && activeTool !== 'eyedropper') return
 
     function handleToolEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
@@ -464,8 +473,11 @@ export function ComposePage({
     if (!editingTextId) return
     window.requestAnimationFrame(() => {
       const editor = inlineTextEditorRef.current
+      const selectAll = selectAllInlineTextRef.current
+      selectAllInlineTextRef.current = false
       editor?.focus()
-      editor?.setSelectionRange(editor.value.length, editor.value.length)
+      if (selectAll) editor?.select()
+      else editor?.setSelectionRange(editor.value.length, editor.value.length)
     })
   }, [editingTextId])
 
@@ -548,7 +560,7 @@ export function ComposePage({
   } as CSSProperties
 
   useEffect(() => {
-    if (activeTool === 'rectangle' && layerLimitReached) cancelActiveComposeTool()
+    if ((activeTool === 'rectangle' || activeTool === 'text') && layerLimitReached) cancelActiveComposeTool()
   }, [activeTool, layerLimitReached])
 
   useEffect(() => {
@@ -572,8 +584,13 @@ export function ComposePage({
     suppressStageClickRef.current = false
   }
 
+  function clearTextPlacement() {
+    textGestureRef.current = null
+  }
+
   function cancelActiveComposeTool() {
     clearRectanglePlacement()
+    clearTextPlacement()
     cancelStageSampling()
     setActiveTool('select')
   }
@@ -776,6 +793,24 @@ export function ComposePage({
       return
     }
 
+    if (activeTool === 'text') {
+      if (event.button !== 0 || textGestureRef.current) {
+        event.stopPropagation()
+        return
+      }
+      const startPoint = stagePointForEvent(event)
+      if (!startPoint) return
+      event.stopPropagation()
+      textGestureRef.current = {
+        pointerId: event.pointerId,
+        startClient: { clientX: event.clientX, clientY: event.clientY },
+        startPoint,
+        isDrag: false,
+      }
+      event.currentTarget.setPointerCapture(event.pointerId)
+      return
+    }
+
     if (!stageSamplingTarget) return
     event.preventDefault()
     event.stopPropagation()
@@ -783,7 +818,19 @@ export function ComposePage({
 
   function handleStagePointerMoveCapture(event: React.PointerEvent<HTMLDivElement>) {
     const gesture = rectangleGestureRef.current
-    if (!gesture) return
+    if (!gesture) {
+      const textGesture = textGestureRef.current
+      if (!textGesture) return
+      if (textGesture.pointerId !== event.pointerId) {
+        event.stopPropagation()
+        return
+      }
+      textGestureRef.current = {
+        ...textGesture,
+        isDrag: textGesture.isDrag || isComposePlacementDrag(textGesture.startClient, event),
+      }
+      return
+    }
     if (gesture.pointerId !== event.pointerId) {
       event.preventDefault()
       event.stopPropagation()
@@ -812,6 +859,10 @@ export function ComposePage({
       finishRectanglePlacement(event)
       return
     }
+    if (textGestureRef.current) {
+      finishTextPlacement(event)
+      return
+    }
     if (!stageSamplingTarget) return
     event.preventDefault()
     event.stopPropagation()
@@ -824,7 +875,10 @@ export function ComposePage({
 
   function handleStagePointerCancelCapture(event: React.PointerEvent<HTMLDivElement>) {
     const gesture = rectangleGestureRef.current
-    if (!gesture) return
+    if (!gesture) {
+      if (textGestureRef.current?.pointerId === event.pointerId) clearTextPlacement()
+      return
+    }
     if (gesture.pointerId !== event.pointerId) {
       event.preventDefault()
       event.stopPropagation()
@@ -837,8 +891,39 @@ export function ComposePage({
 
   function handleStageLostPointerCapture(event: React.PointerEvent<HTMLDivElement>) {
     const gesture = rectangleGestureRef.current
-    if (!gesture || gesture.pointerId !== event.pointerId) return
-    cancelRectangleGesture()
+    if (gesture) {
+      if (gesture.pointerId !== event.pointerId) return
+      cancelRectangleGesture()
+      return
+    }
+    if (textGestureRef.current?.pointerId === event.pointerId) clearTextPlacement()
+  }
+
+  function finishTextPlacement(event: React.PointerEvent<HTMLDivElement>) {
+    const gesture = textGestureRef.current
+    if (!gesture) return
+    if (gesture.pointerId !== event.pointerId) {
+      event.stopPropagation()
+      return
+    }
+
+    const isDrag = gesture.isDrag || isComposePlacementDrag(gesture.startClient, event)
+    clearTextPlacement()
+
+    if (isDrag) {
+      event.stopPropagation()
+      scheduleStageClickSuppression()
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+    scheduleStageClickSuppression()
+    if (!canAddComposeLayer(placedObjectsRef.current.length)) {
+      setActiveTool('select')
+      return
+    }
+    placeTextAt(gesture.startPoint)
   }
 
   function handleStageClickCapture(event: React.MouseEvent<HTMLDivElement>) {
@@ -902,10 +987,11 @@ export function ComposePage({
     setSelectedId(id)
   }
 
-  function addText() {
-    if (!canAddComposeLayer(placedObjectsRef.current.length)) return
-    finishTextEditingBeforeToolChange()
-    cancelActiveComposeTool()
+  function placeTextAt(point: ComposeStagePoint) {
+    if (!canAddComposeLayer(placedObjectsRef.current.length)) {
+      setActiveTool('select')
+      return false
+    }
     const id = createComposeObjectId('text')
     applyPlacedObjects((current) => [
       ...current,
@@ -918,8 +1004,8 @@ export function ComposePage({
         strokeWidth: 2,
         fontSize: 56,
         fontFamily: COMPOSE_TEXT_FONT,
-        x: 0.5,
-        y: 0.5,
+        x: point.x,
+        y: point.y,
         scale: 1,
         rotation: 0,
         opacity: 1,
@@ -930,6 +1016,11 @@ export function ComposePage({
       },
     ])
     setSelectedId(id)
+    setActiveTool('select')
+    selectAllInlineTextRef.current = true
+    onBeginTransaction()
+    setEditingTextId(id)
+    return true
   }
 
   function activateSelectTool() {
@@ -947,6 +1038,19 @@ export function ComposePage({
     clearRectanglePlacement()
     cancelStageSampling()
     setActiveTool('rectangle')
+  }
+
+  function toggleTextTool() {
+    if (layerLimitReached) return
+    finishTextEditingBeforeToolChange()
+    if (activeTool === 'text') {
+      cancelActiveComposeTool()
+      return
+    }
+    clearRectanglePlacement()
+    cancelStageSampling()
+    clearTextPlacement()
+    setActiveTool('text')
   }
 
   function copySelected() {
@@ -1630,11 +1734,11 @@ export function ComposePage({
             <button
               className={`compose-tool${activeTool === 'text' ? ' is-active' : ''}`}
               type="button"
-              onClick={addText}
+              onClick={toggleTextTool}
               disabled={layerLimitReached}
               aria-pressed={activeTool === 'text'}
               aria-label="Text tool"
-              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Add text'}
+              title={layerLimitReached ? `Maximum ${MAX_COMPOSE_LAYERS} layers` : 'Place text'}
             >
               <span className="compose-tool__icon">
                 <CatLabIcon name="text-size" />
@@ -1678,7 +1782,7 @@ export function ComposePage({
           </div>
           <div className="compose-stage-wrap">
             <div
-              className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}${stageSamplingTarget ? ' compose-stage--sampling' : ''}${activeTool === 'rectangle' ? ' compose-stage--rectangle-tool' : ''}`}
+              className={`compose-stage${selected ? ' compose-stage--has-selection' : ''}${stageSamplingTarget ? ' compose-stage--sampling' : ''}${activeTool === 'rectangle' ? ' compose-stage--rectangle-tool' : ''}${activeTool === 'text' ? ' compose-stage--text-tool' : ''}`}
               ref={stageRef}
               style={stageStyle}
               onPointerDownCapture={handleStagePointerDownCapture}
@@ -1859,6 +1963,7 @@ export function ComposePage({
                   }}
                 />
               )}
+              {activeTool === 'text' && <div className="compose-stage__tool-hint">Tap to place text</div>}
               {stageSamplingMessage && (
                 <div className="compose-stage__sampling-status" role="status">
                   {stageSamplingMessage}

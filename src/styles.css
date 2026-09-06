@@ -2534,6 +2534,11 @@ h1 {
   touch-action: none;
 }
 
+.compose-stage--text-tool,
+.compose-stage--text-tool * {
+  cursor: text !important;
+}
+
 .compose-stage__sampling-status {
   position: absolute;
   z-index: 60;
@@ -2549,6 +2554,23 @@ h1 {
   font: 700 0.58rem/1.35 var(--console-micro-font, ui-monospace, monospace);
   pointer-events: none;
   text-align: right;
+}
+
+.compose-stage__tool-hint {
+  position: absolute;
+  z-index: 60;
+  top: 12px;
+  left: 50%;
+  max-width: calc(100% - 24px);
+  padding: 6px 9px;
+  border: 1px solid rgba(153, 154, 255, 0.42);
+  border-radius: 5px;
+  color: #e8e8ff;
+  background: rgba(20, 20, 42, 0.84);
+  font: 700 0.58rem/1.35 var(--console-micro-font, ui-monospace, monospace);
+  pointer-events: none;
+  text-align: center;
+  transform: translateX(-50%);
 }
 
 .compose-stage__content {
