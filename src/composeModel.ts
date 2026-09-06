@@ -28,6 +28,39 @@ export function createComposeClipboardSnapshot<T extends { id: string; z: number
   return snapshot as ComposeClipboardSnapshot<T>
 }
 
+interface ComposeCatInstanceCandidate {
+  kind: string
+  rescueOrder?: number
+  instanceNumber?: number
+}
+
+export function getNextMoonCatInstanceNumber(objects: ReadonlyArray<ComposeCatInstanceCandidate>, rescueOrder: number) {
+  let highest = 0
+  for (const object of objects) {
+    if (
+      object.kind === 'cat' &&
+      object.rescueOrder === rescueOrder &&
+      typeof object.instanceNumber === 'number' &&
+      Number.isSafeInteger(object.instanceNumber) &&
+      object.instanceNumber > highest
+    ) {
+      highest = object.instanceNumber
+    }
+  }
+  return highest + 1
+}
+
+export function assignNextMoonCatInstanceNumber<T extends ComposeCatInstanceCandidate>(
+  object: T,
+  objects: ReadonlyArray<ComposeCatInstanceCandidate>,
+): T {
+  if (object.kind !== 'cat' || typeof object.rescueOrder !== 'number') return object
+  return {
+    ...object,
+    instanceNumber: getNextMoonCatInstanceNumber(objects, object.rescueOrder),
+  }
+}
+
 export function createComposeObjectId(prefix: string, existingIds?: ReadonlySet<string>) {
   let id = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
   while (existingIds?.has(id)) {

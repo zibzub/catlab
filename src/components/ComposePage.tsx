@@ -15,6 +15,7 @@ import {
   loadComposeBackground,
   renderComposition,
   type ComposeBackground,
+  type ComposePlacedCat,
   type ComposePlacedObject,
   type ComposePlacedRect,
 } from '../composeExport'
@@ -22,11 +23,13 @@ import { parseComposeDocument, serializeComposeDocument, type LoadedComposeDocum
 import {
   canTransformComposeObject,
   canAddComposeLayer,
+  assignNextMoonCatInstanceNumber,
   cloneComposeObjectFromSnapshot,
   createComposeClipboardSnapshot,
   createComposeObjectId,
   defaultComposeObjectState,
   getComposePastePosition,
+  getNextMoonCatInstanceNumber,
   MAX_COMPOSE_LAYERS,
   moveComposeLayer,
   moveComposeLayerToIndex,
@@ -544,12 +547,12 @@ export function ComposePage({
     if (!canAddComposeLayer(placedObjectsRef.current.length)) return
     cancelStageSampling()
     const id = createComposeObjectId(String(cat.rescueOrder))
-    setPlacedObjects((current) => [
-      ...current,
-      {
+    setPlacedObjects((current) => {
+      const newCat: ComposePlacedCat = {
         id,
         kind: 'cat',
         rescueOrder: cat.rescueOrder,
+        instanceNumber: getNextMoonCatInstanceNumber(current, cat.rescueOrder),
         artMode: 'bodies',
         x: 0.5,
         y: 0.5,
@@ -560,8 +563,9 @@ export function ComposePage({
         flipY: false,
         z: nextLayer(current),
         ...defaultComposeObjectState(),
-      },
-    ])
+      }
+      return [...current, newCat]
+    })
     setSelectedId(id)
   }
 
@@ -604,7 +608,7 @@ export function ComposePage({
         kind: 'rect',
         width: 0.28,
         height: 0.2,
-        fill: '#e5e5ee',
+        fill: '#ffffff',
         x: 0.5,
         y: 0.5,
         scale: 1,
@@ -636,10 +640,15 @@ export function ComposePage({
     )
     pasteCountRef.current += 1
     const position = getComposePastePosition(composeClipboard, pasteCountRef.current)
-    setPlacedObjects((current) => [
-      ...current,
-      cloneComposeObjectFromSnapshot<ComposePlacedObject>(composeClipboard, id, nextLayer(current), position),
-    ])
+    setPlacedObjects((current) => {
+      const pasted = cloneComposeObjectFromSnapshot<ComposePlacedObject>(
+        composeClipboard,
+        id,
+        nextLayer(current),
+        position,
+      )
+      return [...current, assignNextMoonCatInstanceNumber(pasted, current)]
+    })
     setSelectedId(id)
   }
 
@@ -651,15 +660,13 @@ export function ComposePage({
       const source = current.find((item) => item.id === selectedId)
       if (!source) return current
       const position = offsetComposePosition(source)
-      return [
-        ...current,
-        cloneComposeObjectFromSnapshot<ComposePlacedObject>(
-          createComposeClipboardSnapshot(source),
-          id,
-          nextLayer(current),
-          position,
-        ),
-      ]
+      const duplicate = cloneComposeObjectFromSnapshot<ComposePlacedObject>(
+        createComposeClipboardSnapshot(source),
+        id,
+        nextLayer(current),
+        position,
+      )
+      return [...current, assignNextMoonCatInstanceNumber(duplicate, current)]
     })
     setSelectedId(id)
   }

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ComposePlacedCat, ComposePlacedText } from '../composeExport'
-import {
-  getComposeLayerDescription,
-  getComposeLayerLabel,
-  getComposeLayerLabels,
-} from '../components/ComposeLayersPanel'
+import { getComposeLayerDescription, getComposeLayerLabel } from '../components/ComposeLayersPanel'
 
 const textObject: ComposePlacedText = {
   id: 'text-1',
@@ -38,11 +34,12 @@ describe('Compose layer labels', () => {
     expect(getComposeLayerDescription({ ...textObject, text: ' \n\t ' })).toBe('Empty text')
   })
 
-  it('numbers repeated MoonCat instances in front-to-back layer order', () => {
-    const cat = (id: string, z: number, rescueOrder: number): ComposePlacedCat => ({
+  it('uses each MoonCat instance number regardless of layer order', () => {
+    const cat = (id: string, z: number, rescueOrder: number, instanceNumber: number): ComposePlacedCat => ({
       id,
       kind: 'cat',
       rescueOrder,
+      instanceNumber,
       artMode: 'bodies',
       x: 0.5,
       y: 0.5,
@@ -56,10 +53,9 @@ describe('Compose layer labels', () => {
       visible: true,
     })
 
-    const labels = getComposeLayerLabels([cat('cat-back', 1, 42), cat('cat-other', 2, 7), cat('cat-front', 3, 42)])
+    const objects = [cat('cat-back', 1, 42, 3), cat('cat-other', 2, 7, 1), cat('cat-front', 3, 42, 1)]
 
-    expect(labels.get('cat-front')).toBe('MoonCat 42')
-    expect(labels.get('cat-back')).toBe('MoonCat 42 (2)')
-    expect(labels.get('cat-other')).toBe('MoonCat 7')
+    expect(objects.map(getComposeLayerLabel)).toEqual(['MoonCat 42 (3)', 'MoonCat 7', 'MoonCat 42'])
+    expect(getComposeLayerLabel({ ...objects[0], z: 4 })).toBe('MoonCat 42 (3)')
   })
 })

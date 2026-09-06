@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   canAddComposeLayer,
   canTransformComposeObject,
+  assignNextMoonCatInstanceNumber,
   cloneComposeObjectFromSnapshot,
   createComposeClipboardSnapshot,
   getComposePastePosition,
+  getNextMoonCatInstanceNumber,
   moveComposeLayer,
   moveComposeLayerToIndex,
   offsetComposePosition,
@@ -53,6 +55,27 @@ describe('Compose object model', () => {
     expect(canTransformComposeObject({ locked: false, visible: true })).toBe(true)
     expect(canTransformComposeObject({ locked: true, visible: true })).toBe(false)
     expect(canTransformComposeObject({ locked: false, visible: false })).toBe(false)
+  })
+
+  it('allocates the next persistent MoonCat instance number per rescue order', () => {
+    const objects = [
+      { kind: 'cat', rescueOrder: 42, instanceNumber: 1, z: 10 },
+      { kind: 'cat', rescueOrder: 42, instanceNumber: 3, z: 1 },
+      { kind: 'cat', rescueOrder: 7, instanceNumber: 2, z: 5 },
+      { kind: 'text' },
+    ]
+
+    expect(getNextMoonCatInstanceNumber([], 42)).toBe(1)
+    expect(getNextMoonCatInstanceNumber(objects, 42)).toBe(4)
+    expect(getNextMoonCatInstanceNumber([...objects].reverse(), 42)).toBe(4)
+    expect(getNextMoonCatInstanceNumber(objects, 7)).toBe(3)
+    expect(getNextMoonCatInstanceNumber(objects, 99)).toBe(1)
+    expect(objects).toEqual([
+      { kind: 'cat', rescueOrder: 42, instanceNumber: 1, z: 10 },
+      { kind: 'cat', rescueOrder: 42, instanceNumber: 3, z: 1 },
+      { kind: 'cat', rescueOrder: 7, instanceNumber: 2, z: 5 },
+      { kind: 'text' },
+    ])
   })
 
   it('orders layers from front to back without mutating the source array', () => {
@@ -120,6 +143,7 @@ describe('Compose object model', () => {
       id: 'cat-1',
       kind: 'cat' as const,
       rescueOrder: 42,
+      instanceNumber: 2,
       artMode: 'faces' as const,
       x: 0.2,
       y: 0.3,
@@ -175,16 +199,20 @@ describe('Compose object model', () => {
     const rectSnapshot = createComposeClipboardSnapshot(rect)
     expect(catSnapshot).not.toHaveProperty('id')
     expect(catSnapshot).not.toHaveProperty('z')
-    expect(cloneComposeObjectFromSnapshot(catSnapshot, 'cat-2', 8, { x: 0.24, y: 0.34 })).toMatchObject({
+    const clonedCat = cloneComposeObjectFromSnapshot(catSnapshot, 'cat-2', 8, { x: 0.24, y: 0.34 })
+    expect(clonedCat).toMatchObject({
       id: 'cat-2',
       z: 8,
       rescueOrder: 42,
+      instanceNumber: 2,
       artMode: 'faces',
       locked: true,
       visible: false,
       x: 0.24,
       y: 0.34,
     })
+    expect(assignNextMoonCatInstanceNumber(clonedCat, [cat])).toMatchObject({ id: 'cat-2', instanceNumber: 3 })
+    expect(cat.instanceNumber).toBe(2)
     expect(cloneComposeObjectFromSnapshot(textSnapshot, 'text-2', 9, { x: 0.44, y: 0.54 })).toMatchObject({
       id: 'text-2',
       z: 9,

@@ -26,7 +26,7 @@ const document = {
   version: COMPOSE_DOCUMENT_VERSION,
   background: { kind: 'reference', url: './background.png', width: 1200, height: 900, name: 'Background' },
   objects: [
-    { kind: 'cat', rescueOrder: 25_439, artMode: 'faces', ...transform },
+    { kind: 'cat', rescueOrder: 25_439, instanceNumber: 3, artMode: 'faces', ...transform },
     {
       kind: 'text',
       text: 'MoonCats',
@@ -83,7 +83,30 @@ describe('Compose document parsing', () => {
 
   it('loads version-1 objects with unlocked and visible defaults', () => {
     const loaded = parseComposeDocument(legacyDocument)
-    expect(loaded.placedObjects[0]).toMatchObject({ locked: false, visible: true })
+    expect(loaded.placedObjects[0]).toMatchObject({ locked: false, visible: true, instanceNumber: 1 })
+  })
+
+  it('migrates version-1 MoonCats deterministically by z with independent rescue sequences', () => {
+    const loaded = parseComposeDocument({
+      ...legacyDocument,
+      objects: [
+        { ...legacyDocument.objects[0], rescueOrder: 42, z: 8 },
+        { ...legacyDocument.objects[0], rescueOrder: 7, z: 3 },
+        { ...legacyDocument.objects[0], rescueOrder: 42, z: 1 },
+        { ...legacyDocument.objects[0], rescueOrder: 42, z: 5 },
+      ],
+    })
+
+    expect(
+      loaded.placedObjects
+        .filter((object) => object.kind === 'cat')
+        .map((object) => [object.rescueOrder, object.instanceNumber]),
+    ).toEqual([
+      [42, 3],
+      [7, 1],
+      [42, 1],
+      [42, 2],
+    ])
   })
 
   it('rejects unsupported versions and malformed persisted data', () => {
@@ -100,6 +123,21 @@ describe('Compose document parsing', () => {
     expect(() => parseComposeDocument({ ...document, objects: [{ ...document.objects[1], fill: 'red' }] })).toThrow(
       'Invalid text fill',
     )
+    expect(() =>
+      parseComposeDocument({ ...document, objects: [{ ...document.objects[0], instanceNumber: 0 }] }),
+    ).toThrow('Invalid MoonCat instance number')
+    expect(() =>
+      parseComposeDocument({ ...document, objects: [{ ...document.objects[0], instanceNumber: -1 }] }),
+    ).toThrow('Invalid MoonCat instance number')
+    expect(() =>
+      parseComposeDocument({ ...document, objects: [{ ...document.objects[0], instanceNumber: 1.5 }] }),
+    ).toThrow('Invalid MoonCat instance number')
+    expect(() =>
+      parseComposeDocument({ ...document, objects: [{ ...document.objects[0], instanceNumber: Number.NaN }] }),
+    ).toThrow('Invalid MoonCat instance number')
+    expect(() =>
+      parseComposeDocument({ ...document, objects: [{ ...document.objects[0], instanceNumber: '2' }] }),
+    ).toThrow('Invalid MoonCat instance number')
     expect(() =>
       parseComposeDocument({ ...document, objects: [{ ...document.objects[0], visible: undefined }] }),
     ).toThrow('Invalid object visibility or lock state')

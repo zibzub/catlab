@@ -13,6 +13,7 @@ interface ComposePlacedTransform extends ComposeObjectState, ComposeTransform {
 export interface ComposePlacedCat extends ComposePlacedTransform {
   kind: 'cat'
   rescueOrder: number
+  instanceNumber: number
   artMode: GridArtMode
 }
 

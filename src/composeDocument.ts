@@ -37,6 +37,7 @@ interface ComposeDocumentCatV1 extends ComposeDocumentTransformV1 {
 interface ComposeDocumentCatV2 extends ComposeDocumentTransformV2 {
   kind: 'cat'
   rescueOrder: number
+  instanceNumber: number
   artMode: 'bodies' | 'faces'
 }
 
@@ -76,7 +77,6 @@ interface ComposeDocumentRectV2 extends ComposeDocumentTransformV2 {
 
 type ComposeDocumentObjectV1 = ComposeDocumentCatV1 | ComposeDocumentTextV1 | ComposeDocumentRectV1
 type ComposeDocumentObjectV2 = ComposeDocumentCatV2 | ComposeDocumentTextV2 | ComposeDocumentRectV2
-type ComposeDocumentObject = ComposeDocumentObjectV1 | ComposeDocumentObjectV2
 
 interface EmbeddedBackground {
   kind: 'embedded'
@@ -195,12 +195,17 @@ function parseObject(
   if (kind === 'cat') {
     const artMode = value.artMode
     if (artMode !== 'bodies' && artMode !== 'faces') throw new Error(`Invalid cat art mode in object ${index + 1}.`)
-    return {
-      ...transform,
-      kind,
-      rescueOrder: numberField(value.rescueOrder, 'MoonCat rescue order', 0, MAX_RESCUE_ORDER, true),
-      artMode,
+    const rescueOrder = numberField(value.rescueOrder, 'MoonCat rescue order', 0, MAX_RESCUE_ORDER, true)
+    if (version === COMPOSE_DOCUMENT_VERSION) {
+      return {
+        ...transform,
+        kind,
+        rescueOrder,
+        instanceNumber: numberField(value.instanceNumber, 'MoonCat instance number', 1, 1_000_000, true),
+        artMode,
+      }
     }
+    return { ...transform, kind, rescueOrder, artMode }
   }
 
   if (kind === 'rect') {
@@ -268,11 +273,31 @@ function runtimeId(kind: ComposePlacedObject['kind'], index: number): string {
   return `compose-${kind}-${index}-${randomId}`
 }
 
-function restoreObject(value: ComposeDocumentObject, index: number): ComposePlacedObject {
-  const state =
-    'locked' in value && 'visible' in value
-      ? { locked: value.locked, visible: value.visible }
-      : defaultComposeObjectState()
+function migrateV1Objects(objects: ComposeDocumentObjectV1[]): ComposeDocumentObjectV2[] {
+  const instanceNumbers = new Map<number, number>()
+  const nextByRescueOrder = new Map<number, number>()
+  const ordered = objects
+    .map((object, index) => ({ object, index }))
+    .sort((a, b) => a.object.z - b.object.z || a.index - b.index)
+
+  for (const { object, index } of ordered) {
+    if (object.kind !== 'cat') continue
+    const instanceNumber = (nextByRescueOrder.get(object.rescueOrder) ?? 0) + 1
+    nextByRescueOrder.set(object.rescueOrder, instanceNumber)
+    instanceNumbers.set(index, instanceNumber)
+  }
+
+  return objects.map((object, index) => {
+    const state = defaultComposeObjectState()
+    if (object.kind === 'cat') {
+      return { ...object, ...state, instanceNumber: instanceNumbers.get(index) } as ComposeDocumentCatV2
+    }
+    if (object.kind === 'rect') return { ...object, ...state } as ComposeDocumentRectV2
+    return { ...object, ...state } as ComposeDocumentTextV2
+  })
+}
+
+function restoreObject(value: ComposeDocumentObjectV2, index: number): ComposePlacedObject {
   const transform = {
     id: runtimeId(value.kind, index),
     x: value.x,
@@ -283,11 +308,18 @@ function restoreObject(value: ComposeDocumentObject, index: number): ComposePlac
     flipX: value.flipX,
     flipY: value.flipY,
     z: value.z,
-    ...state,
+    locked: value.locked,
+    visible: value.visible,
   }
 
   if (value.kind === 'cat')
-    return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
+    return {
+      ...transform,
+      kind: value.kind,
+      rescueOrder: value.rescueOrder,
+      instanceNumber: value.instanceNumber,
+      artMode: value.artMode,
+    }
   if (value.kind === 'rect')
     return { ...transform, kind: value.kind, width: value.width, height: value.height, fill: value.fill }
   return {
@@ -313,7 +345,11 @@ export function parseComposeDocument(value: unknown): LoadedComposeDocument {
   const background = parseBackground(value.background)
   if (!Array.isArray(value.objects) || value.objects.length > 500) throw new Error('Invalid composition object list.')
 
-  const documentObjects = value.objects.map((object, index) => parseObject(object, index, version))
+  const parsedObjects = value.objects.map((object, index) => parseObject(object, index, version))
+  const documentObjects =
+    version === COMPOSE_DOCUMENT_V1_VERSION
+      ? migrateV1Objects(parsedObjects as ComposeDocumentObjectV1[])
+      : (parsedObjects as ComposeDocumentObjectV2[])
   return {
     background:
       background?.kind === 'embedded'
@@ -376,7 +412,13 @@ function serializeObject(value: ComposePlacedObject): ComposeDocumentObjectV2 {
   }
 
   if (value.kind === 'cat')
-    return { ...transform, kind: value.kind, rescueOrder: value.rescueOrder, artMode: value.artMode }
+    return {
+      ...transform,
+      kind: value.kind,
+      rescueOrder: value.rescueOrder,
+      instanceNumber: value.instanceNumber,
+      artMode: value.artMode,
+    }
   if (value.kind === 'rect')
     return { ...transform, kind: value.kind, width: value.width, height: value.height, fill: value.fill }
   return {
