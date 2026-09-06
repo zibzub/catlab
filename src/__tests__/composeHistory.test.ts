@@ -86,6 +86,148 @@ describe('Compose object history', () => {
     expect(previewed.future).toHaveLength(1)
   })
 
+  it('coalesces multiple previews into one committed transaction', () => {
+    const initial = createComposeHistory([cat('one')])
+    const started = composeHistoryReducer(initial, { type: 'beginTransaction' })
+    const previewed = composeHistoryReducer(started, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.4 })),
+    })
+    const previewedAgain = composeHistoryReducer(previewed, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.6 })),
+    })
+    const committed = composeHistoryReducer(previewedAgain, { type: 'commitTransaction' })
+
+    expect(committed.past).toHaveLength(1)
+    expect(committed.present.placedObjects[0].x).toBe(0.6)
+    expect(committed.transaction).toBeNull()
+    expect(composeHistoryReducer(committed, { type: 'undo' }).present.placedObjects[0].x).toBe(0.25)
+  })
+
+  it('does not record a transaction that stays at its baseline', () => {
+    const initial = createComposeHistory([cat('one')])
+    const started = composeHistoryReducer(initial, { type: 'beginTransaction' })
+    const noOpPreview = composeHistoryReducer(started, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object })),
+    })
+    expect(noOpPreview).toBe(started)
+    const noOpCommitted = composeHistoryReducer(noOpPreview, { type: 'commitTransaction' })
+    expect(noOpCommitted.past).toHaveLength(0)
+
+    const restarted = composeHistoryReducer(noOpCommitted, { type: 'beginTransaction' })
+    const previewed = composeHistoryReducer(restarted, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.4 })),
+    })
+    const returned = composeHistoryReducer(previewed, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.25 })),
+    })
+    const committed = composeHistoryReducer(returned, { type: 'commitTransaction' })
+
+    expect(committed.past).toHaveLength(0)
+    expect(committed.future).toHaveLength(0)
+    expect(committed.transaction).toBeNull()
+  })
+
+  it('clones a transaction baseline and safely ignores duplicate starts', () => {
+    const initial = createComposeHistory([cat('one')])
+    const started = composeHistoryReducer(initial, { type: 'beginTransaction' })
+    const duplicateStart = composeHistoryReducer(started, { type: 'beginTransaction' })
+    const previewed = composeHistoryReducer(duplicateStart, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.4 })),
+    })
+
+    expect(duplicateStart).toBe(started)
+    expect(previewed.transaction?.placedObjects[0].x).toBe(0.25)
+    expect(previewed.present.placedObjects[0].x).toBe(0.4)
+  })
+
+  it('clears redo when a changed transaction branches after Undo', () => {
+    const initial = createComposeHistory([cat('one')])
+    const committed = composeHistoryReducer(initial, {
+      type: 'commit',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.4 })),
+    })
+    const undone = composeHistoryReducer(committed, { type: 'undo' })
+    const started = composeHistoryReducer(undone, { type: 'beginTransaction' })
+    const previewed = composeHistoryReducer(started, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.6 })),
+    })
+    const branched = composeHistoryReducer(previewed, { type: 'commitTransaction' })
+
+    expect(branched.future).toHaveLength(0)
+    expect(branched.present.placedObjects[0].x).toBe(0.6)
+  })
+
+  it('preserves redo when a transaction returns to its baseline', () => {
+    const initial = createComposeHistory([cat('one')])
+    const committed = composeHistoryReducer(initial, {
+      type: 'commit',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.4 })),
+    })
+    const undone = composeHistoryReducer(committed, { type: 'undo' })
+    const started = composeHistoryReducer(undone, { type: 'beginTransaction' })
+    const previewed = composeHistoryReducer(started, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.6 })),
+    })
+    const returned = composeHistoryReducer(previewed, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.25 })),
+    })
+    const completed = composeHistoryReducer(returned, { type: 'commitTransaction' })
+
+    expect(completed.future).toHaveLength(1)
+    expect(composeHistoryReducer(completed, { type: 'redo' }).present.placedObjects[0].x).toBe(0.4)
+  })
+
+  it('clears a transaction when replacing an opened document', () => {
+    const started = composeHistoryReducer(createComposeHistory([cat('one')]), { type: 'beginTransaction' })
+    const replaced = composeHistoryReducer(started, { type: 'replace', placedObjects: [cat('loaded')] })
+
+    expect(replaced.transaction).toBeNull()
+    expect(replaced.past).toHaveLength(0)
+    expect(replaced.future).toHaveLength(0)
+  })
+
+  it('commits an active transaction before Undo and treats a missing transaction as a no-op', () => {
+    const initial = createComposeHistory([cat('one')])
+    const committed = composeHistoryReducer(initial, {
+      type: 'commit',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.4 })),
+    })
+    const undone = composeHistoryReducer(committed, { type: 'undo' })
+    const started = composeHistoryReducer(undone, { type: 'beginTransaction' })
+    const previewed = composeHistoryReducer(started, {
+      type: 'preview',
+      update: (objects) => objects.map((object) => ({ ...object, x: 0.6 })),
+    })
+    const undoneTransaction = composeHistoryReducer(previewed, { type: 'undo' })
+
+    expect(undoneTransaction.present.placedObjects[0].x).toBe(0.25)
+    expect(undoneTransaction.transaction).toBeNull()
+    expect(composeHistoryReducer(undoneTransaction, { type: 'commitTransaction' })).toBe(undoneTransaction)
+  })
+
+  it('caps transaction history at the existing limit', () => {
+    let history = createComposeHistory([cat('one')])
+    for (let index = 1; index <= COMPOSE_HISTORY_LIMIT + 5; index += 1) {
+      history = composeHistoryReducer(history, { type: 'beginTransaction' })
+      history = composeHistoryReducer(history, {
+        type: 'preview',
+        update: (objects) => objects.map((object) => ({ ...object, x: index / 100 })),
+      })
+      history = composeHistoryReducer(history, { type: 'commitTransaction' })
+    }
+
+    expect(history.past).toHaveLength(COMPOSE_HISTORY_LIMIT)
+  })
+
   it('caps history and ignores structurally identical updates', () => {
     let history = createComposeHistory([cat('one')])
     history = composeHistoryReducer(history, { type: 'commit', update: (objects) => objects })

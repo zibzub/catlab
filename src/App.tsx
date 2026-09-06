@@ -163,6 +163,15 @@ export default function App() {
   const redoCompose = useCallback(() => {
     dispatchComposeHistory({ type: 'redo' })
   }, [])
+  const beginComposeTransaction = useCallback(() => {
+    dispatchComposeHistory({ type: 'beginTransaction' })
+  }, [])
+  const commitComposeTransaction = useCallback(() => {
+    dispatchComposeHistory({ type: 'commitTransaction' })
+  }, [])
+  const clearComposeTransaction = useCallback(() => {
+    dispatchComposeHistory({ type: 'clearTransaction' })
+  }, [])
   const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
   const [colorLabOpen, setColorLabOpen] = useState(false)
   const [colorLabSample, setColorLabSample] = useState<ColorLabSample | null>(null)
@@ -476,6 +485,9 @@ export default function App() {
           canRedo={composeHistory.future.length > 0}
           onUndo={undoCompose}
           onRedo={redoCompose}
+          onBeginTransaction={beginComposeTransaction}
+          onCommitTransaction={commitComposeTransaction}
+          onClearTransaction={clearComposeTransaction}
           background={composeBackground}
           onBackgroundChange={updateComposeBackground}
           onBack={() => setAppView('collection')}

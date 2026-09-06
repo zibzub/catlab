@@ -3,7 +3,11 @@ import Moveable, {
   type Able,
   type MoveableManagerInterface,
   type OnDrag,
+  type OnDragEnd,
+  type OnDragStart,
   type OnRotate,
+  type OnRotateEnd,
+  type OnRotateStart,
   type OnScale,
   type OnScaleEnd,
   type OnScaleStart,
@@ -56,6 +60,9 @@ interface ComposePageProps {
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
+  onBeginTransaction: () => void
+  onCommitTransaction: () => void
+  onClearTransaction: () => void
   background: ComposeBackground | null
   onBackgroundChange: (background: ComposeBackground | null) => void
   onBack: () => void
@@ -168,6 +175,9 @@ export function ComposePage({
   canRedo,
   onUndo,
   onRedo,
+  onBeginTransaction,
+  onCommitTransaction,
+  onClearTransaction,
   background,
   onBackgroundChange,
   onBack,
@@ -220,6 +230,8 @@ export function ComposePage({
   const samplingSequenceRef = useRef(0)
   const backgroundSelectionSequenceRef = useRef(0)
   const pendingBackgroundRef = useRef<{ sequence: number; url: string } | null>(null)
+  const arrowKeysRef = useRef(new Set<string>())
+  const arrowTransactionRef = useRef(false)
 
   useEffect(
     () => () => {
@@ -233,9 +245,15 @@ export function ComposePage({
   )
 
   useEffect(() => {
+    const selectedStillExists = selectedId ? placedObjects.some((object) => object.id === selectedId) : true
+    if (arrowTransactionRef.current && !selectedStillExists) {
+      arrowKeysRef.current.clear()
+      arrowTransactionRef.current = false
+      onClearTransaction()
+    }
     setSelectedId((current) => reconcileComposeSelection(current, placedObjects))
     setEditingTextId((current) => (current && placedObjects.some((object) => object.id === current) ? current : null))
-  }, [placedObjects])
+  }, [onClearTransaction, placedObjects, selectedId])
 
   useEffect(() => {
     function handleDocumentPointerDown(event: PointerEvent) {
@@ -283,11 +301,15 @@ export function ComposePage({
         const wantsRedo = (key === 'z' && event.shiftKey) || (key === 'y' && !event.shiftKey)
         if (wantsUndo && canUndo) {
           event.preventDefault()
+          arrowKeysRef.current.clear()
+          arrowTransactionRef.current = false
           onUndo()
           return
         }
         if (wantsRedo && canRedo) {
           event.preventDefault()
+          arrowKeysRef.current.clear()
+          arrowTransactionRef.current = false
           onRedo()
           return
         }
@@ -333,6 +355,13 @@ export function ComposePage({
 
       event.preventDefault()
       const step = event.shiftKey ? 10 : 1
+      const selectedObject = placedObjectsRef.current.find((item) => item.id === selectedId)
+      if (!selectedObject || !canTransformComposeObject(selectedObject)) return
+      if (!arrowTransactionRef.current) {
+        arrowTransactionRef.current = true
+        onBeginTransaction()
+      }
+      arrowKeysRef.current.add(event.key)
       setPlacedObjects((current) =>
         current.map((item) =>
           item.id === selectedId
@@ -351,7 +380,31 @@ export function ComposePage({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [canRedo, canUndo, composeClipboard, editingTextId, onRedo, onUndo, selectedId])
+  }, [canRedo, canUndo, composeClipboard, editingTextId, onBeginTransaction, onRedo, onUndo, selectedId])
+
+  useEffect(() => {
+    function handleArrowKeyUp(event: KeyboardEvent) {
+      if (!arrowTransactionRef.current || !arrowKeysRef.current.has(event.key)) return
+      arrowKeysRef.current.delete(event.key)
+      if (arrowKeysRef.current.size === 0) {
+        arrowTransactionRef.current = false
+        onCommitTransaction()
+      }
+    }
+
+    function handleWindowBlur() {
+      arrowKeysRef.current.clear()
+      arrowTransactionRef.current = false
+      onCommitTransaction()
+    }
+
+    document.addEventListener('keyup', handleArrowKeyUp)
+    window.addEventListener('blur', handleWindowBlur)
+    return () => {
+      document.removeEventListener('keyup', handleArrowKeyUp)
+      window.removeEventListener('blur', handleWindowBlur)
+    }
+  }, [onCommitTransaction])
 
   useEffect(() => {
     if (!stageSamplingTarget) return
@@ -727,6 +780,7 @@ export function ComposePage({
   function finishTextEditing() {
     if (!editingTextId) return
     setEditingTextId(null)
+    onCommitTransaction()
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
   }
 
@@ -878,6 +932,12 @@ export function ComposePage({
     return target.getAttribute('data-compose-id')
   }
 
+  function handleMoveableDragStart(event: OnDragStart) {
+    const id = moveableTargetId(event.target)
+    const item = id ? placedObjectsRef.current.find((candidate) => candidate.id === id) : null
+    if (item && canTransformComposeObject(item)) onBeginTransaction()
+  }
+
   function handleMoveableDrag(event: OnDrag) {
     const rect = stageRef.current?.getBoundingClientRect()
     const id = moveableTargetId(event.target)
@@ -894,14 +954,20 @@ export function ComposePage({
     )
   }
 
+  function handleMoveableDragEnd(_event: OnDragEnd) {
+    onCommitTransaction()
+  }
+
   function handleMoveableScaleStart(event: OnScaleStart) {
     const id = moveableTargetId(event.target)
     const item = id ? placedObjectsRef.current.find((candidate) => candidate.id === id) : null
     const stageBounds = stageRef.current?.getBoundingClientRect()
     if (!id || !item || !canTransformComposeObject(item) || item.kind !== 'rect') {
+      if (id && item && canTransformComposeObject(item)) onBeginTransaction()
       rectangleScaleStartRef.current = null
       return
     }
+    onBeginTransaction()
     rectangleScaleStartRef.current = {
       id,
       x: item.x,
@@ -944,6 +1010,13 @@ export function ComposePage({
     if (rectangleScaleStartRef.current?.id === moveableTargetId(event.target)) {
       rectangleScaleStartRef.current = null
     }
+    onCommitTransaction()
+  }
+
+  function handleMoveableRotateStart(event: OnRotateStart) {
+    const id = moveableTargetId(event.target)
+    const item = id ? placedObjectsRef.current.find((candidate) => candidate.id === id) : null
+    if (item && canTransformComposeObject(item)) onBeginTransaction()
   }
 
   function handleMoveableRotate(event: OnRotate) {
@@ -954,6 +1027,10 @@ export function ComposePage({
         item.id === id && canTransformComposeObject(item) ? { ...item, rotation: event.rotation } : item,
       ),
     )
+  }
+
+  function handleMoveableRotateEnd(_event: OnRotateEnd) {
+    onCommitTransaction()
   }
 
   function handleObjectPointerDown(event: React.PointerEvent<HTMLElement>, id: string) {
@@ -1482,6 +1559,7 @@ export function ComposePage({
                           event.preventDefault()
                           event.stopPropagation()
                           setSelectedId(item.id)
+                          onBeginTransaction()
                           setEditingTextId(item.id)
                         }}
                         onKeyDown={(event) => {
@@ -1534,11 +1612,15 @@ export function ComposePage({
                 throttleDrag={0}
                 throttleScale={0}
                 throttleRotate={0}
+                onDragStart={handleMoveableDragStart}
                 onDrag={handleMoveableDrag}
+                onDragEnd={handleMoveableDragEnd}
                 onScaleStart={handleMoveableScaleStart}
                 onScale={handleMoveableScale}
                 onScaleEnd={handleMoveableScaleEnd}
+                onRotateStart={handleMoveableRotateStart}
                 onRotate={handleMoveableRotate}
+                onRotateEnd={handleMoveableRotateEnd}
               />
             </div>
           </div>
@@ -1689,6 +1771,8 @@ export function ComposePage({
                     <textarea
                       rows={3}
                       value={selected.text}
+                      onFocus={onBeginTransaction}
+                      onBlur={onCommitTransaction}
                       onChange={(event) => updateSelected({ text: event.currentTarget.value })}
                     />
                   </label>
@@ -1696,7 +1780,7 @@ export function ComposePage({
                     <span>Font family</span>
                     <select
                       value={selected.fontFamily}
-                      onChange={(event) => updateSelected({ fontFamily: event.currentTarget.value })}
+                      onChange={(event) => updateSelected({ fontFamily: event.currentTarget.value }, true)}
                     >
                       {COMPOSE_TEXT_FONTS.map((font) => (
                         <option key={font.label} value={font.value}>
@@ -1711,6 +1795,8 @@ export function ComposePage({
                         <input
                           type="color"
                           value={selected.fill}
+                          onFocus={onBeginTransaction}
+                          onBlur={onCommitTransaction}
                           onChange={(event) => updateSelected({ fill: event.currentTarget.value })}
                         />
                         <span>Fill</span>
@@ -1735,6 +1821,8 @@ export function ComposePage({
                         <input
                           type="color"
                           value={selected.stroke}
+                          onFocus={onBeginTransaction}
+                          onBlur={onCommitTransaction}
                           onChange={(event) => updateSelected({ stroke: event.currentTarget.value })}
                         />
                         <span>Outline</span>
@@ -1765,6 +1853,12 @@ export function ComposePage({
                       max="16"
                       step="0.5"
                       value={selected.strokeWidth}
+                      onFocus={onBeginTransaction}
+                      onKeyDown={onBeginTransaction}
+                      onPointerDown={onBeginTransaction}
+                      onPointerUp={onCommitTransaction}
+                      onKeyUp={onCommitTransaction}
+                      onBlur={onCommitTransaction}
                       onChange={(event) => updateSelected({ strokeWidth: Number(event.currentTarget.value) })}
                     />
                   </label>
@@ -1778,6 +1872,12 @@ export function ComposePage({
                       max="240"
                       step="1"
                       value={selected.fontSize}
+                      onFocus={onBeginTransaction}
+                      onKeyDown={onBeginTransaction}
+                      onPointerDown={onBeginTransaction}
+                      onPointerUp={onCommitTransaction}
+                      onKeyUp={onCommitTransaction}
+                      onBlur={onCommitTransaction}
                       onChange={(event) => updateSelected({ fontSize: Number(event.currentTarget.value) })}
                     />
                   </label>
@@ -1790,6 +1890,8 @@ export function ComposePage({
                       <input
                         type="color"
                         value={selected.fill}
+                        onFocus={onBeginTransaction}
+                        onBlur={onCommitTransaction}
                         onChange={(event) => updateSelected({ fill: event.currentTarget.value })}
                       />
                       <span>Fill</span>
@@ -1884,6 +1986,12 @@ export function ComposePage({
                   max="1"
                   step="0.01"
                   value={selected.opacity}
+                  onFocus={onBeginTransaction}
+                  onKeyDown={onBeginTransaction}
+                  onPointerDown={onBeginTransaction}
+                  onPointerUp={onCommitTransaction}
+                  onKeyUp={onCommitTransaction}
+                  onBlur={onCommitTransaction}
                   onChange={(event) => updateSelected({ opacity: Number(event.currentTarget.value) })}
                 />
               </label>
@@ -1897,6 +2005,12 @@ export function ComposePage({
                   max="12"
                   step="0.05"
                   value={selected.scale}
+                  onFocus={onBeginTransaction}
+                  onKeyDown={onBeginTransaction}
+                  onPointerDown={onBeginTransaction}
+                  onPointerUp={onCommitTransaction}
+                  onKeyUp={onCommitTransaction}
+                  onBlur={onCommitTransaction}
                   onChange={(event) => updateSelected({ scale: Number(event.currentTarget.value) })}
                 />
               </label>
@@ -1910,6 +2024,12 @@ export function ComposePage({
                   max="180"
                   step="1"
                   value={selected.rotation}
+                  onFocus={onBeginTransaction}
+                  onKeyDown={onBeginTransaction}
+                  onPointerDown={onBeginTransaction}
+                  onPointerUp={onCommitTransaction}
+                  onKeyUp={onCommitTransaction}
+                  onBlur={onCommitTransaction}
                   onChange={(event) => updateSelected({ rotation: Number(event.currentTarget.value) })}
                 />
               </label>
