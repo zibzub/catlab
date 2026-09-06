@@ -19,6 +19,25 @@ export function getComposeLayerLabel(object: ComposePlacedObject) {
   return 'Text'
 }
 
+export function getComposeLayerLabels(objects: ComposePlacedObject[]) {
+  const labels = new Map<string, string>()
+  const catInstances = new Map<number, number>()
+
+  for (const object of orderComposeLayers(objects)) {
+    const baseLabel = getComposeLayerLabel(object)
+    if (object.kind !== 'cat') {
+      labels.set(object.id, baseLabel)
+      continue
+    }
+
+    const instance = (catInstances.get(object.rescueOrder) ?? 0) + 1
+    catInstances.set(object.rescueOrder, instance)
+    labels.set(object.id, instance === 1 ? baseLabel : `${baseLabel} (${instance})`)
+  }
+
+  return labels
+}
+
 export function getComposeLayerDescription(object: ComposePlacedObject) {
   if (object.kind === 'cat') return object.artMode === 'faces' ? 'Face' : 'Full'
   if (object.kind === 'rect') return object.fill
@@ -110,6 +129,7 @@ export function ComposeLayersPanel({
   const autoScrollFrameRef = useRef<number | null>(null)
   const pointerYRef = useRef<number | null>(null)
   const orderedObjects = orderComposeLayers(objects)
+  const layerLabels = getComposeLayerLabels(objects)
   const orderedObjectsRef = useRef(orderedObjects)
   orderedObjectsRef.current = orderedObjects
 
@@ -231,7 +251,7 @@ export function ComposeLayersPanel({
   }, [draggingId, onReorder])
 
   const renderRow = (object: ComposePlacedObject) => {
-    const label = getComposeLayerLabel(object)
+    const label = layerLabels.get(object.id) ?? getComposeLayerLabel(object)
     const description = getComposeLayerDescription(object)
     const primary = object.kind === 'text' ? description : label
     const secondary = object.kind === 'text' ? label : description
