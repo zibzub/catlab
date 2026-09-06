@@ -45,6 +45,7 @@ import {
 } from '../composeModel'
 import { reconcileComposeSelection, type ComposeObjectsUpdate } from '../composeHistory'
 import { ComposeLayersPanel } from './ComposeLayersPanel'
+import { ComposeToolbar } from './ComposeToolbar'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -187,9 +188,10 @@ export function ComposePage({
   const stageRef = useRef<HTMLDivElement>(null)
   const stageContentRef = useRef<HTMLDivElement>(null)
   const backgroundInputRef = useRef<HTMLInputElement>(null)
-  const openInputRef = useRef<HTMLInputElement>(null)
   const openConfirmDialogRef = useRef<HTMLDialogElement>(null)
   const openConfirmCancelRef = useRef<HTMLButtonElement>(null)
+  const clearDialogRef = useRef<HTMLDialogElement>(null)
+  const clearDialogCancelRef = useRef<HTMLButtonElement>(null)
   const saveDialogRef = useRef<HTMLDialogElement>(null)
   const saveFilenameInputRef = useRef<HTMLInputElement>(null)
   const exportDialogRef = useRef<HTMLDialogElement>(null)
@@ -223,6 +225,7 @@ export function ComposePage({
   const [documentError, setDocumentError] = useState<string | null>(null)
   const [openConfirmDialogOpen, setOpenConfirmDialogOpen] = useState(false)
   const [pendingOpenDocument, setPendingOpenDocument] = useState<PendingOpenDocument | null>(null)
+  const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [compositionName, setCompositionName] = useState(DEFAULT_COMPOSE_FILENAME)
   const [saveFilenameDraft, setSaveFilenameDraft] = useState(DEFAULT_COMPOSE_FILENAME)
@@ -266,7 +269,7 @@ export function ComposePage({
         target.closest('.moveable-control-box') ||
         target.closest('.compose-tool-rail') ||
         target.closest('.compose-controls') ||
-        target.closest('.compose-action-bar__document') ||
+        target.closest('.compose-action-bar') ||
         target.closest('.compose-action-bar__name') ||
         target.closest('.compose-save-dialog')
       ) {
@@ -466,6 +469,21 @@ export function ComposePage({
       saveFilenameInputRef.current?.select()
     })
   }, [saveDialogOpen])
+
+  useEffect(() => {
+    const dialog = clearDialogRef.current
+    if (!dialog) return
+    if (!clearDialogOpen) {
+      if (dialog.open) dialog.close()
+      return
+    }
+
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal()
+      else dialog.setAttribute('open', '')
+    }
+    window.requestAnimationFrame(() => clearDialogCancelRef.current?.focus({ preventScroll: true }))
+  }, [clearDialogOpen])
 
   useEffect(() => {
     const dialog = exportDialogRef.current
@@ -847,6 +865,29 @@ export function ComposePage({
     setPendingOpenDocument(null)
   }
 
+  function openClearDialog() {
+    if (placedObjects.length === 0) return
+    setClearDialogOpen(true)
+  }
+
+  function closeClearDialog() {
+    setClearDialogOpen(false)
+  }
+
+  function handleClearDialogCancel(event: React.SyntheticEvent<HTMLDialogElement>) {
+    event.preventDefault()
+    closeClearDialog()
+  }
+
+  function clearLayers() {
+    cancelStageSampling()
+    applyPlacedObjects([])
+    setSelectedId(null)
+    setComposeClipboard(null)
+    pasteCountRef.current = 0
+    closeClearDialog()
+  }
+
   function handleOpenConfirmCancel(event: React.SyntheticEvent<HTMLDialogElement>) {
     event.preventDefault()
     closeOpenConfirmDialog()
@@ -1100,65 +1141,25 @@ export function ComposePage({
           </button>
         </div>
 
-        <div className="compose-action-bar" aria-label="Composition actions">
-          <label className="compose-action-bar__name">
-            <span className="sr-only">Composition name</span>
-            <input
-              type="text"
-              value={compositionName}
-              onChange={(event) => setCompositionName(event.currentTarget.value)}
-              aria-label="Composition name"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
-          <div className="compose-action-bar__document" aria-label="Document actions">
-            <button type="button" disabled={documentBusy} onClick={() => openInputRef.current?.click()}>
-              Open
-            </button>
-            <button type="button" disabled={documentBusy} onClick={openSaveDialog}>
-              Save
-            </button>
-            <button type="button" disabled={!canUndo} onClick={onUndo} aria-label="Undo" title="Undo (Ctrl/Cmd+Z)">
-              Undo
-            </button>
-            <button
-              type="button"
-              disabled={!canRedo}
-              onClick={onRedo}
-              aria-label="Redo"
-              title="Redo (Ctrl/Cmd+Shift+Z)"
-            >
-              Redo
-            </button>
-            <input
-              ref={openInputRef}
-              className="compose-document-input"
-              type="file"
-              accept=".catlab"
-              onChange={handleOpenDocument}
-            />
-          </div>
-          <div className="compose-action-bar__actions">
-            <button
-              className="compose-clear"
-              type="button"
-              disabled={placedObjects.length === 0}
-              onClick={() => {
-                cancelStageSampling()
-                applyPlacedObjects([])
-                setSelectedId(null)
-                setComposeClipboard(null)
-                pasteCountRef.current = 0
-              }}
-            >
-              Clear layers
-            </button>
-            <button className="compose-export" type="button" disabled={exportBusy} onClick={openExportDialog}>
-              Export PNG
-            </button>
-          </div>
-        </div>
+        <ComposeToolbar
+          compositionName={compositionName}
+          onCompositionNameChange={setCompositionName}
+          documentBusy={documentBusy}
+          onOpenFile={handleOpenDocument}
+          onSave={openSaveDialog}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={onUndo}
+          onRedo={onRedo}
+          canCopy={Boolean(selected)}
+          canPaste={Boolean(composeClipboard) && !layerLimitReached}
+          onCopy={copySelected}
+          onPaste={pasteCopied}
+          canClear={placedObjects.length > 0}
+          onClear={openClearDialog}
+          exportBusy={exportBusy}
+          onExport={openExportDialog}
+        />
         {(exportError || documentError || layerLimitReached) && (
           <div className="compose-action-status">
             <p
@@ -1338,6 +1339,46 @@ export function ComposePage({
               </button>
               <button className="compose-save-dialog__save" type="submit" disabled={exportBusy}>
                 {exportBusy ? 'Exporting…' : 'Export'}
+              </button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog
+          ref={clearDialogRef}
+          className="compose-save-dialog compose-clear-dialog"
+          aria-labelledby="compose-clear-dialog-title"
+          onCancel={handleClearDialogCancel}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeClearDialog()
+          }}
+        >
+          <form
+            className="compose-save-dialog__form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              clearLayers()
+            }}
+          >
+            <div className="compose-save-dialog__header">
+              <div>
+                <p className="eyebrow">CatLab composition</p>
+                <h2 id="compose-clear-dialog-title">Clear all layers?</h2>
+              </div>
+              <button className="compose-save-dialog__close" type="button" onClick={closeClearDialog}>
+                <span aria-hidden="true">×</span>
+                <span className="sr-only">Cancel clear layers</span>
+              </button>
+            </div>
+            <p className="compose-open-dialog__message">
+              This removes all {placedObjects.length} layers from the composition. You can undo this action.
+            </p>
+            <div className="compose-save-dialog__actions">
+              <button ref={clearDialogCancelRef} type="button" onClick={closeClearDialog}>
+                Cancel
+              </button>
+              <button className="compose-save-dialog__danger" type="submit">
+                Clear layers
               </button>
             </div>
           </form>
