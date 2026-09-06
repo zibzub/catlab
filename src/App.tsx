@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { CatDetailsDialog } from './components/CatDetailsDialog'
 import { CatGrid } from './components/CatGrid'
 import { CatList } from './components/CatList'
@@ -32,6 +32,7 @@ import {
   type MoonCatNames,
 } from './mooncatDetails'
 import type { ComposeBackground, ComposePlacedObject } from './composeExport'
+import { composeHistoryReducer, createComposeHistory, type ComposeObjectsUpdate } from './composeHistory'
 import type {
   AtlasManifest,
   CatRecord,
@@ -143,7 +144,25 @@ export default function App() {
   const inspectTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false)
   const [appView, setAppView] = useState<'collection' | 'compose'>('collection')
-  const [composePlacedObjects, setComposePlacedObjects] = useState<ComposePlacedObject[]>([])
+  const [composeHistory, dispatchComposeHistory] = useReducer(composeHistoryReducer, undefined, () =>
+    createComposeHistory(),
+  )
+  const composePlacedObjects = composeHistory.present.placedObjects
+  const setComposePlacedObjects = useCallback((update: ComposeObjectsUpdate) => {
+    dispatchComposeHistory({ type: 'preview', update })
+  }, [])
+  const applyComposePlacedObjects = useCallback((update: ComposeObjectsUpdate) => {
+    dispatchComposeHistory({ type: 'commit', update })
+  }, [])
+  const replaceComposePlacedObjects = useCallback((placedObjects: ComposePlacedObject[]) => {
+    dispatchComposeHistory({ type: 'replace', placedObjects })
+  }, [])
+  const undoCompose = useCallback(() => {
+    dispatchComposeHistory({ type: 'undo' })
+  }, [])
+  const redoCompose = useCallback(() => {
+    dispatchComposeHistory({ type: 'redo' })
+  }, [])
   const [composeBackground, setComposeBackground] = useState<ComposeBackground | null>(null)
   const [colorLabOpen, setColorLabOpen] = useState(false)
   const [colorLabSample, setColorLabSample] = useState<ColorLabSample | null>(null)
@@ -451,6 +470,12 @@ export default function App() {
           manifest={manifest}
           placedObjects={composePlacedObjects}
           setPlacedObjects={setComposePlacedObjects}
+          applyPlacedObjects={applyComposePlacedObjects}
+          replacePlacedObjects={replaceComposePlacedObjects}
+          canUndo={composeHistory.past.length > 0}
+          canRedo={composeHistory.future.length > 0}
+          onUndo={undoCompose}
+          onRedo={redoCompose}
           background={composeBackground}
           onBackgroundChange={updateComposeBackground}
           onBack={() => setAppView('collection')}

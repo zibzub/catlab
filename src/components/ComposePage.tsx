@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import Moveable, {
   type Able,
   type MoveableManagerInterface,
@@ -39,6 +39,7 @@ import {
   type ComposeClipboardSnapshot,
   type ComposeLayerMove,
 } from '../composeModel'
+import { reconcileComposeSelection, type ComposeObjectsUpdate } from '../composeHistory'
 import { ComposeLayersPanel } from './ComposeLayersPanel'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
@@ -48,7 +49,13 @@ interface ComposePageProps {
   catalogCats: CatRecord[]
   manifest: AtlasManifest
   placedObjects: ComposePlacedObject[]
-  setPlacedObjects: Dispatch<SetStateAction<ComposePlacedObject[]>>
+  setPlacedObjects: (update: ComposeObjectsUpdate) => void
+  applyPlacedObjects: (update: ComposeObjectsUpdate) => void
+  replacePlacedObjects: (placedObjects: ComposePlacedObject[]) => void
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
   background: ComposeBackground | null
   onBackgroundChange: (background: ComposeBackground | null) => void
   onBack: () => void
@@ -155,6 +162,12 @@ export function ComposePage({
   manifest,
   placedObjects,
   setPlacedObjects,
+  applyPlacedObjects,
+  replacePlacedObjects,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   background,
   onBackgroundChange,
   onBack,
@@ -220,6 +233,11 @@ export function ComposePage({
   )
 
   useEffect(() => {
+    setSelectedId((current) => reconcileComposeSelection(current, placedObjects))
+    setEditingTextId((current) => (current && placedObjects.some((object) => object.id === current) ? current : null))
+  }, [placedObjects])
+
+  useEffect(() => {
     function handleDocumentPointerDown(event: PointerEvent) {
       const target = event.target
       if (!(target instanceof Element)) return
@@ -259,6 +277,22 @@ export function ComposePage({
       }
 
       const hasModifier = event.ctrlKey || event.metaKey
+      if (hasModifier && !event.altKey) {
+        const key = event.key.toLowerCase()
+        const wantsUndo = key === 'z' && !event.shiftKey
+        const wantsRedo = (key === 'z' && event.shiftKey) || (key === 'y' && !event.shiftKey)
+        if (wantsUndo && canUndo) {
+          event.preventDefault()
+          onUndo()
+          return
+        }
+        if (wantsRedo && canRedo) {
+          event.preventDefault()
+          onRedo()
+          return
+        }
+      }
+
       if (hasModifier && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'c') {
         if (!selectedId) return
         event.preventDefault()
@@ -317,7 +351,7 @@ export function ComposePage({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [composeClipboard, editingTextId, selectedId])
+  }, [canRedo, canUndo, composeClipboard, editingTextId, onRedo, onUndo, selectedId])
 
   useEffect(() => {
     if (!stageSamplingTarget) return
@@ -498,7 +532,7 @@ export function ComposePage({
       return
     }
 
-    updateSelected(target === 'fill' ? { fill: sample.hex } : { stroke: sample.hex })
+    updateSelected(target === 'fill' ? { fill: sample.hex } : { stroke: sample.hex }, true)
     setStageSamplingMessage(null)
   }
 
@@ -528,7 +562,7 @@ export function ComposePage({
     try {
       const result = await requestScreenColor()
       if (result.status !== 'picked') return
-      updateSelected(target === 'fill' ? { fill: result.color } : { stroke: result.color })
+      updateSelected(target === 'fill' ? { fill: result.color } : { stroke: result.color }, true)
     } finally {
       setColorPickerBusy(false)
     }
@@ -547,7 +581,7 @@ export function ComposePage({
     if (!canAddComposeLayer(placedObjectsRef.current.length)) return
     cancelStageSampling()
     const id = createComposeObjectId(String(cat.rescueOrder))
-    setPlacedObjects((current) => {
+    applyPlacedObjects((current) => {
       const newCat: ComposePlacedCat = {
         id,
         kind: 'cat',
@@ -573,7 +607,7 @@ export function ComposePage({
     if (!canAddComposeLayer(placedObjectsRef.current.length)) return
     cancelStageSampling()
     const id = createComposeObjectId('text')
-    setPlacedObjects((current) => [
+    applyPlacedObjects((current) => [
       ...current,
       {
         id,
@@ -602,7 +636,7 @@ export function ComposePage({
     if (!canAddComposeLayer(placedObjectsRef.current.length)) return
     cancelStageSampling()
     const id = createComposeObjectId('rect')
-    setPlacedObjects((current) => {
+    applyPlacedObjects((current) => {
       const rectangle: ComposePlacedRect = {
         id,
         kind: 'rect',
@@ -640,7 +674,7 @@ export function ComposePage({
     )
     pasteCountRef.current += 1
     const position = getComposePastePosition(composeClipboard, pasteCountRef.current)
-    setPlacedObjects((current) => {
+    applyPlacedObjects((current) => {
       const pasted = cloneComposeObjectFromSnapshot<ComposePlacedObject>(
         composeClipboard,
         id,
@@ -656,7 +690,7 @@ export function ComposePage({
     if (!selectedId || !canAddComposeLayer(placedObjectsRef.current.length)) return
     const id = createComposeObjectId(`${selectedId}-copy`, new Set(placedObjectsRef.current.map((object) => object.id)))
 
-    setPlacedObjects((current) => {
+    applyPlacedObjects((current) => {
       const source = current.find((item) => item.id === selectedId)
       if (!source) return current
       const position = offsetComposePosition(source)
@@ -671,19 +705,20 @@ export function ComposePage({
     setSelectedId(id)
   }
 
-  function updateSelected(update: Partial<ComposePlacedObject>) {
+  function updateSelected(update: Partial<ComposePlacedObject>, commit = false) {
     if (!selectedId) return
-    updateObject(selectedId, update)
+    updateObject(selectedId, update, commit)
   }
 
   function removeSelected() {
     if (!selectedId) return
-    setPlacedObjects((current) => current.filter((item) => item.id !== selectedId))
+    applyPlacedObjects((current) => current.filter((item) => item.id !== selectedId))
     setSelectedId(null)
   }
 
-  function updateObject(id: string, update: Partial<ComposePlacedObject>) {
-    setPlacedObjects((current) =>
+  function updateObject(id: string, update: Partial<ComposePlacedObject>, commit = false) {
+    const setObjects = commit ? applyPlacedObjects : setPlacedObjects
+    setObjects((current) =>
       current.map((item) => (item.id === id ? ({ ...item, ...update } as ComposePlacedObject) : item)),
     )
     window.requestAnimationFrame(() => moveableRef.current?.updateRect())
@@ -755,7 +790,7 @@ export function ComposePage({
     cancelStageSampling()
     setEditingTextId(null)
     setSelectedId(null)
-    setPlacedObjects(candidate.document.placedObjects)
+    replacePlacedObjects(candidate.document.placedObjects)
     setComposeClipboard(null)
     pasteCountRef.current = 0
     onBackgroundChange(candidate.document.background)
@@ -932,7 +967,7 @@ export function ComposePage({
 
   function reorderSelected(direction: ComposeLayerMove) {
     if (!selectedId) return
-    setPlacedObjects((current) => moveComposeLayer(current, selectedId, direction))
+    applyPlacedObjects((current) => moveComposeLayer(current, selectedId, direction))
   }
 
   async function handleExport() {
@@ -995,6 +1030,18 @@ export function ComposePage({
             <button type="button" disabled={documentBusy} onClick={openSaveDialog}>
               Save
             </button>
+            <button type="button" disabled={!canUndo} onClick={onUndo} aria-label="Undo" title="Undo (Ctrl/Cmd+Z)">
+              Undo
+            </button>
+            <button
+              type="button"
+              disabled={!canRedo}
+              onClick={onRedo}
+              aria-label="Redo"
+              title="Redo (Ctrl/Cmd+Shift+Z)"
+            >
+              Redo
+            </button>
             <input
               ref={openInputRef}
               className="compose-document-input"
@@ -1010,7 +1057,7 @@ export function ComposePage({
               disabled={placedObjects.length === 0}
               onClick={() => {
                 cancelStageSampling()
-                setPlacedObjects([])
+                applyPlacedObjects([])
                 setSelectedId(null)
                 setComposeClipboard(null)
                 pasteCountRef.current = 0
@@ -1471,7 +1518,7 @@ export function ComposePage({
                           label: selected.artMode === 'bodies' ? 'Full' : 'Face',
                           nextLabel: selected.artMode === 'bodies' ? 'Face' : 'Full',
                           onToggle: () =>
-                            updateSelected({ artMode: selected.artMode === 'bodies' ? 'faces' : 'bodies' }),
+                            updateSelected({ artMode: selected.artMode === 'bodies' ? 'faces' : 'bodies' }, true),
                         }
                       : undefined,
                 }}
@@ -1580,9 +1627,9 @@ export function ComposePage({
             setEditingTextId(null)
             setSelectedId(id)
           }}
-          onUpdate={updateObject}
+          onUpdate={(id, update) => updateObject(id, update, true)}
           onReorder={(id, targetIndex) =>
-            setPlacedObjects((current) => moveComposeLayerToIndex(current, id, targetIndex))
+            applyPlacedObjects((current) => moveComposeLayerToIndex(current, id, targetIndex))
           }
         />
 
@@ -1621,7 +1668,7 @@ export function ComposePage({
                     type="button"
                     className={selected.artMode === 'bodies' ? 'is-active' : ''}
                     aria-pressed={selected.artMode === 'bodies'}
-                    onClick={() => updateSelected({ artMode: 'bodies' })}
+                    onClick={() => updateSelected({ artMode: 'bodies' }, true)}
                   >
                     Full
                   </button>
@@ -1629,7 +1676,7 @@ export function ComposePage({
                     type="button"
                     className={selected.artMode === 'faces' ? 'is-active' : ''}
                     aria-pressed={selected.artMode === 'faces'}
-                    onClick={() => updateSelected({ artMode: 'faces' })}
+                    onClick={() => updateSelected({ artMode: 'faces' }, true)}
                   >
                     Face
                   </button>
@@ -1769,7 +1816,7 @@ export function ComposePage({
                   type="button"
                   className={selected.flipX ? 'is-active' : ''}
                   aria-pressed={selected.flipX}
-                  onClick={() => updateSelected({ flipX: !selected.flipX })}
+                  onClick={() => updateSelected({ flipX: !selected.flipX }, true)}
                 >
                   Flip Horizontal
                 </button>
@@ -1777,7 +1824,7 @@ export function ComposePage({
                   type="button"
                   className={selected.flipY ? 'is-active' : ''}
                   aria-pressed={selected.flipY}
-                  onClick={() => updateSelected({ flipY: !selected.flipY })}
+                  onClick={() => updateSelected({ flipY: !selected.flipY }, true)}
                 >
                   Flip Vertical
                 </button>
@@ -1786,21 +1833,21 @@ export function ComposePage({
                 <button
                   className="compose-object-action"
                   type="button"
-                  onClick={() => updateSelected(resetComposeTransform(selected))}
+                  onClick={() => updateSelected(resetComposeTransform(selected), true)}
                 >
                   Reset transform
                 </button>
                 <button
                   className="compose-object-action"
                   type="button"
-                  onClick={() => updateSelected({ locked: !selected.locked })}
+                  onClick={() => updateSelected({ locked: !selected.locked }, true)}
                 >
                   {selected.locked ? 'Unlock object' : 'Lock object'}
                 </button>
                 <button
                   className="compose-object-action"
                   type="button"
-                  onClick={() => updateSelected({ visible: !selected.visible })}
+                  onClick={() => updateSelected({ visible: !selected.visible }, true)}
                 >
                   {selected.visible ? 'Hide object' : 'Show object'}
                 </button>
