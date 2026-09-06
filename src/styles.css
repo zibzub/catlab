@@ -2943,6 +2943,50 @@ h1 {
   white-space: nowrap;
 }
 
+.compose-properties__section {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.compose-properties__section-title {
+  margin: 0 0 9px;
+  color: var(--accent-bright);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.compose-properties__section .compose-art-options,
+.compose-properties__section .compose-color-options,
+.compose-properties__section .compose-layer-actions,
+.compose-properties__section .compose-range,
+.compose-properties__section .compose-text-field,
+.compose-properties__section .compose-text-options {
+  margin-bottom: 0;
+}
+
+.compose-properties__section .compose-range + .compose-range,
+.compose-properties__section .compose-range + .compose-flip-options {
+  margin-top: 10px;
+}
+
+.compose-properties__section .compose-text-field + .compose-color-options,
+.compose-properties__section .compose-color-options + .compose-range {
+  margin-top: 10px;
+}
+
+.compose-properties__reset {
+  margin-top: 10px;
+}
+
+.compose-properties__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .compose-layers__summary {
   position: relative;
   align-items: center;
@@ -6743,6 +6787,15 @@ h1 {
 
 .compose-selected-id strong {
   color: var(--console-ink);
+}
+
+.compose-properties__section {
+  border-top-color: var(--console-divider);
+}
+
+.compose-properties__section-title {
+  color: var(--console-purple-bright);
+  font-family: var(--console-micro-font);
 }
 
 .compose-layers__summary small,
