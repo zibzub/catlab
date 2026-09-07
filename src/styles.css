@@ -986,7 +986,7 @@ h1 {
   display: flex;
   --cat-art-height: 124px;
   --cat-platform-width: 119px;
-  --cat-platform-height: 25px;
+  --cat-platform-height: 30px;
   --cat-compact-art-height: 108px;
   --cat-compact-platform-width: 91px;
   --cat-compact-platform-height: 30px;
@@ -1839,7 +1839,7 @@ h1 {
   .cat-tile {
     --cat-art-height: 112px;
     --cat-platform-width: 96px;
-    --cat-platform-height: 21px;
+    --cat-platform-height: 30px;
     --cat-compact-art-height: 102px;
     --cat-compact-platform-width: 88px;
     
@@ -1857,7 +1857,7 @@ h1 {
     --cat-platform-height: 18px;
     --cat-compact-art-height: 82px;
     --cat-compact-platform-width: 70px;
-    --cat-compact-platform-height: 15px;
+    --cat-compact-platform-height: 25px;
     min-height: 180px;
   }
 
@@ -1867,7 +1867,7 @@ h1 {
     --cat-platform-height: 30px;
     --cat-compact-art-height: 146px;
     --cat-compact-platform-width: 118px;
-    --cat-compact-platform-height: 25px;
+    --cat-compact-platform-height: 35px;
     min-height: 230px;
   }
 
