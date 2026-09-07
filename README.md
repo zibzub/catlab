@@ -1,6 +1,6 @@
 # CatLab
 
-![CatLab screenshot](screenshot.png)
+![CatLab screenshot](screenshot2.png)
 
 CatLab is a MoonCat collection browser and creative composition workspace. Find
 MoonCats, gather them in a Palette, build a scene with them, and save the
