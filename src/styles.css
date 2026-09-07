@@ -2528,8 +2528,8 @@ h1 {
 .compose-color-swatch {
   position: absolute;
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   place-items: center;
   border: 1px solid rgba(218, 222, 255, 0.58);
   border-radius: 5px;
@@ -2539,8 +2539,8 @@ h1 {
 }
 
 .compose-color-swatch--background {
-  top: 8px;
-  left: 8px;
+  top: 11px;
+  left: 11px;
   z-index: 1;
 }
 
