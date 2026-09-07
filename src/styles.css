@@ -7515,13 +7515,13 @@ h1 {
 }
 
 .art-mode-icon--full {
-  mask-image: url('/icons/full.png');
-  -webkit-mask-image: url('/icons/full.png');
+  mask-image: url('/icons/mooncat-poses/mooncat-standing-right.svg');
+  -webkit-mask-image: url('/icons/mooncat-poses/mooncat-standing-right.svg');
 }
 
 .art-mode-icon--face {
-  mask-image: url('/icons/face.png');
-  -webkit-mask-image: url('/icons/face.png');
+  mask-image: url('/icons/face.svg');
+  -webkit-mask-image: url('/icons/face.svg');
   height: 17px;
 }
 
