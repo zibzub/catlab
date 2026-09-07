@@ -8,31 +8,36 @@ result as a CatLab project or export it as an image.
 
 ## Getting started
 
-1. Browse Collection, or search and filter for the cats you want.
+1. Browse in Collect, or search and filter for the cats you want.
 2. In Select mode, click or tap cats to add them to the Palette.
 3. Open Compose from the Palette.
 4. Arrange cats, text, rectangles, and an optional background.
 5. Save the project as `.catlab`, or choose Export PNG for an image.
 
-## Collection
+## Collect
 
-Collection lets you browse the full MoonCat catalog and work with the results
-without leaving the page.
+The Collect workspace lets you browse the full MoonCat catalog and work with
+the collection results without leaving the page.
 
 - Search by rescue ID or MoonCat name.
 - Open Filters to narrow the collection by coat/color, Character Cats, traits,
   naming status, rescue groups, and other available categories. Selecting or
-  deselecting an option updates Collection and its result count immediately
+  deselecting an option updates the collection and its result count immediately
   while the drawer stays open. Active filters appear above the results; remove
   individual filters or use Clear to return to the normal result set. Closing
   the drawer preserves the filters you selected.
 - Choose Compact, Details, or List. Compact offers Small, Medium, and Large
   grid sizes; List provides a horizontally scrollable table on narrow screens.
-- Choose Full or Face art. For Full art, Display effects offers Off, AC, or
-  Outline rings. It also controls the idle animation pattern and speed, Stars,
-  and Vignette; ring styles are unavailable for Face art.
+- Choose Full or Face art. For Full art, Display effects offers Off, AC,
+  Outline, and Dynamic rings. Dynamic is the default and adjusts the white
+  platform width to each MoonCat pose without changing the existing platform
+  vertical placement. Ring styles are unavailable for Face art.
+- Display effects also controls the idle animation pattern and speed, Stars,
+  Vignette, Index, and Names. Index and Names show or hide those labels in
+  Compact and Details; List keeps its identity columns.
 - In Select mode, clicking a MoonCat toggles it in the Palette. In Inspect
-  mode, clicking a MoonCat opens its detail view instead.
+  mode, clicking a MoonCat opens a detail card with traits, classifications,
+  ChainStation and OpenSea links, and a local Save Card PNG action.
 - In Filters, enter an Ethereum address or ENS name (with or without `.eth`) in
   Wallet to show the MoonCats owned by that wallet. Wallet results intersect
   with the normal search and filters, as well as ColorLab matching. Recent
@@ -44,7 +49,7 @@ without leaving the page.
   chain-change, or balance requests. Disconnect clears CatLab's active
   connected-wallet filter without revoking the extension's permissions.
 
-Collection views identify cats by rescue ID, with current names loaded from
+Views in Collect identify cats by rescue ID, with current names loaded from
 `names-timestamp-live.json`. The Name filter's Recently Named option shows
 named cats newest-to-oldest by naming timestamp.
 Wallet-filtered views can be shared with the `?wallet=<address-or-ENS>` query
@@ -53,49 +58,80 @@ an Ethereum address. Opening such a link performs the lookup automatically.
 
 ## ColorLab
 
-Open ColorLab from the Collection toolbar, then choose one of its example
+Open ColorLab from the Collect toolbar, then choose one of its example
 images or upload an image of your own. Click or tap a visible image color or
-MoonCat coat color to sample it. CatLab narrows Collection to MoonCats matching
-that hue. Use Clear sample to return to the normal Collection results.
+MoonCat coat color to sample it. CatLab narrows the collection to MoonCats
+matching that hue. Use Clear sample to return to the normal collection results.
 
 ## Palette
 
-Palette is the collection of cats selected from Collection. Remove individual
+Palette is the collection of cats selected from Collect. Remove individual
 cats with their remove control, or use Clear to empty the Palette. Compose uses
 the Palette as its source tray; removing a cat from Palette does not remove a
 cat that has already been placed in a composition.
 
 Palette also has a local export panel. Select Full or Face art, PNG or WebP,
-and Small, Medium, or Large output, then download one image or a ZIP of the
-selected cats. Palette export accepts up to 10 cats at a time.
+and Small 8×, Medium 16×, or Large 32× output, then download one image or a ZIP
+of the selected cats. Palette export accepts up to 10 cats at a time.
 
 On a narrow screen, Palette opens as a drawer from the header.
 
 ## Compose
 
-Use the tools beside the canvas to Select / Move, add a Rectangle, add Text, or
-use the Eyedropper. Click or tap a placed layer to select it. Selected layers
-can be moved, resized, rotated, flipped, duplicated, given an opacity, and
-reordered with Back, Behind, Forward, and Front. Cat layers can switch between
-Full and Face art. Click or tap empty stage space to deselect the current layer.
+Use the tools beside the canvas to Select / Move, draw a Rectangle, place Text,
+or sample a Foreground color with the Eyedropper. Click or tap a placed layer
+to select it. Selected layers can be moved, resized, rotated, flipped,
+duplicated, removed, and reordered. Cat layers can switch between Full and
+Face art. Compose accepts up to 40 placed layers, and the same MoonCat can be
+placed more than once.
+
+The Layers panel controls selection, opacity, visibility, locking, and drag
+reordering from front to back. Properties contains the selected object's
+content or appearance, transforms, explicit Back / Behind / Forward / Front
+ordering actions, Duplicate, and Remove. Locking prevents stage transforms;
+visibility and other layer controls remain in Layers.
+
+The toolbar provides a Compose-local Copy and Paste clipboard in addition to
+Duplicate. Pasted layers retain their source appearance and are placed as new
+frontmost objects.
+
+Undo and Redo cover placed-object changes, including object creation and
+removal, transforms, styles, visibility, locking, and ordering. A continuous
+drag, resize, rotation, slider adjustment, or text-editing session is grouped
+into one history step. Background changes and Foreground / Background editor
+colors are outside object history.
 
 The composition title in the action bar is editable. It supplies the default
 name for `.catlab` saves and PNG exports, while each filename dialog still lets
-you choose a different name for that download. `Clear layers` removes placed
-objects and keeps the background.
+you choose a different name for that download. Clear layers asks for
+confirmation, removes all placed objects in one undoable action, and keeps the
+background.
 
 ### Text
 
-Choose Text to add a text layer. Double-click the text on the canvas for inline
-editing, or edit it in the Selected layer controls. Choose a font family, fill,
-outline color, outline width, and font size. Text layers also support the
-shared transform, opacity, flip, duplicate, and layer-order controls.
+Choose Text, then click or tap the stage to place a text layer at that point.
+The tool returns to Select and opens the new layer's inline editor with the
+default `Text` placeholder selected. Double-click existing text for inline
+editing, or edit it in Properties. Choose a font family, fill, outline color,
+outline width, and font size. Text layers also support the shared transform,
+opacity, flip, duplicate, and layer-order controls.
 
 ### Rectangles
 
-Choose Rectangle to add a rectangle layer. Change its fill and opacity, and
-resize it independently from other objects. Rectangles support the shared move,
-rotate, scale, flip, duplicate, and layer-order controls.
+Choose Rectangle, then drag on the stage to draw one in any direction. A click,
+tap, or movement below the drag threshold places a default-size rectangle at
+that point. The tool returns to Select after placement. Change its fill and
+opacity in Properties and Layers respectively, and resize it with independent
+stage handles. Rectangles support move, rotate, flip, reset, duplicate, and
+layer-order controls.
+
+### Foreground and Background colors
+
+The overlapping Foreground and Background swatches use native color pickers
+and include Swap and Reset controls. New rectangles use Foreground as their
+fill. New text uses Foreground for its fill and Background for its outline.
+Changing these editor colors affects future objects only; existing objects,
+duplicates, and pasted copies keep their own colors.
 
 ### Backgrounds
 
@@ -106,39 +142,49 @@ uses a transparent 1200×900 canvas.
 
 ### Eyedropper
 
-Select a rectangle or text layer, then choose the fill or outline color control
-and arm the Eyedropper. Click or tap the composition to sample the visible
-color at that point and apply it to the selected target. Press Escape or choose
-the tool again to cancel sampling.
+Choose the tool-rail Eyedropper to sample any visible stage pixel into the
+global Foreground color; no selected object is required. It is a one-shot tool
+and returns to Select after a sample attempt. A transparent point leaves
+Foreground unchanged. The sample buttons beside Rectangle fill and Text fill
+or outline remain property-specific: they change that exact selected object's
+color and can be undone without changing the global swatches.
 
 CatLab's internal stage eyedropper does not require browser-native EyeDropper
-support. On browsers that provide it, Shift-clicking a color-pick control can
-also use the optional native screen picker.
+support. On browsers that provide it, Shift-clicking the rail Eyedropper or a
+property sample control can use the optional native screen picker with the same
+global or property-specific target.
 
 ## Compose keyboard shortcuts
 
-These shortcuts apply when a layer is selected and focus is not in a form field.
+Compose handles these shortcuts outside form fields and inline text editing;
+editable controls retain their native keyboard behavior.
 
-| Key                     | Action                                                   | Context                          |
-| ----------------------- | -------------------------------------------------------- | -------------------------------- |
-| `Delete` or `Backspace` | Remove the selected layer                                | Selected layer, not text editing |
-| `←` `→` `↑` `↓`         | Move the selected layer by a small step                  | Selected layer                   |
-| `Shift` + arrow key     | Move the selected layer by a larger step                 | Selected layer                   |
-| `Ctrl/Cmd` + `D`        | Duplicate the selected layer                             | Selected layer, not text editing |
-| `Escape`                | Cancel active eyedropper sampling                        | While sampling                   |
-| `Escape`                | Finish inline text editing                               | While editing text on the canvas |
-| `Enter`                 | Confirm a Save or Export dialog                          | While a filename dialog is open  |
-| `Escape`                | Cancel an open Save, Open-confirmation, or Export dialog | While a dialog is open           |
+| Key                        | Action                                                          | Context                          |
+| -------------------------- | --------------------------------------------------------------- | -------------------------------- |
+| `Ctrl/Cmd` + `Z`           | Undo the last placed-object action                              | Outside editable controls        |
+| `Ctrl/Cmd` + `Shift` + `Z` | Redo                                                            | Outside editable controls        |
+| `Ctrl/Cmd` + `Y`           | Redo                                                            | Outside editable controls        |
+| `Ctrl/Cmd` + `C`           | Copy the selected layer                                         | Selected layer, not text editing |
+| `Ctrl/Cmd` + `V`           | Paste the Compose-local clipboard                               | Outside editable controls        |
+| `Ctrl/Cmd` + `D`           | Duplicate the selected layer                                    | Selected layer, not text editing |
+| `Delete` or `Backspace`    | Remove the selected layer                                       | Selected layer, not text editing |
+| `←` `→` `↑` `↓`            | Move the selected layer by a small step                         | Transformable selected layer     |
+| `Shift` + arrow key        | Move the selected layer by a larger step                        | Transformable selected layer     |
+| `Escape`                   | Cancel an armed Rectangle, Text, or Eyedropper tool             | Outside editable controls        |
+| `Escape`                   | Finish inline text editing                                      | While editing text on the canvas |
+| `Enter`                    | Confirm a Save or Export dialog                                 | While a filename dialog is open  |
+| `Escape`                   | Cancel an open Save, Open-confirmation, Clear, or Export dialog | While a dialog is open           |
 
 ## Save, Open, and Export
 
 ### `.catlab` projects
 
 Compose **Save** writes a portable CatLab composition file with the `.catlab`
-extension. It preserves placed cats, text, rectangles, transforms, and the
-background. Uploaded local backgrounds are included in the saved file. The
-composition title supplies the filename dialog's default, and a custom Save
-filename becomes the new title after a successful save.
+extension. It preserves placed cats, text, rectangles, transforms, opacity,
+layer order, lock and visibility state, and the background. Uploaded local
+backgrounds are included in the saved file. The composition title supplies the
+filename dialog's default, and a custom Save filename becomes the new title
+after a successful save.
 
 Compose **Open** restores a saved composition and derives its title from the
 opened filename. If the current composition has layers or a background, CatLab
@@ -157,30 +203,34 @@ limit and will be refused rather than silently resized.
 
 ## Mobile and touch
 
-Collection adapts its toolbar, results, List scrolling, and Palette drawer for
-narrow screens. Compose supports pointer/touch selection and manipulation, and
-ColorLab supports tapping the sampler. Filename dialogs and the composition
-title remain editable with the on-screen keyboard; hover-only styling is not
-required for these controls.
+Collect adapts its toolbar, results, List scrolling, and Palette drawer for
+narrow screens. Compose supports pointer/touch selection and manipulation,
+touch drawing for Rectangle, tap placement for Text, and deliberate stage
+sampling. Normal page scrolling remains available when a drawing or sampling
+interaction does not own the stage. ColorLab supports tapping the sampler.
+Filename dialogs and the composition title remain editable with the on-screen
+keyboard; hover-only styling is not required for these controls.
 
 ## State, reloads, and local files
 
-Collection display preferences—view mode, compact grid size, ring style, Stars,
-Vignette, idle animation pattern, and idle animation speed—are saved in this
-browser's `localStorage`. Successful wallet
-lookups are also remembered there as up to 8 recent lookup entries. The active
+Collect display preferences—view mode, compact grid size, ring style, Stars,
+Vignette, Index, Names, idle animation pattern, and idle animation speed—are
+saved in this browser's `localStorage`. Successful wallet lookups are also
+remembered there as up to 8 recent lookup entries. The active
 wallet filter is represented by the `wallet` query parameter, but its ownership
 result IDs and any connected-wallet provider state are not persisted. Palette
 selections, normal filters, ColorLab samples, and Compose layers/backgrounds
-remain in-memory session state. Reloading the page loses that work unless it
-was saved as a `.catlab` file or represented by a shareable wallet URL. The
-composition title is also session/UI state; opening a file restores a title
-from its filename.
+remain in-memory session state. Compose Foreground and Background colors also
+remain available while moving between Collect and Compose in the same page
+session, but are not saved in `.catlab`. Reloading the page loses that work
+unless it was saved as a `.catlab` file or represented by a shareable wallet
+URL. The composition title is also session/UI state; opening a file restores a
+title from its filename.
 
-Catalog data, live names and naming timestamps, classifications, and atlas assets are served from the
-built app's local files. Image uploads and `.catlab` documents are read and
-processed in the browser for these workflows; CatLab does not require sending
-them to an application server.
+Catalog data, live names and naming timestamps, classifications, and atlas
+assets are served from the built app's local files. Image uploads and `.catlab`
+documents are read and processed in the browser for these workflows; CatLab
+does not require sending them to an application server.
 
 ## Browser expectations
 
@@ -225,7 +275,7 @@ sibling repository after generation.
 | `npm run validate:classifications`                    | Validate the classification artifact.                                             |
 | `npm run validate:generated`                          | Validate generated catalog, atlas, classification, and live name artifacts.       |
 | `npm test`                                            | Run the fast Vitest unit and regression tests.                                    |
-| `npm run test:browser`                                | Run the Playwright desktop/mobile Collection smoke tests.                         |
+| `npm run test:browser`                                | Run the Playwright desktop/mobile Collect smoke tests.                            |
 | `npm run format:check`                                | Check source, configuration, and documentation formatting without changing files. |
 | `npm run format`                                      | Format source, configuration, and documentation files with Prettier.              |
 | `npm run check`                                       | Run the TypeScript check.                                                         |
@@ -234,7 +284,7 @@ sibling repository after generation.
 The browser smoke tests require the Playwright Chromium binary. After
 `npm install`, install it once with `npx playwright install chromium`.
 Vitest is the fast default test path; run the separate Playwright suite when
-browser-level desktop or mobile Collection behavior needs validation.
+browser-level desktop or mobile Collect behavior needs validation.
 
 For structured QA scenarios, see [TESTING.md](./TESTING.md).
 
@@ -242,7 +292,7 @@ For structured QA scenarios, see [TESTING.md](./TESTING.md).
 
 CatLab's runtime uses the generated MoonCat index, atlas manifest, atlas sheets,
 `names-timestamp-live.json`, and classification artifacts already present under
-`public/`. Naming timestamps power the Recently Named Collection filter/order.
+`public/`. Naming timestamps power the Recently Named collection filter/order.
 The app does not regenerate them during normal runtime or fetch remote image
 assets.
 Wallet ownership lookup is the intentional remote exception and uses the shared
