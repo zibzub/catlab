@@ -12,6 +12,7 @@ import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } fro
 import {
   COLLECTION_DISPLAY_PREFS_KEY,
   COLLECTION_RING_STYLE_MIGRATION,
+  effectiveCollectionVignette,
   loadCollectionDisplayPreferences,
   serializeCollectionDisplayPreferences,
 } from './collectionPreferences'
@@ -156,6 +157,7 @@ export default function App() {
   const [showNames, setShowNames] = useState(displayPreferences.showNames ?? true)
   const [idlePattern, setIdlePattern] = useState<IdlePattern>(displayPreferences.idlePattern ?? 'off')
   const [idleSpeed, setIdleSpeed] = useState<IdleSpeed>(displayPreferences.idleSpeed ?? 'medium')
+  const effectiveShowVignette = effectiveCollectionVignette(showVignette, showSky)
   const [interactionMode, setInteractionMode] = useState<CollectionInteractionMode>('select')
   const [inspectedCat, setInspectedCat] = useState<CatRecord | null>(null)
   const inspectTriggerRef = useRef<HTMLButtonElement | null>(null)
@@ -638,7 +640,7 @@ export default function App() {
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               showStars={showStars}
               showSky={showSky}
-              showVignette={showVignette}
+              showVignette={effectiveShowVignette}
               showIndex={showIndex}
               showNames={showNames}
               idlePattern={idlePattern}

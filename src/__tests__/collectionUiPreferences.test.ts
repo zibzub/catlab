@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   COLLECTION_RING_STYLE_MIGRATION,
+  effectiveCollectionVignette,
   parseCollectionDisplayPreferences,
   serializeCollectionDisplayPreferences,
 } from '../collectionPreferences'
@@ -123,6 +124,13 @@ describe('collection display preference persistence', () => {
       showSky: true,
     })
     expect(parseCollectionDisplayPreferences(JSON.stringify({ showSky: 'yes' })).showSky ?? false).toBe(false)
+  })
+
+  it('suppresses Vignette only while Sky is active', () => {
+    expect(effectiveCollectionVignette(true, false)).toBe(true)
+    expect(effectiveCollectionVignette(true, true)).toBe(false)
+    expect(effectiveCollectionVignette(false, true)).toBe(false)
+    expect(effectiveCollectionVignette(false, false)).toBe(false)
   })
 })
 

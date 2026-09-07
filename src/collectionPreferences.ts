@@ -93,3 +93,7 @@ export function loadCollectionDisplayPreferences(): CollectionDisplayPreferences
 export function serializeCollectionDisplayPreferences(values: StoredCollectionDisplayPreferences) {
   return JSON.stringify(values)
 }
+
+export function effectiveCollectionVignette(showVignette: boolean, showSky: boolean) {
+  return showVignette && !showSky
+}

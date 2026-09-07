@@ -184,6 +184,8 @@ export function DisplayMenu({
                 type="button"
                 className={`rings-toggle${showVignette ? ' is-active' : ''}`}
                 aria-pressed={showVignette}
+                aria-disabled={showSky}
+                disabled={showSky}
                 onClick={() => onVignetteChange(!showVignette)}
               >
                 <span className="rings-toggle__icon" aria-hidden="true">

@@ -8001,6 +8001,14 @@ h1 {
   top: 5px;
 }
 
+.cat-grid-viewport--sky .cat-tile__compact-number,
+.cat-grid-viewport--sky .cat-tile__compact-name {
+  text-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.9),
+    -1px 1px 0 rgba(0, 0, 0, 0.75),
+    -1px -1px 0 rgba(226, 239, 255, 0.12);
+}
+
 .cat-tile--compact.cat-tile--selected .cat-tile__compact-number {
   color: #f0efff;
 }
