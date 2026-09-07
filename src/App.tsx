@@ -148,6 +148,8 @@ export default function App() {
   const [ringStyle, setRingStyle] = useState<RingStyle>(displayPreferences.ringStyle ?? 'outline')
   const [showStars, setShowStars] = useState(displayPreferences.showStars ?? true)
   const [showVignette, setShowVignette] = useState(displayPreferences.showVignette ?? true)
+  const [showIndex, setShowIndex] = useState(displayPreferences.showIndex ?? true)
+  const [showNames, setShowNames] = useState(displayPreferences.showNames ?? true)
   const [idlePattern, setIdlePattern] = useState<IdlePattern>(displayPreferences.idlePattern ?? 'off')
   const [idleSpeed, setIdleSpeed] = useState<IdleSpeed>(displayPreferences.idleSpeed ?? 'medium')
   const [interactionMode, setInteractionMode] = useState<CollectionInteractionMode>('select')
@@ -211,6 +213,8 @@ export default function App() {
           ringStyle,
           showStars,
           showVignette,
+          showIndex,
+          showNames,
           idlePattern,
           idleSpeed,
         }),
@@ -218,7 +222,7 @@ export default function App() {
     } catch {
       // Persistence is optional; keep the app usable when storage is unavailable.
     }
-  }, [gridSize, idlePattern, idleSpeed, ringStyle, showStars, showVignette, viewMode])
+  }, [gridSize, idlePattern, idleSpeed, ringStyle, showIndex, showNames, showStars, showVignette, viewMode])
 
   useEffect(() => {
     let active = true
@@ -547,6 +551,8 @@ export default function App() {
               ringStyle={ringStyle}
               showStars={showStars}
               showVignette={showVignette}
+              showIndex={showIndex}
+              showNames={showNames}
               idlePattern={idlePattern}
               idleSpeed={idleSpeed}
               colorLabOpen={colorLabOpen}
@@ -571,6 +577,8 @@ export default function App() {
               onRingStyleChange={setRingStyle}
               onStarsChange={setShowStars}
               onVignetteChange={setShowVignette}
+              onIndexChange={setShowIndex}
+              onNamesChange={setShowNames}
               onIdlePatternChange={setIdlePattern}
               onIdleSpeedChange={setIdleSpeed}
               onColorLabToggle={() => setColorLabOpen((current) => !current)}
@@ -613,6 +621,8 @@ export default function App() {
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               showStars={showStars}
               showVignette={showVignette}
+              showIndex={showIndex}
+              showNames={showNames}
               idlePattern={idlePattern}
               idleSpeed={idleSpeed}
               selectedOrders={selectedOrders}

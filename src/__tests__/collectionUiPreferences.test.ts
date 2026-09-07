@@ -38,11 +38,28 @@ describe('collection display preference persistence', () => {
         ringStyle: 'ac',
         showStars: true,
         showVignette: false,
+        showIndex: true,
+        showNames: true,
         idlePattern: 'wave',
         idleSpeed: 'slow',
       }),
     ).toBe(
-      '{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","showStars":true,"showVignette":false,"idlePattern":"wave","idleSpeed":"slow"}',
+      '{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","showStars":true,"showVignette":false,"showIndex":true,"showNames":true,"idlePattern":"wave","idleSpeed":"slow"}',
+    )
+  })
+
+  it('defaults new label toggles on and preserves explicit off values', () => {
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ showIndex: false, showNames: false }))).toMatchObject({
+      showIndex: false,
+      showNames: false,
+    })
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ viewMode: 'compact' })).showIndex ?? true).toBe(true)
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ viewMode: 'compact' })).showNames ?? true).toBe(true)
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ showIndex: 'no', showNames: 0 })).showIndex ?? true).toBe(
+      true,
+    )
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ showIndex: 'no', showNames: 0 })).showNames ?? true).toBe(
+      true,
     )
   })
 })

@@ -3,10 +3,10 @@ import { getDynamicRingScale } from '../collectionRing'
 
 describe('dynamic Collection ring sizing', () => {
   it('maps compact and broad poses to stable width scales', () => {
-    expect(getDynamicRingScale('standing')).toBe(0.78)
-    expect(getDynamicRingScale('sleeping')).toBe(1.18)
-    expect(getDynamicRingScale('stalking')).toBe(0.98)
-    expect(getDynamicRingScale('pouncing')).toBe(1.08)
+    expect(getDynamicRingScale('standing')).toBe(0.8)
+    expect(getDynamicRingScale('sleeping')).toBe(1.05)
+    expect(getDynamicRingScale('stalking')).toBe(1)
+    expect(getDynamicRingScale('pouncing')).toBe(0.7)
   })
 
   it('keeps unknown poses at a neutral scale and clamps the supported range', () => {

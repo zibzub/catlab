@@ -28,6 +28,8 @@ interface FilterBarProps {
   ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
+  showIndex: boolean
+  showNames: boolean
   idlePattern: IdlePattern
   idleSpeed: IdleSpeed
   colorLabOpen: boolean
@@ -52,6 +54,8 @@ interface FilterBarProps {
   onRingStyleChange: (style: RingStyle) => void
   onStarsChange: (show: boolean) => void
   onVignetteChange: (show: boolean) => void
+  onIndexChange: (show: boolean) => void
+  onNamesChange: (show: boolean) => void
   onIdlePatternChange: (pattern: IdlePattern) => void
   onIdleSpeedChange: (speed: IdleSpeed) => void
   onColorLabToggle: () => void
@@ -93,6 +97,8 @@ export function FilterBar({
   ringStyle,
   showStars,
   showVignette,
+  showIndex,
+  showNames,
   idlePattern,
   idleSpeed,
   colorLabOpen,
@@ -117,6 +123,8 @@ export function FilterBar({
   onRingStyleChange,
   onStarsChange,
   onVignetteChange,
+  onIndexChange,
+  onNamesChange,
   onIdlePatternChange,
   onIdleSpeedChange,
   onColorLabToggle,
@@ -514,11 +522,15 @@ export function FilterBar({
               ringStyle={ringStyle}
               showStars={showStars}
               showVignette={showVignette}
+              showIndex={showIndex}
+              showNames={showNames}
               idlePattern={idlePattern}
               idleSpeed={idleSpeed}
               onRingStyleChange={onRingStyleChange}
               onStarsChange={onStarsChange}
               onVignetteChange={onVignetteChange}
+              onIndexChange={onIndexChange}
+              onNamesChange={onNamesChange}
               onIdlePatternChange={onIdlePatternChange}
               onIdleSpeedChange={onIdleSpeedChange}
             />

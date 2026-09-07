@@ -7,11 +7,15 @@ interface DisplayMenuProps {
   ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
+  showIndex: boolean
+  showNames: boolean
   idlePattern: IdlePattern
   idleSpeed: IdleSpeed
   onRingStyleChange: (value: RingStyle) => void
   onStarsChange: (value: boolean) => void
   onVignetteChange: (value: boolean) => void
+  onIndexChange: (value: boolean) => void
+  onNamesChange: (value: boolean) => void
   onIdlePatternChange: (value: IdlePattern) => void
   onIdleSpeedChange: (value: IdleSpeed) => void
 }
@@ -21,11 +25,15 @@ export function DisplayMenu({
   ringStyle,
   showStars,
   showVignette,
+  showIndex,
+  showNames,
   idlePattern,
   idleSpeed,
   onRingStyleChange,
   onStarsChange,
   onVignetteChange,
+  onIndexChange,
+  onNamesChange,
   onIdlePatternChange,
   onIdleSpeedChange,
 }: DisplayMenuProps) {
@@ -167,6 +175,28 @@ export function DisplayMenu({
                   ◌
                 </span>
                 Vignette
+              </button>
+              <button
+                type="button"
+                className={`rings-toggle${showIndex ? ' is-active' : ''}`}
+                aria-pressed={showIndex}
+                onClick={() => onIndexChange(!showIndex)}
+              >
+                <span className="rings-toggle__icon" aria-hidden="true">
+                  #
+                </span>
+                Index
+              </button>
+              <button
+                type="button"
+                className={`rings-toggle${showNames ? ' is-active' : ''}`}
+                aria-pressed={showNames}
+                onClick={() => onNamesChange(!showNames)}
+              >
+                <span className="rings-toggle__icon" aria-hidden="true">
+                  Aa
+                </span>
+                Names
               </button>
             </div>
           </div>

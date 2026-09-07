@@ -9,6 +9,8 @@ export interface CollectionDisplayPreferences {
   ringStyle?: RingStyle
   showStars?: boolean
   showVignette?: boolean
+  showIndex?: boolean
+  showNames?: boolean
   idlePattern?: IdlePattern
   idleSpeed?: IdleSpeed
 }
@@ -19,6 +21,8 @@ export interface StoredCollectionDisplayPreferences {
   ringStyle: RingStyle
   showStars: boolean
   showVignette: boolean
+  showIndex: boolean
+  showNames: boolean
   idlePattern: IdlePattern
   idleSpeed: IdleSpeed
 }
@@ -54,6 +58,8 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
       ringStyle,
       showStars: typeof values.showStars === 'boolean' ? values.showStars : undefined,
       showVignette: typeof values.showVignette === 'boolean' ? values.showVignette : undefined,
+      showIndex: typeof values.showIndex === 'boolean' ? values.showIndex : undefined,
+      showNames: typeof values.showNames === 'boolean' ? values.showNames : undefined,
       idlePattern: isIdlePattern(migratedIdlePattern) ? migratedIdlePattern : undefined,
       idleSpeed: isIdleSpeed(values.idleSpeed) ? values.idleSpeed : undefined,
     }

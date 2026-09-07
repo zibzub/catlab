@@ -7971,6 +7971,19 @@ h1 {
   -webkit-line-clamp: 2;
 }
 
+.cat-tile__compact-id--index-hidden .cat-tile__compact-name {
+  top: 2px;
+}
+
+.cat-tile--compact.cat-tile--size-large .cat-tile__compact-name {
+  top: 21px;
+  font-size: 0.76rem;
+}
+
+.cat-tile--compact.cat-tile--size-large .cat-tile__compact-id--index-hidden .cat-tile__compact-name {
+  top: 5px;
+}
+
 .cat-tile--compact.cat-tile--selected .cat-tile__compact-number {
   color: #f0efff;
 }

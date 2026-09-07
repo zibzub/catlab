@@ -36,6 +36,8 @@ interface CatGridProps {
   idleSpeed: IdleSpeed
   showStars: boolean
   showVignette: boolean
+  showIndex: boolean
+  showNames: boolean
   selectedOrders: Set<number>
   interactionMode: CollectionInteractionMode
   onToggle: (rescueOrder: number) => void
@@ -58,6 +60,8 @@ export function CatGrid({
   idleSpeed,
   showStars,
   showVignette,
+  showIndex,
+  showNames,
   selectedOrders,
   interactionMode,
   onToggle,
@@ -362,6 +366,8 @@ export function CatGrid({
                           artMode={artMode}
                           gridSize={gridSize}
                           ringStyle={ringStyle}
+                          showIndex={showIndex}
+                          showNames={showNames}
                           idlePulse={idleState.pulseByOrder.get(cat.rescueOrder)}
                           idleHeld={idleState.heldOrders.has(cat.rescueOrder)}
                           selected={selectedOrders.has(cat.rescueOrder)}

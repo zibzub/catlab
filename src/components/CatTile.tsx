@@ -19,6 +19,8 @@ interface CatTileProps {
   artMode: GridArtMode
   gridSize: GridSize
   ringStyle: RingStyle
+  showIndex: boolean
+  showNames: boolean
   idlePulse?: number
   idleHeld: boolean
   selected: boolean
@@ -35,6 +37,8 @@ export const CatTile = memo(function CatTile({
   artMode,
   gridSize,
   ringStyle,
+  showIndex,
+  showNames,
   idlePulse,
   idleHeld,
   selected,
@@ -71,23 +75,27 @@ export const CatTile = memo(function CatTile({
         ringStyle={ringStyle}
       />
       {viewMode === 'compact' ? (
-        <span className="cat-tile__compact-id">
-          <span className="cat-tile__compact-number">{cat.rescueOrder}</span>
-          {name && (
-            <span className="cat-tile__compact-name" title={name}>
-              {name}
-            </span>
-          )}
-        </span>
+        showIndex || (showNames && name) ? (
+          <span className={`cat-tile__compact-id${showIndex ? '' : ' cat-tile__compact-id--index-hidden'}`}>
+            {showIndex && <span className="cat-tile__compact-number">{cat.rescueOrder}</span>}
+            {showNames && name && (
+              <span className="cat-tile__compact-name" title={name}>
+                {name}
+              </span>
+            )}
+          </span>
+        ) : null
       ) : (
         <span className="cat-tile__details">
           <span className="cat-tile__identity">
-            <strong>{cat.rescueOrder}</strong>
+            {showIndex && <strong>{cat.rescueOrder}</strong>}
             <span className="cat-tile__year">{cat.rescueYear}</span>
           </span>
-          <span className="cat-tile__name" title={name || undefined}>
-            {name ?? ''}
-          </span>
+          {showNames && (
+            <span className="cat-tile__name" title={name || undefined}>
+              {name ?? ''}
+            </span>
+          )}
           <span className="cat-tile__id">{cat.catId}</span>
           <span className="cat-tile__traits">
             <span>{cat.hueName}</span>
