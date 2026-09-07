@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CatTile } from './CatTile'
 import {
@@ -185,7 +185,16 @@ export function CatGrid({
     estimateSize: () => rowEstimateFor(viewMode, artMode, gridSize),
     getItemKey: (index) => `row-${index}`,
     overscan,
+    directDomUpdates: true,
+    directDomUpdatesMode: 'transform',
   })
+  const setCanvasElement = useCallback(
+    (element: HTMLDivElement | null) => {
+      canvasRef.current = element
+      rowVirtualizer.containerRef(element)
+    },
+    [rowVirtualizer],
+  )
   const virtualRows = rowVirtualizer.getVirtualItems()
   const scrollOffset = rowVirtualizer.scrollOffset ?? 0
   const viewportHeight = scrollElementRef.current?.clientHeight ?? 0
@@ -292,15 +301,25 @@ export function CatGrid({
       }
     }
 
+    let frameId = 0
+    const scheduleFaderSync = () => {
+      if (frameId !== 0) return
+      frameId = requestAnimationFrame(() => {
+        frameId = 0
+        syncFader()
+      })
+    }
+
     const resizeObserver = new ResizeObserver(syncFader)
     resizeObserver.observe(scrollElement)
     if (canvasRef.current) resizeObserver.observe(canvasRef.current)
-    scrollElement.addEventListener('scroll', syncFader, { passive: true })
+    scrollElement.addEventListener('scroll', scheduleFaderSync, { passive: true })
     syncFader()
 
     return () => {
       resizeObserver.disconnect()
-      scrollElement.removeEventListener('scroll', syncFader)
+      scrollElement.removeEventListener('scroll', scheduleFaderSync)
+      if (frameId !== 0) cancelAnimationFrame(frameId)
     }
   }, [artMode, cats, columnCount, gridSize, viewMode])
 
@@ -341,7 +360,7 @@ export function CatGrid({
               </div>
             )}
             <div className="cat-grid-scroll" ref={scrollElementRef}>
-              <div className="cat-grid-canvas" ref={canvasRef} style={{ height: rowVirtualizer.getTotalSize() }}>
+              <div className="cat-grid-canvas" ref={setCanvasElement}>
                 {virtualRows.map((virtualRow) => {
                   const rowStart = virtualRow.index * columnCount
                   const rowCats = cats.slice(rowStart, rowStart + columnCount)
@@ -353,7 +372,6 @@ export function CatGrid({
                       ref={rowVirtualizer.measureElement}
                       style={{
                         gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-                        top: virtualRow.start,
                       }}
                     >
                       {rowCats.map((cat) => (

@@ -1,6 +1,6 @@
 import type { GridArtMode, GridSize, GridViewMode } from '../types'
 
-export const CONTINUOUS_SCROLL_VIEWPORTS_PER_SECOND = 1.2
+export const CONTINUOUS_SCROLL_VIEWPORTS_PER_SECOND = 1.5
 export const PAGE_SCROLL_RATIO = 0.92
 
 export function columnsForWidth(width: number, viewMode: GridViewMode, artMode: GridArtMode, gridSize: GridSize) {

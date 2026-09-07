@@ -50,4 +50,8 @@ describe('collection grid scroll arithmetic', () => {
     expect(reachedScrollEndpoint(0, 1_500, -1)).toBe(true)
     expect(reachedScrollEndpoint(1_500, 1_500, 1)).toBe(true)
   })
+
+  it('moves a held arrow at one and a half viewports per second', () => {
+    expect(continuousScrollTarget(100, 500, 2_000, 1, 100)).toEqual({ maxScroll: 1_500, target: 175 })
+  })
 })
