@@ -183,7 +183,7 @@ export function Palette({
             <ul className="palette-list">
               {cats.map((cat) => (
                 <li className="palette-item" key={cat.rescueOrder}>
-                  <MoonCatSprite cat={cat} manifest={manifest} variant="palette" />
+                  <MoonCatSprite cat={cat} manifest={manifest} variant="palette" ringStyle={ringStyle} />
                   <span className="palette-item__details">
                     <strong>{cat.rescueOrder}</strong>
                     <span>{cat.catId}</span>

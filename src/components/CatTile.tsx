@@ -1,7 +1,15 @@
 import { memo } from 'react'
 import { MoonCatSprite } from './MoonCatSprite'
 import { getMoonCatName, type MoonCatNames } from '../mooncatDetails'
-import type { AtlasManifest, CatRecord, CollectionInteractionMode, GridArtMode, GridSize, GridViewMode } from '../types'
+import type {
+  AtlasManifest,
+  CatRecord,
+  CollectionInteractionMode,
+  GridArtMode,
+  GridSize,
+  GridViewMode,
+  RingStyle,
+} from '../types'
 
 interface CatTileProps {
   cat: CatRecord
@@ -10,6 +18,7 @@ interface CatTileProps {
   viewMode: GridViewMode
   artMode: GridArtMode
   gridSize: GridSize
+  ringStyle: RingStyle
   idlePulse?: number
   idleHeld: boolean
   selected: boolean
@@ -25,6 +34,7 @@ export const CatTile = memo(function CatTile({
   viewMode,
   artMode,
   gridSize,
+  ringStyle,
   idlePulse,
   idleHeld,
   selected,
@@ -58,6 +68,7 @@ export const CatTile = memo(function CatTile({
         variant={viewMode}
         artMode={artMode}
         gridSize={gridSize}
+        ringStyle={ringStyle}
       />
       {viewMode === 'compact' ? (
         <span className="cat-tile__compact-id">

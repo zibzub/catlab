@@ -32,7 +32,10 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
     const values = parsed as Record<string, unknown>
     const migratedIdlePattern = values.idlePattern === 'snake' ? 'worm' : values.idlePattern
     const ringStyle =
-      values.ringStyle === 'off' || values.ringStyle === 'ac' || values.ringStyle === 'outline'
+      values.ringStyle === 'off' ||
+      values.ringStyle === 'ac' ||
+      values.ringStyle === 'outline' ||
+      values.ringStyle === 'dynamic'
         ? values.ringStyle
         : typeof values.showRings === 'boolean'
           ? values.showRings

@@ -1,6 +1,7 @@
 import { memo, type CSSProperties } from 'react'
+import { getDynamicRingScale } from '../collectionRing'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
-import type { AtlasManifest, CatRecord, GridArtMode, GridSize, GridViewMode } from '../types'
+import type { AtlasManifest, CatRecord, GridArtMode, GridSize, GridViewMode, RingStyle } from '../types'
 
 interface MoonCatSpriteProps {
   cat: CatRecord
@@ -8,6 +9,7 @@ interface MoonCatSpriteProps {
   variant?: GridViewMode | 'palette'
   artMode?: GridArtMode
   gridSize?: GridSize
+  ringStyle?: RingStyle
 }
 
 export const MoonCatSprite = memo(function MoonCatSprite({
@@ -16,6 +18,7 @@ export const MoonCatSprite = memo(function MoonCatSprite({
   variant = 'detailed',
   artMode = 'bodies',
   gridSize = 'medium',
+  ringStyle = 'off',
 }: MoonCatSpriteProps) {
   const atlasCell = getMoonCatAtlasCell(
     manifest,
@@ -62,10 +65,14 @@ export const MoonCatSprite = memo(function MoonCatSprite({
     transform: `scale(${scale})`,
     transformOrigin: 'top left',
   } satisfies CSSProperties
+  const platformStyle =
+    ringStyle === 'dynamic'
+      ? ({ transform: `scaleX(${getDynamicRingScale(cat.pose)})` } satisfies CSSProperties)
+      : undefined
 
   return (
     <div className={`cat-art cat-art--${variant} cat-art--${artMode}`} aria-hidden="true">
-      <div className="cat-art__platform" />
+      <div className="cat-art__platform" style={platformStyle} />
       <div className="cat-art__sprite" style={spriteBoxStyle}>
         <div className="cat-art__sprite-cell" style={spriteCellStyle} />
       </div>

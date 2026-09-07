@@ -361,6 +361,7 @@ export function CatGrid({
                           viewMode={viewMode}
                           artMode={artMode}
                           gridSize={gridSize}
+                          ringStyle={ringStyle}
                           idlePulse={idleState.pulseByOrder.get(cat.rescueOrder)}
                           idleHeld={idleState.heldOrders.has(cat.rescueOrder)}
                           selected={selectedOrders.has(cat.rescueOrder)}

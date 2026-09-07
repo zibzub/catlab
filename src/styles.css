@@ -989,7 +989,7 @@ h1 {
   --cat-platform-height: 25px;
   --cat-compact-art-height: 108px;
   --cat-compact-platform-width: 91px;
-  --cat-compact-platform-height: 19px;
+  --cat-compact-platform-height: 30px;
   min-width: 0;
   min-height: 213px;
   flex-direction: column;
@@ -1152,6 +1152,7 @@ h1 {
   position: relative;
   flex: 0 0 auto;
   z-index: 1;
+  top: -3px;
   overflow: hidden;
   pointer-events: none;
   transition: transform 300ms ease;
@@ -1342,6 +1343,14 @@ h1 {
 .cat-grid-viewport--rings-outline .cat-art__platform,
 .cat-list-shell--rings-outline .cat-art__platform,
 .palette-panel--rings-outline .cat-art__platform {
+  border: 3px solid #fff;
+  background: #000;
+  box-shadow: none;
+}
+
+.cat-grid-viewport--rings-dynamic .cat-art__platform,
+.cat-list-shell--rings-dynamic .cat-art__platform,
+.palette-panel--rings-dynamic .cat-art__platform {
   border: 3px solid #fff;
   background: #000;
   box-shadow: none;

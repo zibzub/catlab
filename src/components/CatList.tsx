@@ -314,6 +314,7 @@ export function CatList({
                           variant="list"
                           artMode={artMode}
                           gridSize={isNarrow ? 'small' : 'medium'}
+                          ringStyle={ringStyle}
                         />
                       </span>
                       <span className="cat-list-row__identity-copy">

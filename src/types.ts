@@ -24,7 +24,7 @@ export interface CollectionScrollAnchor {
   token: number
 }
 
-export type RingStyle = 'off' | 'ac' | 'outline'
+export type RingStyle = 'off' | 'ac' | 'outline' | 'dynamic'
 
 export type IdlePattern = 'off' | 'wave' | 'cascade' | 'random' | 'popcorn' | 'ripple' | 'worm' | 'snake-game'
 

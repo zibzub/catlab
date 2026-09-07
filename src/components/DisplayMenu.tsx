@@ -97,7 +97,7 @@ export function DisplayMenu({
           <div className="display-menu__body">
             <div className="display-menu__effects" aria-label="Grid effects">
               <div className="rings-style-picker" role="group" aria-label="Ring style">
-                {(['off', 'ac', 'outline'] as const).map((style) => (
+                {(['off', 'ac', 'outline', 'dynamic'] as const).map((style) => (
                   <button
                     key={style}
                     type="button"
@@ -109,9 +109,9 @@ export function DisplayMenu({
                     onClick={() => onRingStyleChange(style)}
                   >
                     <span className="rings-toggle__icon" aria-hidden="true">
-                      {style === 'off' ? '×' : style === 'ac' ? '◉' : '◌'}
+                      {style === 'off' ? '×' : style === 'ac' ? '◉' : style === 'outline' ? '◌' : '◍'}
                     </span>
-                    {style === 'off' ? 'Off' : style === 'ac' ? 'AC' : 'Outline'}
+                    {style === 'off' ? 'Off' : style === 'ac' ? 'AC' : style === 'outline' ? 'Outline' : 'Dynamic'}
                   </button>
                 ))}
               </div>
