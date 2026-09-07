@@ -1,10 +1,9 @@
 import type { MouseEvent, ReactNode } from 'react'
 import type { ComposePlacedObject } from '../composeExport'
+import type { ComposeColorTarget } from '../composeSampling'
 import { MAX_COMPOSE_LAYERS, resetComposeTransform, type ComposeLayerMove } from '../composeModel'
 import type { CatRecord } from '../types'
 import { CatLabIcon } from './CatLabIcon'
-
-type ComposeColorTarget = 'fill' | 'stroke'
 
 interface ComposePropertiesPanelProps {
   selected: ComposePlacedObject | null

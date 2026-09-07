@@ -57,6 +57,13 @@ import { ComposeToolbar } from './ComposeToolbar'
 import { ComposeColorSwatches } from './ComposeColorSwatches'
 import { CatLabIcon } from './CatLabIcon'
 import { getComposeCreationColors, type ComposeEditorColors } from '../composeColors'
+import {
+  getComposeSamplingReadyMessage,
+  getComposeSamplingTransparentMessage,
+  isComposeSamplingTargetValid,
+  type ComposeColorTarget,
+  type ComposeSamplingTarget,
+} from '../composeSampling'
 import { getMoonCatAtlasCell } from '../mooncat-index/atlas'
 import type { AtlasManifest, CatRecord, GridArtMode } from '../types'
 
@@ -107,7 +114,6 @@ const COMPOSE_TEXT_FONTS = [
   { label: 'Arimo (Arial-like)', value: 'Arimo, Arial, sans-serif' },
   { label: 'Roboto (Helvetica-like)', value: 'Roboto, Arial, sans-serif' },
 ] as const
-type ComposeColorTarget = 'fill' | 'stroke'
 type ComposeTool = 'select' | 'rectangle' | 'text' | 'eyedropper'
 
 interface RectangleGesture {
@@ -267,7 +273,7 @@ export function ComposePage({
   const [exportBusy, setExportBusy] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [colorPickerBusy, setColorPickerBusy] = useState(false)
-  const [stageSamplingTarget, setStageSamplingTarget] = useState<ComposeColorTarget | null>(null)
+  const [stageSamplingTarget, setStageSamplingTarget] = useState<ComposeSamplingTarget | null>(null)
   const [stageSamplingMessage, setStageSamplingMessage] = useState<string | null>(null)
   const [documentBusy, setDocumentBusy] = useState(false)
   const [documentError, setDocumentError] = useState<string | null>(null)
@@ -564,8 +570,6 @@ export function ComposePage({
   const catalogCatsByOrder = useMemo(() => new Map(catalogCats.map((cat) => [cat.rescueOrder, cat])), [catalogCats])
   const selectedCat = selected?.kind === 'cat' ? (catalogCatsByOrder.get(selected.rescueOrder) ?? null) : null
   const colorPickerSupported = supportsColorPicker()
-  const selectedDefaultColorTarget: 'fill' | null =
-    selected?.kind === 'rect' || selected?.kind === 'text' ? 'fill' : null
   const stageRatio = background ? background.width / background.height : EMPTY_STAGE_RATIO
   const stageStyle = {
     '--compose-ratio': stageRatio,
@@ -650,12 +654,14 @@ export function ComposePage({
     }
   }
 
-  async function armStageSampling(target: ComposeColorTarget) {
-    if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
-    if (target === 'stroke' && selected.kind !== 'text') return
-
+  async function armComposeSampling(target: ComposeSamplingTarget) {
+    const targetObject =
+      target.kind === 'object' ? placedObjectsRef.current.find((item) => item.id === target.objectId) : undefined
+    if (target.kind === 'object' && !isComposeSamplingTargetValid(target, targetObject)) return
     finishTextEditingBeforeToolChange()
     clearRectanglePlacement()
+    clearTextPlacement()
+    cancelStageSampling()
     setActiveTool('eyedropper')
     const sequence = samplingSequenceRef.current + 1
     samplingSequenceRef.current = sequence
@@ -666,7 +672,7 @@ export function ComposePage({
       const canvas = await renderStageSamplingCanvas()
       if (samplingSequenceRef.current !== sequence) return
       samplingCanvasRef.current = canvas
-      setStageSamplingMessage('Click the stage to sample a color. Press Escape to cancel.')
+      setStageSamplingMessage(getComposeSamplingReadyMessage(target))
     } catch (error: unknown) {
       if (samplingSequenceRef.current !== sequence) return
       samplingCanvasRef.current = null
@@ -698,11 +704,21 @@ export function ComposePage({
     setColorPickerBusy(false)
     if (sample.alpha === 0) {
       setActiveTool('select')
-      setStageSamplingMessage('That point is transparent. No color was changed.')
+      setStageSamplingMessage(getComposeSamplingTransparentMessage(target))
       return
     }
 
-    updateSelected(target === 'fill' ? { fill: sample.hex } : { stroke: sample.hex }, true)
+    if (target.kind === 'foreground') {
+      onForegroundColorChange(sample.hex)
+    } else {
+      const targetObject = placedObjectsRef.current.find((item) => item.id === target.objectId)
+      if (!isComposeSamplingTargetValid(target, targetObject)) {
+        setActiveTool('select')
+        setStageSamplingMessage('The sampled layer is no longer available.')
+        return
+      }
+      updateObject(target.objectId, target.property === 'fill' ? { fill: sample.hex } : { stroke: sample.hex }, true)
+    }
     setActiveTool('select')
     setStageSamplingMessage(null)
   }
@@ -949,16 +965,28 @@ export function ComposePage({
     }
   }
 
-  async function pickNativeSelectedColor(target: ComposeColorTarget) {
-    if (!selected || (selected.kind !== 'rect' && selected.kind !== 'text')) return
-    if (target === 'stroke' && selected.kind !== 'text') return
-
+  async function pickNativeColor(target: ComposeSamplingTarget) {
+    if (target.kind === 'object') {
+      const targetObject = placedObjectsRef.current.find((item) => item.id === target.objectId)
+      if (!isComposeSamplingTargetValid(target, targetObject)) return
+    }
     cancelActiveComposeTool()
     setColorPickerBusy(true)
     try {
       const result = await requestScreenColor()
       if (result.status !== 'picked') return
-      updateSelected(target === 'fill' ? { fill: result.color } : { stroke: result.color }, true)
+      if (target.kind === 'foreground') {
+        onForegroundColorChange(result.color)
+        return
+      }
+      const targetObject = placedObjectsRef.current.find((item) => item.id === target.objectId)
+      if (isComposeSamplingTargetValid(target, targetObject)) {
+        updateObject(
+          target.objectId,
+          target.property === 'fill' ? { fill: result.color } : { stroke: result.color },
+          true,
+        )
+      }
     } finally {
       setColorPickerBusy(false)
     }
@@ -969,8 +997,19 @@ export function ComposePage({
       cancelActiveComposeTool()
       return
     }
-    if (event.shiftKey && colorPickerSupported) void pickNativeSelectedColor(target)
-    else void armStageSampling(target)
+    if (!selected) return
+    const samplingTarget: ComposeSamplingTarget = { kind: 'object', objectId: selected.id, property: target }
+    if (event.shiftKey && colorPickerSupported) void pickNativeColor(samplingTarget)
+    else void armComposeSampling(samplingTarget)
+  }
+
+  function handleRailEyedropperClick(event: React.MouseEvent<HTMLButtonElement>) {
+    if (stageSamplingTarget) {
+      cancelActiveComposeTool()
+      return
+    }
+    if (event.shiftKey && colorPickerSupported) void pickNativeColor({ kind: 'foreground' })
+    else void armComposeSampling({ kind: 'foreground' })
   }
 
   function addCat(cat: CatRecord) {
@@ -1760,29 +1799,17 @@ export function ComposePage({
               <button
                 className={`compose-tool${activeTool === 'eyedropper' ? ' is-active' : ''}`}
                 type="button"
-                disabled={!selectedDefaultColorTarget || colorPickerBusy}
+                disabled={colorPickerBusy}
                 aria-pressed={activeTool === 'eyedropper'}
-                aria-label={
-                  colorPickerSupported
-                    ? selectedDefaultColorTarget
-                      ? 'Sample color for selected layer fill'
-                      : 'Select a rectangle or text layer to sample a color'
-                    : selectedDefaultColorTarget
-                      ? 'Sample color for selected layer fill'
-                      : 'Select a rectangle or text layer to sample a color'
-                }
+                aria-label={stageSamplingTarget ? 'Cancel active color sample' : 'Sample foreground color'}
                 title={
-                  colorPickerSupported
-                    ? selectedDefaultColorTarget
-                      ? 'Sample selected layer fill (Shift-click for screen picker)'
-                      : 'Select a rectangle or text layer first'
-                    : selectedDefaultColorTarget
-                      ? 'Sample selected layer fill'
-                      : 'Select a rectangle or text layer first'
+                  stageSamplingTarget
+                    ? 'Cancel active color sample'
+                    : colorPickerSupported
+                      ? 'Sample foreground color (Shift-click for screen picker)'
+                      : 'Sample foreground color'
                 }
-                onClick={(event) => {
-                  if (selectedDefaultColorTarget) handleColorPickClick(selectedDefaultColorTarget, event)
-                }}
+                onClick={handleRailEyedropperClick}
               >
                 <span className="compose-tool__icon">
                   {colorPickerBusy ? '…' : stageSamplingTarget ? '×' : <CatLabIcon name="color-picker" />}
