@@ -2,11 +2,13 @@ import { isIdlePattern, isIdleSpeed } from './idleAnimation'
 import type { GridSize, GridViewMode, IdlePattern, IdleSpeed, RingStyle } from './types'
 
 export const COLLECTION_DISPLAY_PREFS_KEY = 'catlab.collection-display.v1'
+export const COLLECTION_RING_STYLE_MIGRATION = 1
 
 export interface CollectionDisplayPreferences {
   viewMode?: GridViewMode
   gridSize?: GridSize
   ringStyle?: RingStyle
+  ringStyleMigration?: number
   showStars?: boolean
   showVignette?: boolean
   showIndex?: boolean
@@ -19,6 +21,7 @@ export interface StoredCollectionDisplayPreferences {
   viewMode: GridViewMode
   gridSize: GridSize
   ringStyle: RingStyle
+  ringStyleMigration: typeof COLLECTION_RING_STYLE_MIGRATION
   showStars: boolean
   showVignette: boolean
   showIndex: boolean
@@ -28,14 +31,16 @@ export interface StoredCollectionDisplayPreferences {
 }
 
 export function parseCollectionDisplayPreferences(raw: string | null): CollectionDisplayPreferences {
-  if (!raw) return {}
+  if (!raw) return { ringStyle: 'dynamic', ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION }
 
   try {
     const parsed: unknown = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { ringStyle: 'dynamic', ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION }
+    }
     const values = parsed as Record<string, unknown>
     const migratedIdlePattern = values.idlePattern === 'snake' ? 'worm' : values.idlePattern
-    const ringStyle =
+    const parsedRingStyle =
       values.ringStyle === 'off' ||
       values.ringStyle === 'ac' ||
       values.ringStyle === 'outline' ||
@@ -46,6 +51,8 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
             ? 'outline'
             : 'off'
           : undefined
+    const ringStyle =
+      values.ringStyleMigration === COLLECTION_RING_STYLE_MIGRATION ? (parsedRingStyle ?? 'dynamic') : 'dynamic'
     return {
       viewMode:
         values.viewMode === 'compact' || values.viewMode === 'detailed' || values.viewMode === 'list'
@@ -56,6 +63,7 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
           ? values.gridSize
           : undefined,
       ringStyle,
+      ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
       showStars: typeof values.showStars === 'boolean' ? values.showStars : undefined,
       showVignette: typeof values.showVignette === 'boolean' ? values.showVignette : undefined,
       showIndex: typeof values.showIndex === 'boolean' ? values.showIndex : undefined,
@@ -64,7 +72,7 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
       idleSpeed: isIdleSpeed(values.idleSpeed) ? values.idleSpeed : undefined,
     }
   } catch {
-    return {}
+    return { ringStyle: 'dynamic', ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION }
   }
 }
 

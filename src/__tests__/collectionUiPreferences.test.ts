@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parseCollectionDisplayPreferences, serializeCollectionDisplayPreferences } from '../collectionPreferences'
+import {
+  COLLECTION_RING_STYLE_MIGRATION,
+  parseCollectionDisplayPreferences,
+  serializeCollectionDisplayPreferences,
+} from '../collectionPreferences'
 import { activeFilterCount, getActiveFilterChips, removeFilterValue } from '../components/collectionFilters'
 import { createEmptyFilterState } from '../mooncat-index/filters'
 
@@ -20,7 +24,8 @@ describe('collection display preference persistence', () => {
     ).toEqual({
       viewMode: 'list',
       gridSize: 'small',
-      ringStyle: 'outline',
+      ringStyle: 'dynamic',
+      ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
       showStars: false,
       showVignette: true,
       idlePattern: 'worm',
@@ -29,13 +34,22 @@ describe('collection display preference persistence', () => {
   })
 
   it('falls back safely for malformed values and serializes current state', () => {
-    expect(parseCollectionDisplayPreferences('{bad json')).toEqual({})
-    expect(parseCollectionDisplayPreferences(JSON.stringify({ viewMode: 'tiles', idlePattern: 'legacy' }))).toEqual({})
+    expect(parseCollectionDisplayPreferences('{bad json')).toMatchObject({
+      ringStyle: 'dynamic',
+      ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
+    })
+    expect(
+      parseCollectionDisplayPreferences(JSON.stringify({ viewMode: 'tiles', idlePattern: 'legacy' })),
+    ).toMatchObject({
+      ringStyle: 'dynamic',
+      ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
+    })
     expect(
       serializeCollectionDisplayPreferences({
         viewMode: 'compact',
         gridSize: 'medium',
         ringStyle: 'ac',
+        ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
         showStars: true,
         showVignette: false,
         showIndex: true,
@@ -44,7 +58,7 @@ describe('collection display preference persistence', () => {
         idleSpeed: 'slow',
       }),
     ).toBe(
-      '{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","showStars":true,"showVignette":false,"showIndex":true,"showNames":true,"idlePattern":"wave","idleSpeed":"slow"}',
+      '{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","ringStyleMigration":1,"showStars":true,"showVignette":false,"showIndex":true,"showNames":true,"idlePattern":"wave","idleSpeed":"slow"}',
     )
   })
 
@@ -61,6 +75,35 @@ describe('collection display preference persistence', () => {
     expect(parseCollectionDisplayPreferences(JSON.stringify({ showIndex: 'no', showNames: 0 })).showNames ?? true).toBe(
       true,
     )
+  })
+
+  it('migrates old ring selections to Dynamic while preserving later choices', () => {
+    expect(parseCollectionDisplayPreferences(null).ringStyle).toBe('dynamic')
+
+    for (const ringStyle of ['off', 'ac', 'outline', 'dynamic'] as const) {
+      expect(parseCollectionDisplayPreferences(JSON.stringify({ ringStyle }))).toMatchObject({
+        ringStyle: 'dynamic',
+        ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
+      })
+    }
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ ringStyle: 'unexpected' })).ringStyle).toBe('dynamic')
+
+    expect(
+      parseCollectionDisplayPreferences(
+        JSON.stringify({ viewMode: 'list', gridSize: 'large', showVignette: false, ringStyle: 'outline' }),
+      ),
+    ).toMatchObject({
+      viewMode: 'list',
+      gridSize: 'large',
+      showVignette: false,
+      ringStyle: 'dynamic',
+    })
+
+    expect(
+      parseCollectionDisplayPreferences(
+        JSON.stringify({ ringStyle: 'off', ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION }),
+      ).ringStyle,
+    ).toBe('off')
   })
 })
 

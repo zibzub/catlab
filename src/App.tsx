@@ -11,6 +11,7 @@ import { Palette } from './components/Palette'
 import { findMoonCatsByExactHue, getMoonCatColorMatch, type ColorLabSample } from './colorLab'
 import {
   COLLECTION_DISPLAY_PREFS_KEY,
+  COLLECTION_RING_STYLE_MIGRATION,
   loadCollectionDisplayPreferences,
   serializeCollectionDisplayPreferences,
 } from './collectionPreferences'
@@ -145,7 +146,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<GridViewMode>(displayPreferences.viewMode ?? 'compact')
   const [artMode, setArtMode] = useState<GridArtMode>('bodies')
   const [gridSize, setGridSize] = useState<GridSize>(displayPreferences.gridSize ?? 'medium')
-  const [ringStyle, setRingStyle] = useState<RingStyle>(displayPreferences.ringStyle ?? 'outline')
+  const [ringStyle, setRingStyle] = useState<RingStyle>(displayPreferences.ringStyle ?? 'dynamic')
   const [showStars, setShowStars] = useState(displayPreferences.showStars ?? true)
   const [showVignette, setShowVignette] = useState(displayPreferences.showVignette ?? true)
   const [showIndex, setShowIndex] = useState(displayPreferences.showIndex ?? true)
@@ -211,6 +212,7 @@ export default function App() {
           viewMode,
           gridSize,
           ringStyle,
+          ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
           showStars,
           showVignette,
           showIndex,
