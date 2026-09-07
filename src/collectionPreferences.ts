@@ -10,6 +10,7 @@ export interface CollectionDisplayPreferences {
   ringStyle?: RingStyle
   ringStyleMigration?: number
   showStars?: boolean
+  showSky?: boolean
   showVignette?: boolean
   showIndex?: boolean
   showNames?: boolean
@@ -23,6 +24,7 @@ export interface StoredCollectionDisplayPreferences {
   ringStyle: RingStyle
   ringStyleMigration: typeof COLLECTION_RING_STYLE_MIGRATION
   showStars: boolean
+  showSky: boolean
   showVignette: boolean
   showIndex: boolean
   showNames: boolean
@@ -53,6 +55,8 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
           : undefined
     const ringStyle =
       values.ringStyleMigration === COLLECTION_RING_STYLE_MIGRATION ? (parsedRingStyle ?? 'dynamic') : 'dynamic'
+    const showStars = typeof values.showStars === 'boolean' ? values.showStars : undefined
+    const showSky = typeof values.showSky === 'boolean' ? values.showSky : undefined
     return {
       viewMode:
         values.viewMode === 'compact' || values.viewMode === 'detailed' || values.viewMode === 'list'
@@ -64,7 +68,8 @@ export function parseCollectionDisplayPreferences(raw: string | null): Collectio
           : undefined,
       ringStyle,
       ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
-      showStars: typeof values.showStars === 'boolean' ? values.showStars : undefined,
+      showStars,
+      showSky: showStars === true ? false : showSky,
       showVignette: typeof values.showVignette === 'boolean' ? values.showVignette : undefined,
       showIndex: typeof values.showIndex === 'boolean' ? values.showIndex : undefined,
       showNames: typeof values.showNames === 'boolean' ? values.showNames : undefined,

@@ -147,7 +147,10 @@ export default function App() {
   const [artMode, setArtMode] = useState<GridArtMode>('bodies')
   const [gridSize, setGridSize] = useState<GridSize>(displayPreferences.gridSize ?? 'medium')
   const [ringStyle, setRingStyle] = useState<RingStyle>(displayPreferences.ringStyle ?? 'dynamic')
-  const [showStars, setShowStars] = useState(displayPreferences.showStars ?? true)
+  const [showStars, setShowStars] = useState(
+    displayPreferences.showStars ?? (displayPreferences.showSky === true ? false : true),
+  )
+  const [showSky, setShowSky] = useState(displayPreferences.showSky ?? false)
   const [showVignette, setShowVignette] = useState(displayPreferences.showVignette ?? true)
   const [showIndex, setShowIndex] = useState(displayPreferences.showIndex ?? true)
   const [showNames, setShowNames] = useState(displayPreferences.showNames ?? true)
@@ -214,6 +217,7 @@ export default function App() {
           ringStyle,
           ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
           showStars,
+          showSky,
           showVignette,
           showIndex,
           showNames,
@@ -224,7 +228,16 @@ export default function App() {
     } catch {
       // Persistence is optional; keep the app usable when storage is unavailable.
     }
-  }, [gridSize, idlePattern, idleSpeed, ringStyle, showIndex, showNames, showStars, showVignette, viewMode])
+  }, [gridSize, idlePattern, idleSpeed, ringStyle, showIndex, showNames, showSky, showStars, showVignette, viewMode])
+
+  const updateStars = useCallback((show: boolean) => {
+    setShowStars(show)
+    if (show) setShowSky(false)
+  }, [])
+  const updateSky = useCallback((show: boolean) => {
+    setShowSky(show)
+    if (show) setShowStars(false)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -552,6 +565,7 @@ export default function App() {
               gridSize={gridSize}
               ringStyle={ringStyle}
               showStars={showStars}
+              showSky={showSky}
               showVignette={showVignette}
               showIndex={showIndex}
               showNames={showNames}
@@ -577,7 +591,8 @@ export default function App() {
               onArtModeChange={setArtMode}
               onGridSizeChange={chooseGridSize}
               onRingStyleChange={setRingStyle}
-              onStarsChange={setShowStars}
+              onStarsChange={updateStars}
+              onSkyChange={updateSky}
               onVignetteChange={setShowVignette}
               onIndexChange={setShowIndex}
               onNamesChange={setShowNames}
@@ -622,6 +637,7 @@ export default function App() {
               gridSize={viewMode === 'detailed' ? 'medium' : gridSize}
               ringStyle={artMode === 'bodies' ? ringStyle : 'off'}
               showStars={showStars}
+              showSky={showSky}
               showVignette={showVignette}
               showIndex={showIndex}
               showNames={showNames}

@@ -27,6 +27,7 @@ interface FilterBarProps {
   gridSize: GridSize
   ringStyle: RingStyle
   showStars: boolean
+  showSky: boolean
   showVignette: boolean
   showIndex: boolean
   showNames: boolean
@@ -53,6 +54,7 @@ interface FilterBarProps {
   onGridSizeChange: (size: GridSize) => void
   onRingStyleChange: (style: RingStyle) => void
   onStarsChange: (show: boolean) => void
+  onSkyChange: (show: boolean) => void
   onVignetteChange: (show: boolean) => void
   onIndexChange: (show: boolean) => void
   onNamesChange: (show: boolean) => void
@@ -96,6 +98,7 @@ export function FilterBar({
   gridSize,
   ringStyle,
   showStars,
+  showSky,
   showVignette,
   showIndex,
   showNames,
@@ -122,6 +125,7 @@ export function FilterBar({
   onGridSizeChange,
   onRingStyleChange,
   onStarsChange,
+  onSkyChange,
   onVignetteChange,
   onIndexChange,
   onNamesChange,
@@ -521,6 +525,7 @@ export function FilterBar({
               artMode={artMode}
               ringStyle={ringStyle}
               showStars={showStars}
+              showSky={showSky}
               showVignette={showVignette}
               showIndex={showIndex}
               showNames={showNames}
@@ -528,6 +533,7 @@ export function FilterBar({
               idleSpeed={idleSpeed}
               onRingStyleChange={onRingStyleChange}
               onStarsChange={onStarsChange}
+              onSkyChange={onSkyChange}
               onVignetteChange={onVignetteChange}
               onIndexChange={onIndexChange}
               onNamesChange={onNamesChange}

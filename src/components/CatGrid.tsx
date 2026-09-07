@@ -35,6 +35,7 @@ interface CatGridProps {
   idlePattern: IdlePattern
   idleSpeed: IdleSpeed
   showStars: boolean
+  showSky: boolean
   showVignette: boolean
   showIndex: boolean
   showNames: boolean
@@ -59,6 +60,7 @@ export function CatGrid({
   idlePattern,
   idleSpeed,
   showStars,
+  showSky,
   showVignette,
   showIndex,
   showNames,
@@ -351,6 +353,8 @@ export function CatGrid({
           <div
             className={`cat-grid-viewport cat-grid-viewport--rings-${ringStyle}${
               showStars ? ' cat-grid-viewport--stars' : ''
+            }${
+              showSky ? ' cat-grid-viewport--sky' : ''
             }${showVignette ? '' : ' cat-grid-viewport--vignette-hidden'} cat-grid-viewport--${artMode}`}
           >
             {showStars && (
@@ -361,6 +365,7 @@ export function CatGrid({
             )}
             <div className="cat-grid-scroll" ref={scrollElementRef}>
               <div className="cat-grid-canvas" ref={setCanvasElement}>
+                {showSky && <div className="cat-grid-sky" aria-hidden="true" />}
                 {virtualRows.map((virtualRow) => {
                   const rowStart = virtualRow.index * columnCount
                   const rowCats = cats.slice(rowStart, rowStart + columnCount)

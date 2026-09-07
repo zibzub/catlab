@@ -739,6 +739,10 @@ h1 {
   background: transparent;
 }
 
+.cat-grid-viewport--sky .cat-grid-scroll {
+  background: transparent;
+}
+
 .cat-grid-scroll::-webkit-scrollbar {
   display: none;
   width: 0;
@@ -947,8 +951,21 @@ h1 {
   width: 100%;
 }
 
+.cat-grid-sky {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-color: #0c0e14;
+  background-image: url('/img/sky-strip.webp');
+  background-position: center top;
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  pointer-events: none;
+}
+
 .cat-grid-row {
   position: absolute;
+  z-index: 1;
   top: 0;
   left: 0;
   display: grid;

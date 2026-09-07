@@ -16,6 +16,7 @@ describe('collection display preference persistence', () => {
           gridSize: 'small',
           showRings: true,
           showStars: false,
+          showSky: true,
           showVignette: true,
           idlePattern: 'snake',
           idleSpeed: 'fast',
@@ -27,6 +28,7 @@ describe('collection display preference persistence', () => {
       ringStyle: 'dynamic',
       ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
       showStars: false,
+      showSky: true,
       showVignette: true,
       idlePattern: 'worm',
       idleSpeed: 'fast',
@@ -51,6 +53,7 @@ describe('collection display preference persistence', () => {
         ringStyle: 'ac',
         ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION,
         showStars: true,
+        showSky: false,
         showVignette: false,
         showIndex: true,
         showNames: true,
@@ -58,7 +61,7 @@ describe('collection display preference persistence', () => {
         idleSpeed: 'slow',
       }),
     ).toBe(
-      '{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","ringStyleMigration":1,"showStars":true,"showVignette":false,"showIndex":true,"showNames":true,"idlePattern":"wave","idleSpeed":"slow"}',
+      '{"viewMode":"compact","gridSize":"medium","ringStyle":"ac","ringStyleMigration":1,"showStars":true,"showSky":false,"showVignette":false,"showIndex":true,"showNames":true,"idlePattern":"wave","idleSpeed":"slow"}',
     )
   })
 
@@ -104,6 +107,22 @@ describe('collection display preference persistence', () => {
         JSON.stringify({ ringStyle: 'off', ringStyleMigration: COLLECTION_RING_STYLE_MIGRATION }),
       ).ringStyle,
     ).toBe('off')
+  })
+
+  it('defaults Sky off and normalizes simultaneous Stars and Sky values', () => {
+    expect(parseCollectionDisplayPreferences(null).showSky ?? false).toBe(false)
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ showSky: true }))).toMatchObject({
+      showSky: true,
+    })
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ showStars: true, showSky: true }))).toMatchObject({
+      showStars: true,
+      showSky: false,
+    })
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ showStars: false, showSky: true }))).toMatchObject({
+      showStars: false,
+      showSky: true,
+    })
+    expect(parseCollectionDisplayPreferences(JSON.stringify({ showSky: 'yes' })).showSky ?? false).toBe(false)
   })
 })
 

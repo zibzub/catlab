@@ -6,6 +6,7 @@ interface DisplayMenuProps {
   artMode: GridArtMode
   ringStyle: RingStyle
   showStars: boolean
+  showSky: boolean
   showVignette: boolean
   showIndex: boolean
   showNames: boolean
@@ -13,6 +14,7 @@ interface DisplayMenuProps {
   idleSpeed: IdleSpeed
   onRingStyleChange: (value: RingStyle) => void
   onStarsChange: (value: boolean) => void
+  onSkyChange: (value: boolean) => void
   onVignetteChange: (value: boolean) => void
   onIndexChange: (value: boolean) => void
   onNamesChange: (value: boolean) => void
@@ -24,6 +26,7 @@ export function DisplayMenu({
   artMode,
   ringStyle,
   showStars,
+  showSky,
   showVignette,
   showIndex,
   showNames,
@@ -31,6 +34,7 @@ export function DisplayMenu({
   idleSpeed,
   onRingStyleChange,
   onStarsChange,
+  onSkyChange,
   onVignetteChange,
   onIndexChange,
   onNamesChange,
@@ -164,6 +168,17 @@ export function DisplayMenu({
                   ✦
                 </span>
                 Stars
+              </button>
+              <button
+                type="button"
+                className={`rings-toggle${showSky ? ' is-active' : ''}`}
+                aria-pressed={showSky}
+                onClick={() => onSkyChange(!showSky)}
+              >
+                <span className="rings-toggle__icon" aria-hidden="true">
+                  ◒
+                </span>
+                Sky
               </button>
               <button
                 type="button"
