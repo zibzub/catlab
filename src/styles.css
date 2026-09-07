@@ -1011,7 +1011,7 @@ h1 {
   --cat-platform-height: 21px;
   --cat-compact-art-height: 88px;
   --cat-compact-platform-width: 75px;
-  --cat-compact-platform-height: 16px;
+  --cat-compact-platform-height: 25px;
   min-height: 190px;
 }
 
@@ -1021,7 +1021,7 @@ h1 {
   --cat-platform-height: 29px;
   --cat-compact-art-height: 138px;
   --cat-compact-platform-width: 112px;
-  --cat-compact-platform-height: 24px;
+  --cat-compact-platform-height: 35px;
   min-height: 246px;
 }
 
@@ -1842,7 +1842,7 @@ h1 {
     --cat-platform-height: 21px;
     --cat-compact-art-height: 102px;
     --cat-compact-platform-width: 88px;
-    --cat-compact-platform-height: 19px;
+    
     min-height: 196px;
     border-radius: 11px;
   }
